@@ -24,7 +24,7 @@
   .framework,
   .vite {
     inset-inline: 0;
-    margin: 10 auto;
+    margin: 0 auto;
   }
 
   .base {
