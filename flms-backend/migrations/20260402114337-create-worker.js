@@ -18,7 +18,7 @@ module.exports = {
         onUpdate: 'CASCADE',
         onDelete: 'RESTRICT' // باش يمنع حذف أي كفيل لو عنده عمال مسجلين
       },
-      Passport_Number: {
+      Passport_Number: {  
         type: Sequelize.STRING
       },
       National_ID: {
