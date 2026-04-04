@@ -5,7 +5,7 @@ import { useSearch } from "@/context/SearchContext";
 
 export function AppHeader() {
   const [dark, setDark] = useState(false);
-  const [userName, setUserName] = useState("أحمد المنصوري");
+  const [userName, setUserName] = useState("مستخدم");
   const navigate = useNavigate();
   const { searchQuery, setSearchQuery } = useSearch();
 
@@ -14,6 +14,8 @@ export function AppHeader() {
     const storedName = localStorage.getItem("user_name");
     if (storedName) {
       setUserName(storedName);
+    } else {
+      setUserName("مستخدم");
     }
   }, [dark]);
 
