@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Building2, Edit } from "lucide-react";
+import { Plus, Building2, Edit, FileCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload, type UploadedDoc } from "@/components/DocumentUpload";
 import api from "../api/axiosConfig";
@@ -16,6 +16,11 @@ interface Sponsor {
   workersCount: number;
   status: string; // Map status as 'نشط' since it's not in the model
   Phone: string;
+  Email?: string;
+  Commercial_Reg_Copy?: string;
+  Tax_Cert_Copy?: string;
+  License_Copy?: string;
+  Auth_Letter_Copy?: string;
 }
 
 interface SponsorDocs {
@@ -26,7 +31,7 @@ interface SponsorDocs {
 }
 
 const emptyDocs: SponsorDocs = { commercialRegister: null, taxCert: null, licenseCopy: null, authLetter: null };
-const emptyForm = { name: "", license: "", phone: "" };
+const emptyForm = { name: "", license: "", phone: "", email: "" };
 
 export default function Sponsors() {
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
@@ -84,6 +89,11 @@ export default function Sponsors() {
         Sponsor_Name: form.name.trim(),
         Commercial_Reg_No: form.license.trim(),
         Phone: form.phone.trim(),
+        Email: form.email.trim(),
+        Commercial_Reg_Copy: docs.commercialRegister?.url || null,
+        Tax_Cert_Copy: docs.taxCert?.url || null,
+        License_Copy: docs.licenseCopy?.url || null,
+        Auth_Letter_Copy: docs.authLetter?.url || null,
       };
 
       if (editMode && selectedSponsorId) {
@@ -113,6 +123,13 @@ export default function Sponsors() {
       name: sponsor.Sponsor_Name,
       license: sponsor.Commercial_Reg_No,
       phone: sponsor.Phone,
+      email: sponsor.Email || "",
+    });
+    setDocs({
+      commercialRegister: sponsor.Commercial_Reg_Copy ? { name: "مستند مرفق", url: sponsor.Commercial_Reg_Copy, type: "application/pdf", label: "صورة السجل التجاري" } : null,
+      taxCert: sponsor.Tax_Cert_Copy ? { name: "مستند مرفق", url: sponsor.Tax_Cert_Copy, type: "application/pdf", label: "الشهادة الضريبية" } : null,
+      licenseCopy: sponsor.License_Copy ? { name: "مستند مرفق", url: sponsor.License_Copy, type: "application/pdf", label: "نسخة الترخيص" } : null,
+      authLetter: sponsor.Auth_Letter_Copy ? { name: "مستند مرفق", url: sponsor.Auth_Letter_Copy, type: "application/pdf", label: "خطاب التفويض" } : null,
     });
     setAddOpen(true);
   };
@@ -156,17 +173,18 @@ export default function Sponsors() {
                 <th className="text-right p-3 font-medium">عدد العمال</th>
                 <th className="text-right p-3 font-medium">الحالة</th>
                 <th className="text-right p-3 font-medium">الهاتف</th>
+                <th className="text-right p-3 font-medium">المستندات</th>
                 <th className="text-right p-3 font-medium">إجراءات</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="p-3 text-center">جاري التحميل...</td>
+                  <td colSpan={7} className="p-3 text-center">جاري التحميل...</td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="p-3 text-center">لا توجد بيانات</td>
+                  <td colSpan={7} className="p-3 text-center">لا توجد بيانات</td>
                 </tr>
               ) : (
                 filtered.map((s) => (
@@ -180,6 +198,11 @@ export default function Sponsors() {
                       </span>
                     </td>
                     <td className="p-3 font-mono text-xs">{s.Phone}</td>
+                    <td className="p-3">
+                      {(s.Commercial_Reg_Copy || s.Tax_Cert_Copy || s.License_Copy || s.Auth_Letter_Copy) && (
+                        <FileCheck className="w-4 h-4 text-success" title="مستندات مرفقة" />
+                      )}
+                    </td>
                     <td className="p-3">
                       <button onClick={() => handleEditClick(s)} className="w-8 h-8 rounded-md bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
                         <Edit className="w-3.5 h-3.5" />
@@ -222,6 +245,10 @@ export default function Sponsors() {
                 <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="091-XXXXXXX" />
                 {errors.phone && <p className="text-xs text-destructive">{errors.phone}</p>}
               </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>البريد الإلكتروني</Label>
+              <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="example@domain.com" />
             </div>
 
             {/* Document Uploads */}

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Search, Filter, Eye, Edit, ChevronLeft, ChevronRight, Plus, UserPlus, Check, ChevronsUpDown } from "lucide-react";
+import { Search, Filter, Eye, Edit, ChevronLeft, ChevronRight, Plus, UserPlus, Check, ChevronsUpDown, FileCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload, type UploadedDoc } from "@/components/DocumentUpload";
 import api from "../api/axiosConfig";
@@ -27,6 +27,10 @@ interface Worker {
   Sponsor_ID?: number;
   Birth_Date?: string;
   National_ID?: string;
+  Passport_Copy?: string;
+  Health_Cert_Copy?: string;
+  Residency_Copy?: string;
+  Personal_Photo_Copy?: string;
 }
 
 interface Sponsor {
@@ -132,6 +136,10 @@ export default function Workers() {
         National_ID: form.National_ID,
         Birth_Date: form.Birth_Date || null,
         Current_Status: editMode ? undefined : "active",
+        Passport_Copy: docs.passportPhoto?.url || null,
+        Health_Cert_Copy: docs.healthCert?.url || null,
+        Residency_Copy: docs.residencyPhoto?.url || null,
+        Personal_Photo_Copy: docs.personalPhoto?.url || null,
       };
 
       if (editMode && selectedWorkerId) {
@@ -166,6 +174,12 @@ export default function Workers() {
       Sponsor_ID: worker.Sponsor_ID?.toString() || "",
       National_ID: worker.National_ID || "",
       Birth_Date: worker.Birth_Date || "",
+    });
+    setDocs({
+      passportPhoto: worker.Passport_Copy ? { name: "مستند مرفق", url: worker.Passport_Copy, type: "application/pdf", label: "صورة جواز السفر" } : null,
+      healthCert: worker.Health_Cert_Copy ? { name: "مستند مرفق", url: worker.Health_Cert_Copy, type: "application/pdf", label: "الشهادة الصحية" } : null,
+      residencyPhoto: worker.Residency_Copy ? { name: "مستند مرفق", url: worker.Residency_Copy, type: "application/pdf", label: "صورة الإقامة" } : null,
+      personalPhoto: worker.Personal_Photo_Copy ? { name: "مستند مرفق", url: worker.Personal_Photo_Copy, type: "image/jpeg", label: "صورة شخصية" } : null,
     });
     setAddOpen(true);
   };
@@ -226,17 +240,18 @@ export default function Workers() {
                 <th className="text-right p-3 font-medium">الحالة</th>
                 <th className="text-right p-3 font-medium">NFC UID</th>
                 <th className="text-right p-3 font-medium">الكفيل</th>
+                <th className="text-right p-3 font-medium">المستندات</th>
                 <th className="text-right p-3 font-medium">إجراءات</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="p-3 text-center">جاري التحميل...</td>
+                  <td colSpan={9} className="p-3 text-center">جاري التحميل...</td>
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="p-3 text-center">لا توجد بيانات</td>
+                  <td colSpan={9} className="p-3 text-center">لا توجد بيانات</td>
                 </tr>
               ) : (
                 filtered.map((w) => (
@@ -248,6 +263,11 @@ export default function Workers() {
                     <td className="p-3"><StatusBadge variant={w.Current_Status} /></td>
                     <td className="p-3 font-mono text-xs">{w.NFC_UID || "—"}</td>
                     <td className="p-3 text-xs">{w.Sponsor?.Sponsor_Name || "—"}</td>
+                    <td className="p-3 text-center">
+                      {(w.Passport_Copy || w.Health_Cert_Copy || w.Residency_Copy || w.Personal_Photo_Copy) && (
+                        <FileCheck className="w-4 h-4 text-success inline-block" title="مستندات مرفقة" />
+                      )}
+                    </td>
                     <td className="p-3">
                       <div className="flex items-center gap-1">
                         <button className="w-8 h-8 rounded-md bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">

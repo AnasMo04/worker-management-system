@@ -59,7 +59,11 @@ exports.create = async (req, res) => {
       Sponsor_Name,
       Phone,
       Email,
-      Address
+      Address,
+      Commercial_Reg_Copy,
+      Tax_Cert_Copy,
+      License_Copy,
+      Auth_Letter_Copy
     } = req.body;
 
     const newSponsor = await Sponsor.create({
@@ -67,7 +71,11 @@ exports.create = async (req, res) => {
       Sponsor_Name,
       Phone,
       Email,
-      Address
+      Address,
+      Commercial_Reg_Copy,
+      Tax_Cert_Copy,
+      License_Copy,
+      Auth_Letter_Copy
     });
 
     res.status(201).json(newSponsor);
@@ -85,7 +93,11 @@ exports.update = async (req, res) => {
       Sponsor_Name,
       Phone,
       Email,
-      Address
+      Address,
+      Commercial_Reg_Copy,
+      Tax_Cert_Copy,
+      License_Copy,
+      Auth_Letter_Copy
     } = req.body;
 
     const sponsor = await Sponsor.findByPk(id);
@@ -98,7 +110,11 @@ exports.update = async (req, res) => {
       Sponsor_Name,
       Phone,
       Email,
-      Address
+      Address,
+      Commercial_Reg_Copy,
+      Tax_Cert_Copy,
+      License_Copy,
+      Auth_Letter_Copy
     });
 
     res.json(sponsor);
