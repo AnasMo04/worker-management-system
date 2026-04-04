@@ -23,7 +23,11 @@ module.exports = (sequelize, DataTypes) => {
     Job_Title: DataTypes.STRING,
     Current_Status: DataTypes.STRING,
     NFC_UID: DataTypes.STRING,
-    Primary_Card_Serial: DataTypes.STRING
+    Primary_Card_Serial: DataTypes.STRING,
+    Passport_Copy: DataTypes.STRING,
+    Health_Cert_Copy: DataTypes.STRING,
+    Residency_Copy: DataTypes.STRING,
+    Personal_Photo_Copy: DataTypes.STRING
   }, {
     sequelize,
     modelName: 'Worker',

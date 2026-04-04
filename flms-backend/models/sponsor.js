@@ -18,7 +18,11 @@ module.exports = (sequelize, DataTypes) => {
     Sponsor_Name: DataTypes.STRING,
     Phone: DataTypes.STRING,
     Email: DataTypes.STRING,
-    Address: DataTypes.TEXT
+    Address: DataTypes.TEXT,
+    Commercial_Reg_Copy: DataTypes.STRING,
+    Tax_Cert_Copy: DataTypes.STRING,
+    License_Copy: DataTypes.STRING,
+    Auth_Letter_Copy: DataTypes.STRING
   }, {
     sequelize,
     modelName: 'Sponsor',
