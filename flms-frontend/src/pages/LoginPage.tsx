@@ -1,20 +1,49 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Shield, Lock, User, Eye, EyeOff, Fingerprint, Globe } from "lucide-react";
+import axiosInstance from "../api/axiosConfig"; // تأكد من مسار الملف حسب مجلداتك
 
 export default function LoginPage() {
   const [showPass, setShowPass] = useState(false);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState(""); // حالة جديدة لعرض الأخطاء
   const navigate = useNavigate();
 
-  const handleLogin = () => {
+  // الدالة الفعلية لتسجيل الدخول
+  const handleLogin = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault(); // منع تحديث الصفحة عند ضغط Enter
+
+    // التحقق من الحقول فارغة
+    if (!username || !password) {
+      setErrorMsg("الرجاء إدخال اسم المستخدم وكلمة المرور");
+      return;
+    }
+
     setLoading(true);
-    setTimeout(() => {
+    setErrorMsg(""); // تصفير أي خطأ سابق
+
+    try {
+      // إرسال الطلب للسيرفر
+      const response = await axiosInstance.post('/api/auth/login', {
+        username,
+        password,
+      });
+
+      // تخزين التوكن وبيانات المستخدم في المتصفح
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+      
+      // التوجيه للصفحة الرئيسية بعد النجاح
+      navigate("/"); 
+      
+    } catch (error: any) {
+      // التقاط الخطأ من السيرفر وعرضه
+      setErrorMsg(error.response?.data?.message || 'حدث خطأ في الاتصال بالخادم. تأكد من تشغيل السيرفر.');
+    } finally {
       setLoading(false);
-      navigate("/");
-    }, 1500);
+    }
   };
 
   return (
@@ -86,7 +115,16 @@ export default function LoginPage() {
               <p className="text-sm text-[hsl(210,20%,45%)] mt-1">أدخل بيانات الاعتماد للوصول إلى المنظومة</p>
             </div>
 
-            <div className="space-y-5">
+            {/* رسالة الخطأ الأنيقة */}
+            {errorMsg && (
+              <div className="mb-6 p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2 text-red-400 text-sm">
+                <Shield className="w-4 h-4 text-red-400 shrink-0" />
+                <span>{errorMsg}</span>
+              </div>
+            )}
+
+            {/* تم تحويل الـ div إلى form لدعم زر Enter */}
+            <form onSubmit={handleLogin} className="space-y-5">
               {/* Username */}
               <div className="space-y-2">
                 <label className="text-xs font-medium text-[hsl(210,20%,55%)]">اسم المستخدم</label>
@@ -115,6 +153,7 @@ export default function LoginPage() {
                     className="w-full h-12 bg-[hsl(220,25%,8%)] border border-[hsl(220,20%,20%)] rounded-xl pr-11 pl-11 text-sm text-[hsl(210,20%,90%)] placeholder:text-[hsl(210,20%,30%)] outline-none focus:border-[hsl(175,55%,50%)] focus:ring-1 focus:ring-[hsl(175,55%,50%)]/30 transition-all"
                   />
                   <button
+                    type="button" // مهم باش ما يديرش Submit للـ Form بالغلط
                     onClick={() => setShowPass(!showPass)}
                     className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[hsl(210,20%,35%)] hover:text-[hsl(210,20%,55%)] transition-colors"
                   >
@@ -129,14 +168,14 @@ export default function LoginPage() {
                   <input type="checkbox" className="w-3.5 h-3.5 rounded border-[hsl(220,20%,25%)] bg-[hsl(220,25%,10%)] accent-[hsl(175,55%,50%)]" />
                   <span className="text-xs text-[hsl(210,20%,50%)]">تذكرني</span>
                 </label>
-                <button className="text-xs text-[hsl(175,55%,50%)] hover:text-[hsl(175,55%,60%)] transition-colors">
+                <button type="button" className="text-xs text-[hsl(175,55%,50%)] hover:text-[hsl(175,55%,60%)] transition-colors">
                   نسيت كلمة المرور؟
                 </button>
               </div>
 
               {/* Login Button */}
               <button
-                onClick={handleLogin}
+                type="submit"
                 disabled={loading}
                 className="w-full h-12 bg-gradient-to-l from-[hsl(175,55%,45%)] to-[hsl(175,55%,50%)] hover:from-[hsl(175,55%,40%)] hover:to-[hsl(175,55%,45%)] text-[hsl(220,30%,7%)] font-bold rounded-xl transition-all text-sm disabled:opacity-60 shadow-lg shadow-[hsl(175,55%,50%)]/20"
               >
@@ -149,23 +188,23 @@ export default function LoginPage() {
                   "تسجيل الدخول"
                 )}
               </button>
+            </form>
 
-              {/* Divider */}
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-px bg-[hsl(220,20%,18%)]" />
-                <span className="text-[10px] text-[hsl(210,20%,30%)]">أو</span>
-                <div className="flex-1 h-px bg-[hsl(220,20%,18%)]" />
-              </div>
-
-              {/* Biometric */}
-              <button
-                onClick={handleLogin}
-                className="w-full h-12 bg-[hsl(220,25%,13%)] border border-[hsl(220,20%,20%)] text-[hsl(210,20%,65%)] rounded-xl flex items-center justify-center gap-2.5 hover:border-[hsl(175,55%,50%)]/40 hover:text-[hsl(210,20%,80%)] transition-all text-sm"
-              >
-                <Fingerprint className="w-5 h-5" />
-                الدخول بالبصمة
-              </button>
+            {/* Divider */}
+            <div className="flex items-center gap-3 mt-5">
+              <div className="flex-1 h-px bg-[hsl(220,20%,18%)]" />
+              <span className="text-[10px] text-[hsl(210,20%,30%)]">أو</span>
+              <div className="flex-1 h-px bg-[hsl(220,20%,18%)]" />
             </div>
+
+            {/* Biometric */}
+            <button
+              type="button"
+              className="w-full h-12 mt-5 bg-[hsl(220,25%,13%)] border border-[hsl(220,20%,20%)] text-[hsl(210,20%,65%)] rounded-xl flex items-center justify-center gap-2.5 hover:border-[hsl(175,55%,50%)]/40 hover:text-[hsl(210,20%,80%)] transition-all text-sm"
+            >
+              <Fingerprint className="w-5 h-5" />
+              الدخول بالبصمة
+            </button>
           </div>
 
           {/* Footer */}
@@ -175,7 +214,7 @@ export default function LoginPage() {
               <p className="text-[10px]">وصول آمن ومشفر – للمستخدمين المصرح لهم فقط</p>
             </div>
             <p className="text-[10px] text-[hsl(210,20%,22%)]">
-              © 2025 جميع الحقوق محفوظة — وزارة العمل والتأهيل
+              © 2026 جميع الحقوق محفوظة — وزارة العمل والتأهيل
             </p>
           </div>
         </div>
