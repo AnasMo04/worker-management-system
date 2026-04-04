@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Building2 } from "lucide-react";
+import { Plus, Building2, Edit } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload, type UploadedDoc } from "@/components/DocumentUpload";
 import api from "../api/axiosConfig";
@@ -32,6 +32,8 @@ export default function Sponsors() {
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [selectedSponsorId, setSelectedSponsorId] = useState<number | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [docs, setDocs] = useState<SponsorDocs>(emptyDocs);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -69,12 +71,13 @@ export default function Sponsors() {
     if (!form.name.trim() || form.name.trim().length < 3) e.name = "اسم الكفيل مطلوب";
     if (!form.license.trim()) e.license = "رقم الترخيص مطلوب";
     if (!form.phone.trim()) e.phone = "رقم الهاتف مطلوب";
-    if (!docs.commercialRegister) e.commercialRegister = "صورة السجل التجاري مطلوبة";
+    // Document validation only for new sponsors or if you want to enforce it always
+    if (!editMode && !docs.commercialRegister) e.commercialRegister = "صورة السجل التجاري مطلوبة";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
-  const handleAdd = async () => {
+  const handleSubmit = async () => {
     if (!validate()) return;
     try {
       const payload = {
@@ -83,11 +86,14 @@ export default function Sponsors() {
         Phone: form.phone.trim(),
       };
 
-      await api.post("/api/sponsors", payload);
+      if (editMode && selectedSponsorId) {
+        await api.put(`/api/sponsors/${selectedSponsorId}`, payload);
+        toast({ title: "تم التحديث", description: `تم تحديث بيانات الكفيل ${payload.Sponsor_Name} بنجاح.` });
+      } else {
+        await api.post("/api/sponsors", payload);
+        toast({ title: "تمت الإضافة", description: `تم تسجيل الكفيل ${payload.Sponsor_Name} بنجاح.` });
+      }
 
-      toast({ title: "تمت الإضافة", description: `تم تسجيل الكفيل ${payload.Sponsor_Name} بنجاح.` });
-
-      setAddOpen(false);
       handleClose();
       fetchSponsors();
     } catch (error) {
@@ -95,13 +101,26 @@ export default function Sponsors() {
       toast({
         variant: "destructive",
         title: "خطأ",
-        description: "فشل في تسجيل الكفيل.",
+        description: "فشل في حفظ بيانات الكفيل.",
       });
     }
   };
 
+  const handleEditClick = (sponsor: Sponsor) => {
+    setEditMode(true);
+    setSelectedSponsorId(sponsor.id);
+    setForm({
+      name: sponsor.Sponsor_Name,
+      license: sponsor.Commercial_Reg_No,
+      phone: sponsor.Phone,
+    });
+    setAddOpen(true);
+  };
+
   const handleClose = () => {
     setAddOpen(false);
+    setEditMode(false);
+    setSelectedSponsorId(null);
     setForm(emptyForm);
     setDocs(emptyDocs);
     setErrors({});
@@ -137,6 +156,7 @@ export default function Sponsors() {
                 <th className="text-right p-3 font-medium">عدد العمال</th>
                 <th className="text-right p-3 font-medium">الحالة</th>
                 <th className="text-right p-3 font-medium">الهاتف</th>
+                <th className="text-right p-3 font-medium">إجراءات</th>
               </tr>
             </thead>
             <tbody>
@@ -160,6 +180,11 @@ export default function Sponsors() {
                       </span>
                     </td>
                     <td className="p-3 font-mono text-xs">{s.Phone}</td>
+                    <td className="p-3">
+                      <button onClick={() => handleEditClick(s)} className="w-8 h-8 rounded-md bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+                        <Edit className="w-3.5 h-3.5" />
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
@@ -174,9 +199,11 @@ export default function Sponsors() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5 text-primary" />
-              إضافة كفيل جديد
+              {editMode ? "تعديل بيانات الكفيل" : "إضافة كفيل جديد"}
             </DialogTitle>
-            <DialogDescription>أدخل بيانات الكفيل والمستندات المطلوبة.</DialogDescription>
+            <DialogDescription>
+              {editMode ? "قم بتعديل بيانات الكفيل في النظام." : "أدخل بيانات الكفيل والمستندات المطلوبة."}
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-2">
             <div className="space-y-1.5">
@@ -230,7 +257,10 @@ export default function Sponsors() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={handleClose}>إلغاء</Button>
-            <Button onClick={handleAdd} className="gap-2"><Plus className="h-4 w-4" /> تسجيل الكفيل</Button>
+            <Button onClick={handleSubmit} className="gap-2">
+              {editMode ? <Edit className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+              {editMode ? "تحديث البيانات" : "تسجيل الكفيل"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

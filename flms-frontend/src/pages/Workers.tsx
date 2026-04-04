@@ -5,10 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Search, Filter, Eye, Edit, ChevronLeft, ChevronRight, Plus, UserPlus } from "lucide-react";
+import { Search, Filter, Eye, Edit, ChevronLeft, ChevronRight, Plus, UserPlus, Check, ChevronsUpDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload, type UploadedDoc } from "@/components/DocumentUpload";
 import api from "../api/axiosConfig";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
 
 interface Worker {
   id: number;
@@ -59,6 +62,7 @@ export default function Workers() {
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [docs, setDocs] = useState<WorkerDocs>(emptyDocs);
+  const [sponsorOpen, setSponsorOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -323,12 +327,49 @@ export default function Workers() {
               {/* Sponsor */}
               <div className="space-y-1.5">
                 <Label>الكفيل <span className="text-destructive">*</span></Label>
-                <Select value={form.Sponsor_ID} onValueChange={(v) => setForm({ ...form, Sponsor_ID: v })}>
-                  <SelectTrigger><SelectValue placeholder="اختر الكفيل" /></SelectTrigger>
-                  <SelectContent>
-                    {sponsors.map((s) => <SelectItem key={s.id} value={s.id.toString()}>{s.Sponsor_Name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <Popover open={sponsorOpen} onOpenChange={setSponsorOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={sponsorOpen}
+                      className="w-full justify-between bg-background font-normal text-sm"
+                    >
+                      {form.Sponsor_ID
+                        ? sponsors.find((s) => s.id.toString() === form.Sponsor_ID)?.Sponsor_Name
+                        : "اختر الكفيل..."}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="بحث عن كفيل..." />
+                      <CommandList>
+                        <CommandEmpty>لا يوجد كفيل بهذا الاسم.</CommandEmpty>
+                        <CommandGroup>
+                          {sponsors.map((s) => (
+                            <CommandItem
+                              key={s.id}
+                              value={s.Sponsor_Name}
+                              onSelect={() => {
+                                setForm({ ...form, Sponsor_ID: s.id.toString() });
+                                setSponsorOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  form.Sponsor_ID === s.id.toString() ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {s.Sponsor_Name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 {errors.Sponsor_ID && <p className="text-xs text-destructive">{errors.Sponsor_ID}</p>}
               </div>
             </div>
