@@ -1,10 +1,12 @@
 import { Bell, Search, Moon, Sun, Smartphone } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSearch } from "@/context/SearchContext";
 
 export function AppHeader() {
   const [dark, setDark] = useState(false);
   const navigate = useNavigate();
+  const { searchQuery, setSearchQuery } = useSearch();
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
@@ -17,6 +19,8 @@ export function AppHeader() {
         <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <input
           type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="بحث..."
           className="w-full h-10 bg-muted rounded-lg pr-10 pl-4 text-sm outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground"
         />

@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 // أضفنا Navigate هنا باش نقدروا نحولوا المستخدم لصفحة الدخول
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"; 
 import { AppLayout } from "@/components/AppLayout";
+import { SearchProvider } from "./context/SearchContext";
 
 // استدعاء الصفحات
 import Dashboard from "./pages/Dashboard";
@@ -43,6 +44,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <SearchProvider>
       <BrowserRouter>
         <Routes>
           {/* مسارات عامة (لا تحتاج لتسجيل دخول) */}
@@ -76,6 +78,7 @@ const App = () => (
           />
         </Routes>
       </BrowserRouter>
+      </SearchProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
