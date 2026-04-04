@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,36 +8,35 @@ import { Label } from "@/components/ui/label";
 import { Search, Filter, Eye, Edit, ChevronLeft, ChevronRight, Plus, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload, type UploadedDoc } from "@/components/DocumentUpload";
+import api from "../api/axiosConfig";
 
 interface Worker {
   id: number;
-  name: string;
-  passport: string;
-  nationality: string;
-  job: string;
-  status: "active" | "suspended" | "expired" | "runaway";
-  nfc: string;
-  sponsor: string;
+  Full_Name: string;
+  Passport_Number: string;
+  Nationality: string;
+  Job_Title: string;
+  Current_Status: "active" | "suspended" | "expired" | "runaway";
+  NFC_UID: string;
+  Sponsor?: {
+    Sponsor_Name: string;
+  };
+  Sponsor_ID?: number;
+  Birth_Date?: string;
+  National_ID?: string;
 }
 
-const initialWorkers: Worker[] = [
-  { id: 1, name: "محمد أحمد علي", passport: "LY12345678", nationality: "بنغلاديش", job: "عامل بناء", status: "active", nfc: "A1B2C3D4", sponsor: "شركة البناء الحديث" },
-  { id: 2, name: "عبدالله كمارا", passport: "LY23456789", nationality: "غانا", job: "سائق", status: "suspended", nfc: "E5F6G7H8", sponsor: "مؤسسة النقل" },
-  { id: 3, name: "راجيش كومار", passport: "LY34567890", nationality: "الهند", job: "كهربائي", status: "active", nfc: "I9J0K1L2", sponsor: "شركة الطاقة" },
-  { id: 4, name: "فيكتور أونيكا", passport: "LY45678901", nationality: "نيجيريا", job: "نجار", status: "expired", nfc: "M3N4O5P6", sponsor: "شركة البناء الحديث" },
-  { id: 5, name: "جون مارك", passport: "LY56789012", nationality: "الفلبين", job: "لحّام", status: "runaway", nfc: "Q7R8S9T0", sponsor: "مصنع الحديد" },
-  { id: 6, name: "أمين دياب", passport: "LY67890123", nationality: "مصر", job: "محاسب", status: "active", nfc: "U1V2W3X4", sponsor: "مكتب المحاسبة" },
-  { id: 7, name: "سامي حسن", passport: "LY78901234", nationality: "تونس", job: "طباخ", status: "active", nfc: "Y5Z6A7B8", sponsor: "مطعم الواحة" },
-  { id: 8, name: "تشارلز أكو", passport: "LY89012345", nationality: "غانا", job: "حارس أمن", status: "suspended", nfc: "C9D0E1F2", sponsor: "شركة الأمن" },
-];
+interface Sponsor {
+  id: number;
+  Sponsor_Name: string;
+}
 
 const nationalities = ["الكل", "بنغلاديش", "غانا", "الهند", "نيجيريا", "الفلبين", "مصر", "تونس"];
 const nationalityOptions = ["بنغلاديش", "غانا", "الهند", "نيجيريا", "الفلبين", "مصر", "تونس", "باكستان", "سوريا", "السودان"];
 const statuses = ["الكل", "نشط", "موقوف", "منتهي", "هارب"];
-const sponsorOptions = ["شركة البناء الحديث", "مؤسسة النقل", "شركة الطاقة", "مصنع الحديد", "مكتب المحاسبة", "مطعم الواحة", "شركة الأمن"];
 const jobOptions = ["عامل بناء", "سائق", "كهربائي", "نجار", "لحّام", "محاسب", "طباخ", "حارس أمن", "سباك", "فني تكييف"];
 
-const emptyForm = { name: "", passport: "", nationality: "", job: "", sponsor: "", phone: "", residencyNumber: "", residencyExpiry: "" };
+const emptyForm = { Full_Name: "", Passport_Number: "", Nationality: "", Job_Title: "", Sponsor_ID: "", National_ID: "", Birth_Date: "" };
 
 interface WorkerDocs {
   passportPhoto: UploadedDoc | null;
@@ -48,59 +47,129 @@ interface WorkerDocs {
 const emptyDocs: WorkerDocs = { passportPhoto: null, healthCert: null, residencyPhoto: null, personalPhoto: null };
 
 export default function Workers() {
-  const [workers, setWorkers] = useState<Worker[]>(initialWorkers);
+  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [sponsors, setSponsors] = useState<Sponsor[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("الكل");
   const [nationalityFilter, setNationalityFilter] = useState("الكل");
   const [addOpen, setAddOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [selectedWorkerId, setSelectedWorkerId] = useState<number | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [docs, setDocs] = useState<WorkerDocs>(emptyDocs);
   const { toast } = useToast();
 
+  useEffect(() => {
+    fetchWorkers();
+    fetchSponsors();
+  }, []);
+
+  const fetchWorkers = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get("/api/workers");
+      setWorkers(response.data);
+    } catch (error) {
+      console.error("Error fetching workers:", error);
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "فشل في تحميل بيانات العمال.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchSponsors = async () => {
+    try {
+      const response = await api.get("/api/sponsors");
+      setSponsors(response.data);
+    } catch (error) {
+      console.error("Error fetching sponsors:", error);
+    }
+  };
+
   const statusMap: Record<string, string> = { "نشط": "active", "موقوف": "suspended", "منتهي": "expired", "هارب": "runaway" };
 
   const filtered = workers.filter((w) => {
-    const matchSearch = w.name.includes(search) || w.passport.includes(search);
-    const matchStatus = statusFilter === "الكل" || w.status === statusMap[statusFilter];
-    const matchNat = nationalityFilter === "الكل" || w.nationality === nationalityFilter;
+    const matchSearch = w.Full_Name?.toLowerCase().includes(search.toLowerCase()) || w.Passport_Number?.toLowerCase().includes(search.toLowerCase());
+    const matchStatus = statusFilter === "الكل" || w.Current_Status === statusMap[statusFilter];
+    const matchNat = nationalityFilter === "الكل" || w.Nationality === nationalityFilter;
     return matchSearch && matchStatus && matchNat;
   });
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!form.name.trim() || form.name.trim().length < 3) e.name = "الاسم مطلوب (3 أحرف على الأقل)";
-    if (!form.passport.trim() || form.passport.trim().length < 6) e.passport = "رقم الجواز مطلوب (6 أحرف على الأقل)";
-    if (workers.some((w) => w.passport === form.passport.trim())) e.passport = "رقم الجواز مسجّل مسبقاً";
-    if (!form.nationality) e.nationality = "الجنسية مطلوبة";
-    if (!form.job) e.job = "المهنة مطلوبة";
-    if (!form.sponsor) e.sponsor = "الكفيل مطلوب";
+    if (!form.Full_Name.trim() || form.Full_Name.trim().length < 3) e.Full_Name = "الاسم مطلوب (3 أحرف على الأقل)";
+    if (!form.Passport_Number.trim() || form.Passport_Number.trim().length < 6) e.Passport_Number = "رقم الجواز مطلوب (6 أحرف على الأقل)";
+
+    const isDuplicatePassport = workers.some((w) => w.Passport_Number === form.Passport_Number.trim() && w.id !== selectedWorkerId);
+    if (isDuplicatePassport) e.Passport_Number = "رقم الجواز مسجّل مسبقاً";
+
+    if (!form.Nationality) e.Nationality = "الجنسية مطلوبة";
+    if (!form.Job_Title) e.Job_Title = "المهنة مطلوبة";
+    if (!form.Sponsor_ID) e.Sponsor_ID = "الكفيل مطلوب";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
-  const handleAdd = () => {
+  const handleAddOrUpdate = async () => {
     if (!validate()) return;
-    const newWorker: Worker = {
-      id: workers.length + 1,
-      name: form.name.trim(),
-      passport: form.passport.trim(),
-      nationality: form.nationality,
-      job: form.job,
-      status: "active",
-      nfc: "—",
-      sponsor: form.sponsor,
-    };
-    setWorkers([newWorker, ...workers]);
-    setAddOpen(false);
-    setForm(emptyForm);
-    setDocs(emptyDocs);
-    setErrors({});
-    toast({ title: "تمت الإضافة", description: `تم تسجيل العامل ${newWorker.name} بنجاح.` });
+    try {
+      const payload = {
+        Full_Name: form.Full_Name.trim(),
+        Passport_Number: form.Passport_Number.trim(),
+        Nationality: form.Nationality,
+        Job_Title: form.Job_Title,
+        Sponsor_ID: parseInt(form.Sponsor_ID),
+        National_ID: form.National_ID,
+        Birth_Date: form.Birth_Date || null,
+        Current_Status: editMode ? undefined : "active",
+      };
+
+      if (editMode && selectedWorkerId) {
+        await api.put(`/api/workers/${selectedWorkerId}`, payload);
+        toast({ title: "تم التحديث", description: `تم تحديث بيانات العامل ${payload.Full_Name} بنجاح.` });
+      } else {
+        await api.post("/api/workers", { ...payload, Current_Status: "active" });
+        toast({ title: "تمت الإضافة", description: `تم تسجيل العامل ${payload.Full_Name} بنجاح.` });
+      }
+
+      setAddOpen(false);
+      handleClose();
+      fetchWorkers();
+    } catch (error) {
+      console.error("Error saving worker:", error);
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "فشل في حفظ بيانات العامل.",
+      });
+    }
+  };
+
+  const handleEditClick = (worker: Worker) => {
+    setEditMode(true);
+    setSelectedWorkerId(worker.id);
+    setForm({
+      Full_Name: worker.Full_Name,
+      Passport_Number: worker.Passport_Number,
+      Nationality: worker.Nationality,
+      Job_Title: worker.Job_Title,
+      Sponsor_ID: worker.Sponsor_ID?.toString() || "",
+      National_ID: worker.National_ID || "",
+      Birth_Date: worker.Birth_Date || "",
+    });
+    setAddOpen(true);
   };
 
   const handleClose = () => {
     setAddOpen(false);
+    setEditMode(false);
+    setSelectedWorkerId(null);
     setForm(emptyForm);
     setDocs(emptyDocs);
     setErrors({});
@@ -157,27 +226,37 @@ export default function Workers() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((w) => (
-                <tr key={w.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
-                  <td className="p-3 font-medium">{w.name}</td>
-                  <td className="p-3 font-mono text-xs">{w.passport}</td>
-                  <td className="p-3">{w.nationality}</td>
-                  <td className="p-3">{w.job}</td>
-                  <td className="p-3"><StatusBadge variant={w.status} /></td>
-                  <td className="p-3 font-mono text-xs">{w.nfc}</td>
-                  <td className="p-3 text-xs">{w.sponsor}</td>
-                  <td className="p-3">
-                    <div className="flex items-center gap-1">
-                      <button className="w-8 h-8 rounded-md bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
-                        <Eye className="w-3.5 h-3.5" />
-                      </button>
-                      <button className="w-8 h-8 rounded-md bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
-                        <Edit className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </td>
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="p-3 text-center">جاري التحميل...</td>
                 </tr>
-              ))}
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="p-3 text-center">لا توجد بيانات</td>
+                </tr>
+              ) : (
+                filtered.map((w) => (
+                  <tr key={w.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
+                    <td className="p-3 font-medium">{w.Full_Name}</td>
+                    <td className="p-3 font-mono text-xs">{w.Passport_Number}</td>
+                    <td className="p-3">{w.Nationality}</td>
+                    <td className="p-3">{w.Job_Title}</td>
+                    <td className="p-3"><StatusBadge variant={w.Current_Status} /></td>
+                    <td className="p-3 font-mono text-xs">{w.NFC_UID || "—"}</td>
+                    <td className="p-3 text-xs">{w.Sponsor?.Sponsor_Name || "—"}</td>
+                    <td className="p-3">
+                      <div className="flex items-center gap-1">
+                        <button className="w-8 h-8 rounded-md bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => handleEditClick(w)} className="w-8 h-8 rounded-md bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -191,41 +270,41 @@ export default function Workers() {
         </div>
       </div>
 
-      {/* Add Worker Dialog */}
+      {/* Add/Edit Worker Dialog */}
       <Dialog open={addOpen} onOpenChange={(o) => { if (!o) handleClose(); else setAddOpen(true); }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <UserPlus className="h-5 w-5 text-primary" />
-              إضافة عامل جديد
+              {editMode ? "تعديل بيانات العامل" : "إضافة عامل جديد"}
             </DialogTitle>
-            <DialogDescription>أدخل بيانات العامل لتسجيله في النظام.</DialogDescription>
+            <DialogDescription>{editMode ? "قم بتعديل بيانات العامل في النظام." : "أدخل بيانات العامل لتسجيله في النظام."}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-2">
             {/* Name */}
             <div className="space-y-1.5">
               <Label>الاسم الكامل <span className="text-destructive">*</span></Label>
-              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="مثال: محمد أحمد علي" maxLength={100} />
-              {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
+              <Input value={form.Full_Name} onChange={(e) => setForm({ ...form, Full_Name: e.target.value })} placeholder="مثال: محمد أحمد علي" maxLength={100} />
+              {errors.Full_Name && <p className="text-xs text-destructive">{errors.Full_Name}</p>}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               {/* Passport */}
               <div className="space-y-1.5">
                 <Label>رقم الجواز <span className="text-destructive">*</span></Label>
-                <Input value={form.passport} onChange={(e) => setForm({ ...form, passport: e.target.value })} placeholder="LY12345678" maxLength={20} className="font-mono" />
-                {errors.passport && <p className="text-xs text-destructive">{errors.passport}</p>}
+                <Input value={form.Passport_Number} onChange={(e) => setForm({ ...form, Passport_Number: e.target.value })} placeholder="LY12345678" maxLength={20} className="font-mono" />
+                {errors.Passport_Number && <p className="text-xs text-destructive">{errors.Passport_Number}</p>}
               </div>
               {/* Nationality */}
               <div className="space-y-1.5">
                 <Label>الجنسية <span className="text-destructive">*</span></Label>
-                <Select value={form.nationality} onValueChange={(v) => setForm({ ...form, nationality: v })}>
+                <Select value={form.Nationality} onValueChange={(v) => setForm({ ...form, Nationality: v })}>
                   <SelectTrigger><SelectValue placeholder="اختر الجنسية" /></SelectTrigger>
                   <SelectContent>
                     {nationalityOptions.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}
                   </SelectContent>
                 </Select>
-                {errors.nationality && <p className="text-xs text-destructive">{errors.nationality}</p>}
+                {errors.Nationality && <p className="text-xs text-destructive">{errors.Nationality}</p>}
               </div>
             </div>
 
@@ -233,44 +312,38 @@ export default function Workers() {
               {/* Job */}
               <div className="space-y-1.5">
                 <Label>المهنة <span className="text-destructive">*</span></Label>
-                <Select value={form.job} onValueChange={(v) => setForm({ ...form, job: v })}>
+                <Select value={form.Job_Title} onValueChange={(v) => setForm({ ...form, Job_Title: v })}>
                   <SelectTrigger><SelectValue placeholder="اختر المهنة" /></SelectTrigger>
                   <SelectContent>
                     {jobOptions.map((j) => <SelectItem key={j} value={j}>{j}</SelectItem>)}
                   </SelectContent>
                 </Select>
-                {errors.job && <p className="text-xs text-destructive">{errors.job}</p>}
+                {errors.Job_Title && <p className="text-xs text-destructive">{errors.Job_Title}</p>}
               </div>
               {/* Sponsor */}
               <div className="space-y-1.5">
                 <Label>الكفيل <span className="text-destructive">*</span></Label>
-                <Select value={form.sponsor} onValueChange={(v) => setForm({ ...form, sponsor: v })}>
+                <Select value={form.Sponsor_ID} onValueChange={(v) => setForm({ ...form, Sponsor_ID: v })}>
                   <SelectTrigger><SelectValue placeholder="اختر الكفيل" /></SelectTrigger>
                   <SelectContent>
-                    {sponsorOptions.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    {sponsors.map((s) => <SelectItem key={s.id} value={s.id.toString()}>{s.Sponsor_Name}</SelectItem>)}
                   </SelectContent>
                 </Select>
-                {errors.sponsor && <p className="text-xs text-destructive">{errors.sponsor}</p>}
+                {errors.Sponsor_ID && <p className="text-xs text-destructive">{errors.Sponsor_ID}</p>}
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              {/* Phone */}
+              {/* National ID (using this for Phone position or adding it) */}
               <div className="space-y-1.5">
-                <Label>رقم الهاتف</Label>
-                <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="0912345678" maxLength={15} />
+                <Label>الرقم الوطني</Label>
+                <Input value={form.National_ID} onChange={(e) => setForm({ ...form, National_ID: e.target.value })} placeholder="123456789012" maxLength={15} />
               </div>
-              {/* Residency */}
+              {/* Birth Date */}
               <div className="space-y-1.5">
-                <Label>رقم الإقامة</Label>
-                <Input value={form.residencyNumber} onChange={(e) => setForm({ ...form, residencyNumber: e.target.value })} placeholder="رقم الإقامة" maxLength={20} className="font-mono" />
+                <Label>تاريخ الميلاد</Label>
+                <Input type="date" value={form.Birth_Date} onChange={(e) => setForm({ ...form, Birth_Date: e.target.value })} />
               </div>
-            </div>
-
-            {/* Residency Expiry */}
-            <div className="space-y-1.5">
-              <Label>تاريخ انتهاء الإقامة</Label>
-              <Input type="date" value={form.residencyExpiry} onChange={(e) => setForm({ ...form, residencyExpiry: e.target.value })} />
             </div>
 
             {/* Document Uploads */}
@@ -304,7 +377,10 @@ export default function Workers() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={handleClose}>إلغاء</Button>
-            <Button onClick={handleAdd} className="gap-2"><Plus className="h-4 w-4" /> تسجيل العامل</Button>
+            <Button onClick={handleAddOrUpdate} className="gap-2">
+              {editMode ? <Edit className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+              {editMode ? "تحديث البيانات" : "تسجيل العامل"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

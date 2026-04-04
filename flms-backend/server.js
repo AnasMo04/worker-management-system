@@ -12,7 +12,12 @@ app.use(express.json()); // لكي يفهم السيرفر البيانات ال
 // استدعاء روابط الـ API (المسارات اللي درناها في الخطوات السابقة)
 // --------------------------------------------------------
 const authRoutes = require('./routes/authRoutes');
+const workerRoutes = require('./routes/workerRoutes');
+const sponsorRoutes = require('./routes/sponsorRoutes');
+
 app.use('/api/auth', authRoutes); // هكي الرابط حيكون /api/auth/login زي ما تبي الواجهة
+app.use('/api/workers', workerRoutes);
+app.use('/api/sponsors', sponsorRoutes);
 
 // مسار فحص عمل السيرفر
 app.get('/', (req, res) => {
