@@ -6,9 +6,9 @@ import {
 } from "lucide-react";
 
 const navItems = [
-  { title: "لوحة التحكم", url: "/", icon: LayoutDashboard },
-  { title: "الكفلاء", url: "/sponsors", icon: Briefcase },
-  { title: "العمال", url: "/workers", icon: Users },
+  { title: "لوحة التحكم", url: "/dashboard", icon: LayoutDashboard },
+  { title: "الجهات المستضيفة", url: "/sponsors", icon: Briefcase },
+  { title: "إدارة الأجانب", url: "/workers", icon: Users },
   { title: "البطاقات الذكية", url: "/smart-cards", icon: CreditCard },
   { title: "سجلات التفتيش", url: "/field-logs", icon: ClipboardList },
   { title: "القضايا القانونية", url: "/legal-cases", icon: Scale },
@@ -33,7 +33,7 @@ export function AppSidebar() {
           </div>
           <div>
             <h1 className="font-bold text-sm text-sidebar-accent-foreground">FLMS</h1>
-            <p className="text-[10px] text-sidebar-muted">إدارة العمالة الأجنبية</p>
+            <p className="text-[10px] text-sidebar-muted">المنظومة الوطنية الموحدة</p>
           </div>
         </div>
       </div>

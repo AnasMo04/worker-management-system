@@ -44,11 +44,18 @@ exports.create = async (req, res) => {
       Passport_Copy,
       Health_Cert_Copy,
       Residency_Copy,
-      Personal_Photo_Copy
+      Personal_Photo_Copy,
+      Category,
+      Document_Type,
+      Health_Cert_Expiry,
+      Freelance,
+      Residence_Address,
+      Family_ID,
+      Relationship
     } = req.body;
 
-    // Validate Sponsor_ID exists
-    if (Sponsor_ID) {
+    // Validate Sponsor_ID exists (if not freelance)
+    if (Sponsor_ID && !Freelance) {
       const sponsor = await Sponsor.findByPk(Sponsor_ID);
       if (!sponsor) {
         return res.status(400).json({ message: 'Invalid Sponsor_ID' });
@@ -56,7 +63,7 @@ exports.create = async (req, res) => {
     }
 
     const newWorker = await Worker.create({
-      Sponsor_ID,
+      Sponsor_ID: Freelance ? null : Sponsor_ID,
       Passport_Number,
       National_ID,
       Full_Name,
@@ -69,7 +76,14 @@ exports.create = async (req, res) => {
       Passport_Copy,
       Health_Cert_Copy,
       Residency_Copy,
-      Personal_Photo_Copy
+      Personal_Photo_Copy,
+      Category,
+      Document_Type,
+      Health_Cert_Expiry,
+      Freelance,
+      Residence_Address,
+      Family_ID,
+      Relationship
     });
 
     res.status(201).json(newWorker);
@@ -96,7 +110,14 @@ exports.update = async (req, res) => {
       Passport_Copy,
       Health_Cert_Copy,
       Residency_Copy,
-      Personal_Photo_Copy
+      Personal_Photo_Copy,
+      Category,
+      Document_Type,
+      Health_Cert_Expiry,
+      Freelance,
+      Residence_Address,
+      Family_ID,
+      Relationship
     } = req.body;
 
     const worker = await Worker.findByPk(id);
@@ -105,7 +126,7 @@ exports.update = async (req, res) => {
     }
 
     await worker.update({
-      Sponsor_ID,
+      Sponsor_ID: Freelance ? null : Sponsor_ID,
       Passport_Number,
       National_ID,
       Full_Name,
@@ -118,7 +139,14 @@ exports.update = async (req, res) => {
       Passport_Copy,
       Health_Cert_Copy,
       Residency_Copy,
-      Personal_Photo_Copy
+      Personal_Photo_Copy,
+      Category,
+      Document_Type,
+      Health_Cert_Expiry,
+      Freelance,
+      Residence_Address,
+      Family_ID,
+      Relationship
     });
 
     res.json(worker);
