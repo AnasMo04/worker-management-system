@@ -12,6 +12,7 @@ import api from "../api/axiosConfig";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Worker {
   id: number;
@@ -265,9 +266,16 @@ export default function Workers() {
                     <td className="p-3 text-xs">{w.Sponsor?.Sponsor_Name || "—"}</td>
                     <td className="p-3 text-center">
                       {(w.Passport_Copy || w.Health_Cert_Copy || w.Residency_Copy || w.Personal_Photo_Copy) && (
-                        <div title="مستندات مرفقة" className="inline-block">
-                          <FileCheck className="w-4 h-4 text-success" />
-                        </div>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="inline-block cursor-help">
+                              <FileCheck className="w-4 h-4 text-success" />
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>مستندات مرفقة</p>
+                          </TooltipContent>
+                        </Tooltip>
                       )}
                     </td>
                     <td className="p-3">
