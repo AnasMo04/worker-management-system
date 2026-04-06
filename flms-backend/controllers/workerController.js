@@ -51,8 +51,17 @@ exports.create = async (req, res) => {
       Freelance,
       Residence_Address,
       Family_ID,
-      Relationship
+      Relationship,
+      Gender
     } = req.body;
+
+    // Check for duplicate Document Number
+    if (Passport_Number) {
+      const existing = await Worker.findOne({ where: { Passport_Number: Passport_Number.trim() } });
+      if (existing) {
+        return res.status(400).json({ message: 'رقم الوثيقة مسجل مسبقاً في النظام' });
+      }
+    }
 
     // Validate Sponsor_ID exists (if not freelance)
     if (Sponsor_ID && !Freelance) {
@@ -83,7 +92,8 @@ exports.create = async (req, res) => {
       Freelance,
       Residence_Address,
       Family_ID,
-      Relationship
+      Relationship,
+      Gender
     });
 
     res.status(201).json(newWorker);
@@ -117,12 +127,21 @@ exports.update = async (req, res) => {
       Freelance,
       Residence_Address,
       Family_ID,
-      Relationship
+      Relationship,
+      Gender
     } = req.body;
 
     const worker = await Worker.findByPk(id);
     if (!worker) {
       return res.status(404).json({ message: 'Worker not found' });
+    }
+
+    // Check for duplicate Document Number (excluding current)
+    if (Passport_Number && Passport_Number.trim() !== worker.Passport_Number) {
+      const existing = await Worker.findOne({ where: { Passport_Number: Passport_Number.trim() } });
+      if (existing) {
+        return res.status(400).json({ message: 'رقم الوثيقة مسجل مسبقاً في النظام' });
+      }
     }
 
     await worker.update({
@@ -146,7 +165,8 @@ exports.update = async (req, res) => {
       Freelance,
       Residence_Address,
       Family_ID,
-      Relationship
+      Relationship,
+      Gender
     });
 
     res.json(worker);

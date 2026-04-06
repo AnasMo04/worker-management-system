@@ -29,6 +29,7 @@ interface Individual {
   Residence_Address?: string;
   Family_ID?: string;
   Relationship?: string;
+  Gender?: string;
   Sponsor_ID?: number;
   Sponsor?: { Sponsor_Name: string };
   Passport_Copy?: string;
@@ -56,7 +57,8 @@ const statuses = ["الكل", "نشط", "موقوف", "منتهي", "هارب"];
 const emptyForm = {
   Full_Name: "", Passport_Number: "", Nationality: "", Job_Title: "", Sponsor_ID: "",
   National_ID: "", Birth_Date: "", Category: "worker", Document_Type: "جواز سفر",
-  Health_Cert_Expiry: "", Freelance: false, Residence_Address: "", Family_ID: "", Relationship: ""
+  Health_Cert_Expiry: "", Freelance: false, Residence_Address: "", Family_ID: "", Relationship: "",
+  Gender: "ذكر"
 };
 
 interface IndividualDocs {
@@ -79,6 +81,7 @@ export default function Workers() {
   const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [docs, setDocs] = useState<IndividualDocs>(emptyDocs);
+  const [isSaving, setIsSaving] = useState(false);
   const [sponsorOpen, setSponsorOpen] = useState(false);
   const { toast } = useToast();
 
@@ -119,9 +122,10 @@ export default function Workers() {
   const handleSubmit = async () => {
     if (!validate()) return;
     try {
+      setIsSaving(true);
       const payload = {
         ...form,
-        Sponsor_ID: form.Freelance ? null : parseInt(form.Sponsor_ID),
+        Sponsor_ID: (form.Freelance || form.Category === "dependent" || !form.Sponsor_ID) ? null : parseInt(form.Sponsor_ID),
         Passport_Copy: docs.passportPhoto?.url || null,
         Health_Cert_Copy: docs.healthCert?.url || null,
         Residency_Copy: docs.residencyPhoto?.url || null,
@@ -138,9 +142,12 @@ export default function Workers() {
 
       handleClose();
       fetchData();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving individual:", error);
-      toast({ variant: "destructive", title: "خطأ", description: "فشل في حفظ البيانات." });
+      const msg = error.response?.data?.message || "فشل في حفظ البيانات.";
+      toast({ variant: "destructive", title: "خطأ", description: msg });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -162,6 +169,7 @@ export default function Workers() {
       Residence_Address: ind.Residence_Address || "",
       Family_ID: ind.Family_ID || "",
       Relationship: ind.Relationship || "",
+      Gender: ind.Gender || "ذكر",
     });
     setDocs({
       passportPhoto: ind.Passport_Copy ? { name: "مستند مرفق", url: ind.Passport_Copy, type: "application/pdf", label: "صورة الوثيقة" } : null,
@@ -251,7 +259,7 @@ export default function Workers() {
                     <td className="p-3 font-mono text-xs text-blue-500 font-bold">{w.Family_ID || "—"}</td>
                     <td className="p-3"><StatusBadge variant={w.Current_Status as any} /></td>
                     <td className="p-3 text-center">
-                      {(w.Passport_Copy || w.Health_Cert_Copy || w.Residency_Copy) && (
+                      {(w.Passport_Copy || w.Health_Cert_Copy || w.Residency_Copy || w.Personal_Photo_Copy) && (
                         <div title="مستندات مرفقة" className="inline-block cursor-help">
                           <FileCheck className="w-4 h-4 text-green-600" />
                         </div>
@@ -307,6 +315,19 @@ export default function Workers() {
                   {errors.Full_Name && <p className="text-xs text-destructive">{errors.Full_Name}</p>}
                 </div>
                 <div className="space-y-1.5">
+                  <Label>الجنس</Label>
+                  <Select value={form.Gender} onValueChange={(v) => setForm({ ...form, Gender: v })}>
+                    <SelectTrigger><SelectValue placeholder="اختر الجنس" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ذكر">ذكر</SelectItem>
+                      <SelectItem value="أنثى">أنثى</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
                   <Label>الجنسية</Label>
                   <Select value={form.Nationality} onValueChange={(v) => setForm({ ...form, Nationality: v })}>
                     <SelectTrigger><SelectValue placeholder="اختر الجنسية" /></SelectTrigger>
@@ -334,26 +355,30 @@ export default function Workers() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label>{form.Category === "student" ? "مكان الدراسة" : "مكان العمل / المهنة"}</Label>
-                  <Input value={form.Job_Title} onChange={(e) => setForm({ ...form, Job_Title: e.target.value })} placeholder="اسم الشركة / الجامعة / الوظيفة" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>تاريخ انتهاء الشهادة الصحية</Label>
-                  <Input type="date" value={form.Health_Cert_Expiry} onChange={(e) => setForm({ ...form, Health_Cert_Expiry: e.target.value })} />
-                </div>
-              </div>
+              {(form.Category === "worker" || form.Category === "student") && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label>{form.Category === "student" ? "مكان الدراسة" : "مكان العمل / المهنة"}</Label>
+                      <Input value={form.Job_Title} onChange={(e) => setForm({ ...form, Job_Title: e.target.value })} placeholder="اسم الشركة / الجامعة / الوظيفة" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>تاريخ انتهاء الشهادة الصحية</Label>
+                      <Input type="date" value={form.Health_Cert_Expiry} onChange={(e) => setForm({ ...form, Health_Cert_Expiry: e.target.value })} />
+                    </div>
+                  </div>
 
-              <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border">
-                <div className="space-y-0.5">
-                  <Label>يعمل لحسابه (Freelance)</Label>
-                  <p className="text-[10px] text-muted-foreground">تفعيل هذا الخيار يجعل الجهة المستضيفة اختيارية</p>
-                </div>
-                <Switch checked={form.Freelance} onCheckedChange={(v) => setForm({ ...form, Freelance: v })} />
-              </div>
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border">
+                    <div className="space-y-0.5">
+                      <Label>يعمل لحسابه (Freelance)</Label>
+                      <p className="text-[10px] text-muted-foreground">تفعيل هذا الخيار يجعل الجهة المستضيفة اختيارية</p>
+                    </div>
+                    <Switch checked={form.Freelance} onCheckedChange={(v) => setForm({ ...form, Freelance: v })} />
+                  </div>
+                </>
+              )}
 
-              {!form.Freelance && form.Category !== "dependent" && (
+              {!form.Freelance && (form.Category === "worker" || form.Category === "student") && (
                 <div className="space-y-1.5">
                   <Label>الجهة المستضيفة <span className="text-destructive">*</span></Label>
                   <Popover open={sponsorOpen} onOpenChange={setSponsorOpen}>
@@ -419,10 +444,14 @@ export default function Workers() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={handleClose}>إلغاء</Button>
-            <Button onClick={handleSubmit} className="gap-2">
-              {editMode ? <Edit className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-              {editMode ? "تحديث البيانات" : "تسجيل الفرد"}
+            <Button variant="outline" onClick={handleClose} disabled={isSaving}>إلغاء</Button>
+            <Button onClick={handleSubmit} className="gap-2" disabled={isSaving}>
+              {isSaving ? "جاري الحفظ..." : (
+                <>
+                  {editMode ? <Edit className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                  {editMode ? "تحديث البيانات" : "تسجيل الفرد"}
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
