@@ -63,7 +63,13 @@ exports.create = async (req, res) => {
       Commercial_Reg_Copy,
       Tax_Cert_Copy,
       License_Copy,
-      Auth_Letter_Copy
+      Auth_Letter_Copy,
+      Owner_Name,
+      Owner_National_ID,
+      Owner_Phone,
+      Owner_Email,
+      Owner_Photo,
+      Identity_Copy
     } = req.body;
 
     const newSponsor = await Sponsor.create({
@@ -75,7 +81,13 @@ exports.create = async (req, res) => {
       Commercial_Reg_Copy,
       Tax_Cert_Copy,
       License_Copy,
-      Auth_Letter_Copy
+      Auth_Letter_Copy,
+      Owner_Name,
+      Owner_National_ID,
+      Owner_Phone,
+      Owner_Email,
+      Owner_Photo,
+      Identity_Copy
     });
 
     res.status(201).json(newSponsor);
@@ -97,7 +109,13 @@ exports.update = async (req, res) => {
       Commercial_Reg_Copy,
       Tax_Cert_Copy,
       License_Copy,
-      Auth_Letter_Copy
+      Auth_Letter_Copy,
+      Owner_Name,
+      Owner_National_ID,
+      Owner_Phone,
+      Owner_Email,
+      Owner_Photo,
+      Identity_Copy
     } = req.body;
 
     const sponsor = await Sponsor.findByPk(id);
@@ -114,7 +132,13 @@ exports.update = async (req, res) => {
       Commercial_Reg_Copy,
       Tax_Cert_Copy,
       License_Copy,
-      Auth_Letter_Copy
+      Auth_Letter_Copy,
+      Owner_Name,
+      Owner_National_ID,
+      Owner_Phone,
+      Owner_Email,
+      Owner_Photo,
+      Identity_Copy
     });
 
     res.json(sponsor);
