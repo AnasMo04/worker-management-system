@@ -34,7 +34,8 @@ module.exports = (sequelize, DataTypes) => {
     Freelance: DataTypes.BOOLEAN,
     Residence_Address: DataTypes.TEXT,
     Family_ID: DataTypes.STRING,
-    Relationship: DataTypes.STRING // Spouse, Child, Parent
+    Relationship: DataTypes.STRING, // Spouse, Child, Parent
+    Gender: DataTypes.STRING // Male / Female
   }, {
     sequelize,
     modelName: 'Worker',
