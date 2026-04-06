@@ -19,10 +19,10 @@ module.exports = (sequelize, DataTypes) => {
     Phone: DataTypes.STRING,
     Email: DataTypes.STRING,
     Address: DataTypes.TEXT,
-    Commercial_Reg_Copy: DataTypes.STRING,
-    Tax_Cert_Copy: DataTypes.STRING,
-    License_Copy: DataTypes.STRING,
-    Auth_Letter_Copy: DataTypes.STRING
+    Commercial_Reg_Copy: DataTypes.TEXT,
+    Tax_Cert_Copy: DataTypes.TEXT,
+    License_Copy: DataTypes.TEXT,
+    Auth_Letter_Copy: DataTypes.TEXT
   }, {
     sequelize,
     modelName: 'Sponsor',

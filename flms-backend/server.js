@@ -8,6 +8,8 @@ const app = express();
 app.use(cors()); // للسماح للواجهة الأمامية بالتواصل مع السيرفر
 app.use(express.json()); // لكي يفهم السيرفر البيانات المرسلة
 
+const db = require('./models');
+
 // --------------------------------------------------------
 // استدعاء روابط الـ API (المسارات اللي درناها في الخطوات السابقة)
 // --------------------------------------------------------
@@ -26,6 +28,14 @@ app.get('/', (req, res) => {
 
 // تشغيل السيرفر
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
     console.log(` Server is running successfully on: http://localhost:${PORT}`);
+
+    // ⚠️ تحديث قاعدة البيانات مؤقتاً لتتزامن مع النماذج الجديدة (AWS RDS)
+    try {
+        await db.sequelize.sync({ alter: true });
+        console.log('✅ Database schema updated (alter: true) successfully.');
+    } catch (err) {
+        console.error('❌ Error updating database schema:', err.message);
+    }
 });
