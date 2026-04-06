@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload, type UploadedDoc } from "@/components/DocumentUpload";
 import api from "../api/axiosConfig";
 import { useSearch } from "@/context/SearchContext";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Sponsor {
   id: number;
@@ -200,9 +201,16 @@ export default function Sponsors() {
                     <td className="p-3 font-mono text-xs">{s.Phone}</td>
                     <td className="p-3">
                       {(s.Commercial_Reg_Copy || s.Tax_Cert_Copy || s.License_Copy || s.Auth_Letter_Copy) && (
-                        <div title="مستندات مرفقة" className="inline-block">
-                          <FileCheck className="w-4 h-4 text-success" />
-                        </div>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="inline-block cursor-help">
+                              <FileCheck className="w-4 h-4 text-success" />
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>مستندات مرفقة</p>
+                          </TooltipContent>
+                        </Tooltip>
                       )}
                     </td>
                     <td className="p-3">
