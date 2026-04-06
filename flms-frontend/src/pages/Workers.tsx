@@ -265,7 +265,9 @@ export default function Workers() {
                     <td className="p-3 text-xs">{w.Sponsor?.Sponsor_Name || "—"}</td>
                     <td className="p-3 text-center">
                       {(w.Passport_Copy || w.Health_Cert_Copy || w.Residency_Copy || w.Personal_Photo_Copy) && (
-                        <FileCheck className="w-4 h-4 text-success inline-block" title="مستندات مرفقة" />
+                        <div title="مستندات مرفقة" className="inline-block">
+                          <FileCheck className="w-4 h-4 text-success" />
+                        </div>
                       )}
                     </td>
                     <td className="p-3">

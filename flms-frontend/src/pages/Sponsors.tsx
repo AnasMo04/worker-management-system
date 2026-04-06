@@ -200,7 +200,9 @@ export default function Sponsors() {
                     <td className="p-3 font-mono text-xs">{s.Phone}</td>
                     <td className="p-3">
                       {(s.Commercial_Reg_Copy || s.Tax_Cert_Copy || s.License_Copy || s.Auth_Letter_Copy) && (
-                        <FileCheck className="w-4 h-4 text-success" title="مستندات مرفقة" />
+                        <div title="مستندات مرفقة" className="inline-block">
+                          <FileCheck className="w-4 h-4 text-success" />
+                        </div>
                       )}
                     </td>
                     <td className="p-3">
