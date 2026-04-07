@@ -6,27 +6,27 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Search, Filter, Eye, Edit, ChevronLeft, ChevronRight, Plus, UserPlus, Check, ChevronsUpDown, FileCheck, Users } from "lucide-react";
+import { Search, Filter, Eye, Edit, ChevronLeft, ChevronRight, Plus, UserPlus, Check, ChevronsUpDown, FileCheck, Users, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload, type UploadedDoc } from "@/components/DocumentUpload";
 import api from "../api/axiosConfig";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
+import { useSearch } from "../context/SearchContext";
 
 interface Individual {
   id: number;
   Full_Name: string;
   Passport_Number: string; // Document Number
   Nationality: string;
-  Job_Title: string; // Work/Study Location
+  Residence_Address: string; // عنوان السكن
   Current_Status: string;
   NFC_UID: string;
   Category: string;
   Document_Type: string;
   Health_Cert_Expiry?: string;
   Freelance: boolean;
-  Residence_Address?: string;
   Family_ID?: string;
   Relationship?: string;
   Gender?: string;
@@ -52,13 +52,20 @@ const categories = [
 const docTypes = ["جواز سفر", "بطاقة قنصلية", "إفادة سفارة"];
 const relationships = ["زوج/زوجة", "ابن/ابنة", "أب/أم", "أخرى"];
 const nationalityOptions = ["بنغلاديش", "غانا", "الهند", "نيجيريا", "الفلبين", "مصر", "تونس", "باكستان", "سوريا", "السودان"];
-const statuses = ["الكل", "نشط", "موقوف", "منتهي", "هارب"];
+const statusOptions = [
+  { value: "نشط", variant: "active" },
+  { value: "موقوف", variant: "suspended" },
+  { value: "مرحّل", variant: "deported" },
+  { value: "متوفى", variant: "deceased" },
+  { value: "خارج البلاد", variant: "left" }
+];
+const statuses = ["الكل", ...statusOptions.map(o => o.value)];
 
 const emptyForm = {
-  Full_Name: "", Passport_Number: "", Nationality: "", Job_Title: "", Sponsor_ID: "",
+  Full_Name: "", Passport_Number: "", Nationality: "", Residence_Address: "", Sponsor_ID: "",
   National_ID: "", Birth_Date: "", Category: "worker", Document_Type: "جواز سفر",
-  Health_Cert_Expiry: "", Freelance: false, Residence_Address: "", Family_ID: "", Relationship: "",
-  Gender: "ذكر"
+  Health_Cert_Expiry: "", Freelance: false, Family_ID: "", Relationship: "",
+  Gender: "ذكر", Current_Status: "نشط"
 };
 
 interface IndividualDocs {
@@ -73,7 +80,7 @@ export default function Workers() {
   const [individuals, setIndividuals] = useState<Individual[]>([]);
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
+  const { searchQuery, setSearchQuery } = useSearch();
   const [statusFilter, setStatusFilter] = useState("الكل");
   const [addOpen, setAddOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -104,7 +111,7 @@ export default function Workers() {
   };
 
   const filtered = individuals.filter((i) => {
-    const q = search.toLowerCase();
+    const q = searchQuery.toLowerCase();
     const matchSearch = i.Full_Name?.toLowerCase().includes(q) || i.Passport_Number?.toLowerCase().includes(q) || i.Family_ID?.toLowerCase().includes(q);
     const matchStatus = statusFilter === "الكل" || i.Current_Status === statusFilter;
     return matchSearch && matchStatus;
@@ -158,7 +165,7 @@ export default function Workers() {
       Full_Name: ind.Full_Name,
       Passport_Number: ind.Passport_Number,
       Nationality: ind.Nationality,
-      Job_Title: ind.Job_Title || "",
+      Residence_Address: ind.Residence_Address || "",
       Sponsor_ID: ind.Sponsor_ID?.toString() || "",
       National_ID: ind.National_ID || "",
       Birth_Date: ind.Birth_Date || "",
@@ -166,10 +173,10 @@ export default function Workers() {
       Document_Type: ind.Document_Type || "جواز سفر",
       Health_Cert_Expiry: ind.Health_Cert_Expiry || "",
       Freelance: ind.Freelance || false,
-      Residence_Address: ind.Residence_Address || "",
       Family_ID: ind.Family_ID || "",
       Relationship: ind.Relationship || "",
       Gender: ind.Gender || "ذكر",
+      Current_Status: ind.Current_Status || "نشط",
     });
     setDocs({
       passportPhoto: ind.Passport_Copy ? { name: "مستند مرفق", url: ind.Passport_Copy, type: "application/pdf", label: "صورة الوثيقة" } : null,
@@ -207,8 +214,8 @@ export default function Workers() {
         <div className="relative">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="بحث بالاسم، رقم الوثيقة، أو رقم العائلة..."
             className="h-9 bg-muted rounded-lg pr-9 pl-3 text-sm outline-none focus:ring-2 focus:ring-ring w-80 placeholder:text-muted-foreground"
           />
@@ -254,10 +261,15 @@ export default function Workers() {
                     <td className="p-3 text-xs">
                       {w.Freelance ? "يعمل لحسابه" : (w.Sponsor?.Sponsor_Name || "—")}
                       <br/>
-                      <span className="text-[10px] text-muted-foreground">{w.Job_Title}</span>
+                      <span className="text-[10px] text-muted-foreground">{w.Residence_Address}</span>
                     </td>
                     <td className="p-3 font-mono text-xs text-blue-500 font-bold">{w.Family_ID || "—"}</td>
-                    <td className="p-3"><StatusBadge variant={w.Current_Status as any} /></td>
+                    <td className="p-3">
+                      <StatusBadge
+                        variant={statusOptions.find(o => o.value === w.Current_Status)?.variant as any || "default"}
+                        label={w.Current_Status}
+                      />
+                    </td>
                     <td className="p-3 text-center">
                       {(w.Passport_Copy || w.Health_Cert_Copy || w.Residency_Copy || w.Personal_Photo_Copy) && (
                         <div title="مستندات مرفقة" className="inline-block cursor-help">
@@ -269,6 +281,9 @@ export default function Workers() {
                       <div className="flex items-center gap-1">
                         <button onClick={() => handleEditClick(w)} className="w-8 h-8 rounded-md bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
                           <Edit className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => handleDelete(w.id)} className="w-8 h-8 rounded-md bg-muted flex items-center justify-center text-destructive hover:bg-destructive/10 transition-colors">
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </td>
@@ -357,16 +372,29 @@ export default function Workers() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>عنوان السكن</Label>
-                  <Input value={form.Job_Title} onChange={(e) => setForm({ ...form, Job_Title: e.target.value })} placeholder="أدخل عنوان السكن الحالي" />
+                  <Label>الحالة</Label>
+                  <Select value={form.Current_Status} onValueChange={(v) => setForm({ ...form, Current_Status: v })}>
+                    <SelectTrigger><SelectValue placeholder="اختر الحالة" /></SelectTrigger>
+                    <SelectContent>
+                      {statusOptions.map((o) => <SelectItem key={o.value} value={o.value}>{o.value}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
+                <div className="space-y-1.5">
+                  <Label>عنوان السكن</Label>
+                  <Input value={form.Residence_Address} onChange={(e) => setForm({ ...form, Residence_Address: e.target.value })} placeholder="أدخل عنوان السكن الحالي" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label>تاريخ انتهاء الشهادة الصحية</Label>
                   <Input type="date" value={form.Health_Cert_Expiry} onChange={(e) => setForm({ ...form, Health_Cert_Expiry: e.target.value })} />
                 </div>
               </div>
+            </div>
 
-              {(form.Category === "worker" || form.Category === "student") && (
+            {(form.Category === "worker" || form.Category === "student") && (
                 <>
 
                   <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border">

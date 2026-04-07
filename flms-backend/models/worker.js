@@ -20,8 +20,11 @@ module.exports = (sequelize, DataTypes) => {
     Full_Name: DataTypes.STRING,
     Nationality: DataTypes.STRING,
     Birth_Date: DataTypes.DATEONLY,
-    Job_Title: DataTypes.STRING, // Work/Study Location
-    Current_Status: DataTypes.STRING,
+    Residence_Address: DataTypes.STRING, // عنوان السكن
+    Current_Status: {
+      type: DataTypes.STRING,
+      defaultValue: 'نشط'
+    },
     NFC_UID: DataTypes.STRING,
     Primary_Card_Serial: DataTypes.STRING,
     Passport_Copy: DataTypes.TEXT, // Document Copy
@@ -32,7 +35,6 @@ module.exports = (sequelize, DataTypes) => {
     Document_Type: DataTypes.STRING, // Passport, Consular ID, etc.
     Health_Cert_Expiry: DataTypes.DATEONLY,
     Freelance: DataTypes.BOOLEAN,
-    Residence_Address: DataTypes.TEXT,
     Family_ID: DataTypes.STRING,
     Relationship: DataTypes.STRING, // Spouse, Child, Parent
     Gender: DataTypes.STRING // Male / Female
