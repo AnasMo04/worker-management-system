@@ -3,11 +3,11 @@ import { cn } from "@/lib/utils";
 type BadgeVariant = "active" | "suspended" | "expired" | "runaway" | "pending" | "paid" | "failed" | "admin" | "officer" | "clerk" | "auditor" | "ministry" | "deported" | "deceased" | "left" | "default";
 
 const variantStyles: Record<BadgeVariant, string> = {
-  active: "bg-green-500 text-white border-green-600",
-  suspended: "bg-yellow-500 text-white border-yellow-600",
-  deported: "bg-red-500 text-white border-red-600",
-  deceased: "bg-black text-white border-gray-800",
-  left: "bg-gray-500 text-white border-gray-600",
+  active: "bg-success/15 text-success border-success/20",
+  suspended: "bg-amber-500/15 text-amber-600 border-amber-500/20",
+  deported: "bg-destructive/15 text-destructive border-destructive/20",
+  deceased: "bg-destructive/10 text-destructive/80 border-destructive/20",
+  left: "bg-muted text-muted-foreground border-border",
   expired: "bg-muted text-muted-foreground border-border",
   runaway: "bg-destructive/15 text-destructive border-destructive/20",
   pending: "bg-warning/15 text-warning border-warning/20",

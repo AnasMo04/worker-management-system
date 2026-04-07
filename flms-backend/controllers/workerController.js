@@ -2,7 +2,11 @@ const { Worker, Sponsor } = require('../models');
 
 exports.getAll = async (req, res) => {
   try {
+    const { includeArchived } = req.query;
+    const where = includeArchived === 'true' ? {} : { is_archived: false };
+
     const workers = await Worker.findAll({
+      where,
       include: [{ model: Sponsor, attributes: ['Sponsor_Name'] }]
     });
     res.json(workers);
@@ -180,8 +184,8 @@ exports.delete = async (req, res) => {
       return res.status(404).json({ message: 'Worker not found' });
     }
 
-    await worker.destroy();
-    res.json({ message: 'Worker deleted successfully' });
+    await worker.update({ is_archived: true });
+    res.json({ message: 'تمت أرشفت السجل بنجاح' });
   } catch (error) {
     console.error('Delete Worker Error:', error);
     res.status(500).json({ message: 'Error deleting worker' });

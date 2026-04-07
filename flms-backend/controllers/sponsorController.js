@@ -2,7 +2,11 @@ const { Sponsor, Worker, Sequelize } = require('../models');
 
 exports.getAll = async (req, res) => {
   try {
+    const { includeArchived } = req.query;
+    const where = includeArchived === 'true' ? {} : { is_archived: false };
+
     const sponsors = await Sponsor.findAll({
+      where,
       attributes: {
         include: [
           [
@@ -156,14 +160,14 @@ exports.delete = async (req, res) => {
       return res.status(404).json({ message: 'Sponsor not found' });
     }
 
-    // Check if sponsor has workers before deleting (optional but recommended)
-    const workersCount = await Worker.count({ where: { Sponsor_ID: id } });
+    // Check if sponsor has workers before archiving (optional)
+    const workersCount = await Worker.count({ where: { Sponsor_ID: id, is_archived: false } });
     if (workersCount > 0) {
-      return res.status(400).json({ message: 'Cannot delete sponsor with associated workers' });
+      return res.status(400).json({ message: 'لا يمكن أرشفة الجهة لوجود أفراد مسجلين عليها' });
     }
 
-    await sponsor.destroy();
-    res.json({ message: 'Sponsor deleted successfully' });
+    await sponsor.update({ is_archived: true });
+    res.json({ message: 'تمت أرشفة الجهة بنجاح' });
   } catch (error) {
     console.error('Delete Sponsor Error:', error);
     res.status(500).json({ message: 'Error deleting sponsor' });

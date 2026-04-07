@@ -36,6 +36,7 @@ interface Individual {
   Health_Cert_Copy?: string;
   Residency_Copy?: string;
   Personal_Photo_Copy?: string;
+  is_archived?: boolean;
 }
 
 interface Sponsor {
@@ -80,6 +81,7 @@ export default function Workers() {
   const [individuals, setIndividuals] = useState<Individual[]>([]);
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showArchived, setShowArchived] = useState(false);
   const { searchQuery, setSearchQuery } = useSearch();
   const [statusFilter, setStatusFilter] = useState("الكل");
   const [addOpen, setAddOpen] = useState(false);
@@ -94,12 +96,15 @@ export default function Workers() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [showArchived]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [indRes, sponRes] = await Promise.all([api.get("/api/workers"), api.get("/api/sponsors")]);
+      const [indRes, sponRes] = await Promise.all([
+        api.get(`/api/workers?includeArchived=${showArchived}`),
+        api.get("/api/sponsors")
+      ]);
       setIndividuals(indRes.data);
       setSponsors(sponRes.data);
     } catch (error) {
@@ -188,10 +193,10 @@ export default function Workers() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm("هل أنت متأكد من حذف هذا الفرد؟")) return;
+    if (!window.confirm("هل أنت متأكد من أرشفة هذا الفرد؟ لن يتم حذفه نهائياً من المنظومة.")) return;
     try {
       await api.delete(`/api/workers/${id}`);
-      toast({ title: "تم الحذف", description: "تم حذف بيانات الفرد بنجاح." });
+      toast({ title: "تمت الأرشفة", description: "تم نقل الفرد إلى الأرشيف بنجاح." });
       fetchData();
     } catch (error) {
       console.error("Error deleting individual:", error);
@@ -223,6 +228,10 @@ export default function Workers() {
 
       <div className="bg-card rounded-lg border border-border p-4 flex flex-wrap gap-3 items-center">
         <Filter className="w-4 h-4 text-muted-foreground" />
+        <div className="flex items-center gap-2 mr-2">
+          <Switch checked={showArchived} onCheckedChange={setShowArchived} id="archived-toggle" />
+          <Label htmlFor="archived-toggle" className="text-xs cursor-pointer">عرض الأرشيف</Label>
+        </div>
         <div className="relative">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
@@ -261,7 +270,7 @@ export default function Workers() {
                 <tr><td colSpan={9} className="p-3 text-center">لا توجد بيانات</td></tr>
               ) : (
                 filtered.map((w) => (
-                  <tr key={w.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
+                  <tr key={w.id} className={cn("border-b border-border last:border-0 hover:bg-muted/30 transition-colors", w.is_archived && "opacity-60 grayscale-[0.5] bg-muted/20")}>
                     <td className="p-3 font-medium">{w.Full_Name}</td>
                     <td className="p-3">
                       <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold">
@@ -294,9 +303,15 @@ export default function Workers() {
                         <button onClick={() => handleEditClick(w)} className="w-8 h-8 rounded-md bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
                           <Edit className="w-3.5 h-3.5" />
                         </button>
-                        <button onClick={() => handleDelete(w.id)} className="w-8 h-8 rounded-md bg-muted flex items-center justify-center text-destructive hover:bg-destructive/10 transition-colors">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {!w.is_archived && (
+                          <button
+                            onClick={() => handleDelete(w.id)}
+                            title="نقل للأرشيف"
+                            className="w-8 h-8 rounded-md bg-muted flex items-center justify-center text-destructive hover:bg-destructive/10 transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

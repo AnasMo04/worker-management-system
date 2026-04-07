@@ -37,7 +37,11 @@ module.exports = (sequelize, DataTypes) => {
     Freelance: DataTypes.BOOLEAN,
     Family_ID: DataTypes.STRING,
     Relationship: DataTypes.STRING, // Spouse, Child, Parent
-    Gender: DataTypes.STRING // Male / Female
+    Gender: DataTypes.STRING, // Male / Female
+    is_archived: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
+    }
   }, {
     sequelize,
     modelName: 'Worker',
