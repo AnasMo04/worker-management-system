@@ -10,13 +10,13 @@ import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload, type UploadedDoc } from "@/components/DocumentUpload";
 import api from "../api/axiosConfig";
 import { useSearch } from "@/context/SearchContext";
+import { cn } from "@/lib/utils";
 
 interface HostingEntity {
   id: number;
   Sponsor_Name: string; // Used as Entity Name
   Commercial_Reg_No: string;
   workersCount: number;
-  status: string;
   Phone: string;
   Email?: string;
   Address?: string;
@@ -56,6 +56,7 @@ export default function Sponsors() {
   const [docs, setDocs] = useState<EntityDocs>(emptyDocs);
   const [entityType, setEntityType] = useState<string>("business");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
   const { searchQuery } = useSearch();
 
@@ -67,11 +68,7 @@ export default function Sponsors() {
     try {
       setLoading(true);
       const response = await api.get(`/api/sponsors?includeArchived=${showArchived}`);
-      const mapped = response.data.map((s: any) => ({
-        ...s,
-        status: "نشط",
-      }));
-      setEntities(mapped);
+      setEntities(response.data);
     } catch (error) {
       console.error("Error fetching entities:", error);
       toast({ variant: "destructive", title: "خطأ", description: "فشل في تحميل بيانات الجهات المستضيفة." });
@@ -92,6 +89,7 @@ export default function Sponsors() {
   const handleSubmit = async () => {
     if (!validate()) return;
     try {
+      setIsSaving(true);
       const payload = {
         Sponsor_Name: form.name.trim(),
         Commercial_Reg_No: form.license.trim(),
@@ -120,9 +118,12 @@ export default function Sponsors() {
 
       handleClose();
       fetchEntities();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving entity:", error);
-      toast({ variant: "destructive", title: "خطأ", description: "فشل في حفظ البيانات." });
+      const msg = error.response?.data?.message || "فشل في حفظ البيانات.";
+      toast({ variant: "destructive", title: "خطأ", description: msg });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -152,15 +153,6 @@ export default function Sponsors() {
     setAddOpen(true);
   };
 
-  const handleClose = () => {
-    setAddOpen(false);
-    setEditMode(false);
-    setSelectedId(null);
-    setForm(emptyForm);
-    setDocs(emptyDocs);
-    setErrors({});
-  };
-
   const handleDelete = async (id: number) => {
     if (!window.confirm("هل أنت متأكد من أرشفة هذه الجهة؟ لن يتم حذفها نهائياً من المنظومة.")) return;
     try {
@@ -172,6 +164,15 @@ export default function Sponsors() {
       const msg = error.response?.data?.message || "فشل في أرشفة البيانات.";
       toast({ variant: "destructive", title: "خطأ", description: msg });
     }
+  };
+
+  const handleClose = () => {
+    setAddOpen(false);
+    setEditMode(false);
+    setSelectedId(null);
+    setForm(emptyForm);
+    setDocs(emptyDocs);
+    setErrors({});
   };
 
   const filtered = entities.filter((s) => {
@@ -200,6 +201,7 @@ export default function Sponsors() {
           </Button>
         </div>
       </div>
+
       <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -226,8 +228,11 @@ export default function Sponsors() {
                     <td className="p-3 font-mono text-xs">{s.Commercial_Reg_No || "—"}</td>
                     <td className="p-3">{s.workersCount || 0}</td>
                     <td className="p-3">
-                      <span className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold ${s.status === "نشط" ? "bg-success/15 text-success border-success/20" : "bg-warning/15 text-warning border-warning/20"}`}>
-                        {s.status}
+                      <span className={cn(
+                        "inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold",
+                        s.is_archived ? "bg-slate-500/10 text-slate-600 border-slate-200" : "bg-success/15 text-success border-success/20"
+                      )}>
+                        {s.is_archived ? "مؤرشف" : "نشط"}
                       </span>
                     </td>
                     <td className="p-3 font-mono text-xs">{s.Phone}</td>
@@ -353,10 +358,14 @@ export default function Sponsors() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={handleClose}>إلغاء</Button>
-            <Button onClick={handleSubmit} className="gap-2">
-              {editMode ? <Edit className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-              {editMode ? "تحديث البيانات" : "تسجيل الجهة"}
+            <Button variant="outline" onClick={handleClose} disabled={isSaving}>إلغاء</Button>
+            <Button onClick={handleSubmit} className="gap-2" disabled={isSaving}>
+              {isSaving ? "جاري الحفظ..." : (
+                <>
+                  {editMode ? <Edit className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                  {editMode ? "تحديث البيانات" : "تسجيل الجهة"}
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
