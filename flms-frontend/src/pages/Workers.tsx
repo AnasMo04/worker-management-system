@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Search, Filter, Eye, Edit, ChevronLeft, ChevronRight, Plus, UserPlus, Check, ChevronsUpDown, FileCheck, Users, Trash2 } from "lucide-react";
+import { Search, Filter, Edit, Plus, UserPlus, Check, ChevronsUpDown, FileCheck, Users, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload, type UploadedDoc } from "@/components/DocumentUpload";
 import api from "../api/axiosConfig";
@@ -20,7 +20,7 @@ interface Individual {
   Full_Name: string;
   Passport_Number: string; // Document Number
   Nationality: string;
-  Residence_Address: string; // عنوان السكن
+  Residence_Address?: string; // عنوان السكن
   Current_Status: string;
   NFC_UID: string;
   Category: string;
@@ -143,7 +143,7 @@ export default function Workers() {
         await api.put(`/api/workers/${selectedId}`, payload);
         toast({ title: "تم التحديث", description: `تم تحديث بيانات ${payload.Full_Name} بنجاح.` });
       } else {
-        await api.post("/api/workers", { ...payload, Current_Status: "active" });
+        await api.post("/api/workers", payload);
         toast({ title: "تمت الإضافة", description: `تم تسجيل ${payload.Full_Name} بنجاح.` });
       }
 
@@ -185,6 +185,18 @@ export default function Workers() {
       personalPhoto: ind.Personal_Photo_Copy ? { name: "صورة مرفقة", url: ind.Personal_Photo_Copy, type: "image/jpeg", label: "صورة شخصية" } : null,
     });
     setAddOpen(true);
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("هل أنت متأكد من حذف هذا الفرد؟")) return;
+    try {
+      await api.delete(`/api/workers/${id}`);
+      toast({ title: "تم الحذف", description: "تم حذف بيانات الفرد بنجاح." });
+      fetchData();
+    } catch (error) {
+      console.error("Error deleting individual:", error);
+      toast({ variant: "destructive", title: "خطأ", description: "فشل في حذف البيانات." });
+    }
   };
 
   const handleClose = () => {
@@ -392,11 +404,9 @@ export default function Workers() {
                   <Input type="date" value={form.Health_Cert_Expiry} onChange={(e) => setForm({ ...form, Health_Cert_Expiry: e.target.value })} />
                 </div>
               </div>
-            </div>
 
-            {(form.Category === "worker" || form.Category === "student") && (
+              {(form.Category === "worker" || form.Category === "student") && (
                 <>
-
                   <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border">
                     <div className="space-y-0.5">
                       <Label>يعمل لحسابه (Freelance)</Label>
