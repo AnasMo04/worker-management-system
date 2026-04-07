@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Building2, Edit, FileCheck, User } from "lucide-react";
+import { Plus, Building2, Edit, FileCheck, User, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload, type UploadedDoc } from "@/components/DocumentUpload";
 import api from "../api/axiosConfig";
@@ -158,6 +158,18 @@ export default function Sponsors() {
     setErrors({});
   };
 
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("هل أنت متأكد من حذف هذه الجهة؟")) return;
+    try {
+      await api.delete(`/api/sponsors/${id}`);
+      toast({ title: "تم الحذف", description: "تم حذف بيانات الجهة بنجاح." });
+      fetchEntities();
+    } catch (error) {
+      console.error("Error deleting entity:", error);
+      toast({ variant: "destructive", title: "خطأ", description: "فشل في حذف البيانات." });
+    }
+  };
+
   const filtered = entities.filter((s) => {
     const query = searchQuery.toLowerCase();
     return (
@@ -217,9 +229,14 @@ export default function Sponsors() {
                       )}
                     </td>
                     <td className="p-3">
-                      <button onClick={() => handleEditClick(s)} className="w-8 h-8 rounded-md bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
-                        <Edit className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => handleEditClick(s)} className="w-8 h-8 rounded-md bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => handleDelete(s.id)} className="w-8 h-8 rounded-md bg-muted flex items-center justify-center text-destructive hover:bg-destructive/10 transition-colors">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
