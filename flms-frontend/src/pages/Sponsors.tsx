@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Building2, Edit, FileCheck, User, Trash2 } from "lucide-react";
@@ -29,6 +30,7 @@ interface HostingEntity {
   Owner_Email?: string;
   Owner_Photo?: string;
   Identity_Copy?: string;
+  is_archived?: boolean;
 }
 
 interface EntityDocs {
@@ -46,6 +48,7 @@ const emptyForm = { name: "", license: "", phone: "", email: "", address: "", ow
 export default function Sponsors() {
   const [entities, setEntities] = useState<HostingEntity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showArchived, setShowArchived] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -58,12 +61,12 @@ export default function Sponsors() {
 
   useEffect(() => {
     fetchEntities();
-  }, []);
+  }, [showArchived]);
 
   const fetchEntities = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/api/sponsors");
+      const response = await api.get(`/api/sponsors?includeArchived=${showArchived}`);
       const mapped = response.data.map((s: any) => ({
         ...s,
         status: "نشط",
@@ -159,14 +162,15 @@ export default function Sponsors() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm("هل أنت متأكد من حذف هذه الجهة؟")) return;
+    if (!window.confirm("هل أنت متأكد من أرشفة هذه الجهة؟ لن يتم حذفها نهائياً من المنظومة.")) return;
     try {
       await api.delete(`/api/sponsors/${id}`);
-      toast({ title: "تم الحذف", description: "تم حذف بيانات الجهة بنجاح." });
+      toast({ title: "تمت الأرشفة", description: "تم نقل الجهة إلى الأرشيف بنجاح." });
       fetchEntities();
-    } catch (error) {
-      console.error("Error deleting entity:", error);
-      toast({ variant: "destructive", title: "خطأ", description: "فشل في حذف البيانات." });
+    } catch (error: any) {
+      console.error("Error archiving entity:", error);
+      const msg = error.response?.data?.message || "فشل في أرشفة البيانات.";
+      toast({ variant: "destructive", title: "خطأ", description: msg });
     }
   };
 
@@ -185,10 +189,16 @@ export default function Sponsors() {
           <h2 className="text-2xl font-bold">الجهات المستضيفة</h2>
           <p className="text-muted-foreground text-sm">إدارة الشركات، الجامعات، وجهات الاستضافة الأخرى</p>
         </div>
-        <Button onClick={() => setAddOpen(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          إضافة جهة
-        </Button>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-lg border border-border">
+            <Switch checked={showArchived} onCheckedChange={setShowArchived} id="archived-toggle-spon" />
+            <Label htmlFor="archived-toggle-spon" className="text-xs cursor-pointer font-medium">عرض الأرشيف</Label>
+          </div>
+          <Button onClick={() => setAddOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            إضافة جهة
+          </Button>
+        </div>
       </div>
       <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
@@ -211,7 +221,7 @@ export default function Sponsors() {
                 <tr><td colSpan={7} className="p-3 text-center">لا توجد بيانات</td></tr>
               ) : (
                 filtered.map((s) => (
-                  <tr key={s.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
+                  <tr key={s.id} className={cn("border-b border-border last:border-0 hover:bg-muted/30 transition-colors", s.is_archived && "opacity-60 grayscale-[0.5] bg-muted/20")}>
                     <td className="p-3 font-medium">{s.Sponsor_Name}</td>
                     <td className="p-3 font-mono text-xs">{s.Commercial_Reg_No || "—"}</td>
                     <td className="p-3">{s.workersCount || 0}</td>
@@ -233,9 +243,11 @@ export default function Sponsors() {
                         <button onClick={() => handleEditClick(s)} className="w-8 h-8 rounded-md bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
                           <Edit className="w-3.5 h-3.5" />
                         </button>
-                        <button onClick={() => handleDelete(s.id)} className="w-8 h-8 rounded-md bg-muted flex items-center justify-center text-destructive hover:bg-destructive/10 transition-colors">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {!s.is_archived && (
+                          <button onClick={() => handleDelete(s.id)} className="w-8 h-8 rounded-md bg-muted flex items-center justify-center text-destructive hover:bg-destructive/10 transition-colors">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

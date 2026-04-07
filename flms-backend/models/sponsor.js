@@ -28,7 +28,11 @@ module.exports = (sequelize, DataTypes) => {
     Owner_Phone: DataTypes.STRING,
     Owner_Email: DataTypes.STRING,
     Owner_Photo: DataTypes.TEXT,
-    Identity_Copy: DataTypes.TEXT
+    Identity_Copy: DataTypes.TEXT,
+    is_archived: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
+    }
   }, {
     sequelize,
     modelName: 'Sponsor',
