@@ -355,18 +355,19 @@ export default function Workers() {
                 </div>
               </div>
 
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label>عنوان السكن</Label>
+                  <Input value={form.Job_Title} onChange={(e) => setForm({ ...form, Job_Title: e.target.value })} placeholder="أدخل عنوان السكن الحالي" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>تاريخ انتهاء الشهادة الصحية</Label>
+                  <Input type="date" value={form.Health_Cert_Expiry} onChange={(e) => setForm({ ...form, Health_Cert_Expiry: e.target.value })} />
+                </div>
+              </div>
+
               {(form.Category === "worker" || form.Category === "student") && (
                 <>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <Label>{form.Category === "student" ? "مكان الدراسة" : "مكان العمل / المهنة"}</Label>
-                      <Input value={form.Job_Title} onChange={(e) => setForm({ ...form, Job_Title: e.target.value })} placeholder="اسم الشركة / الجامعة / الوظيفة" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label>تاريخ انتهاء الشهادة الصحية</Label>
-                      <Input type="date" value={form.Health_Cert_Expiry} onChange={(e) => setForm({ ...form, Health_Cert_Expiry: e.target.value })} />
-                    </div>
-                  </div>
 
                   <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border">
                     <div className="space-y-0.5">
