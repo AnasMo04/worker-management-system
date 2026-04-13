@@ -1,14 +1,32 @@
-import { Bell, Search, Moon, Sun, Smartphone } from "lucide-react";
+import { Bell, Search, Moon, Sun, Smartphone, LogOut } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 export function AppHeader() {
   const [dark, setDark] = useState(false);
+  const [userName, setUserName] = useState("أحمد المنصوري");
   const navigate = useNavigate();
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
+
+    // Get user name from local storage if available
+    const userStr = localStorage.getItem("user");
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        if (user.name) setUserName(user.name);
+      } catch (e) {
+        console.error("Error parsing user data", e);
+      }
+    }
   }, [dark]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/login");
+  };
 
   return (
     <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6 shrink-0">
@@ -43,12 +61,25 @@ export function AppHeader() {
         </button>
         <div className="flex items-center gap-3 mr-2 border-r border-border pr-4">
           <div className="text-left">
-            <p className="text-sm font-semibold">أحمد المنصوري</p>
+            <p className="text-sm font-semibold">{userName}</p>
             <p className="text-[11px] text-muted-foreground">مدير النظام</p>
           </div>
-          <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-bold">
-            أم
-          </div>
+          <button
+            onClick={handleLogout}
+            className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-bold hover:bg-primary/80 transition-colors group relative"
+          >
+            {userName.substring(0, 2)}
+            <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 bg-destructive text-destructive-foreground text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
+              تسجيل الخروج
+            </div>
+          </button>
+          <button
+            onClick={handleLogout}
+            className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
+            title="تسجيل الخروج"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </header>
