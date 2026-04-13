@@ -40,7 +40,10 @@ exports.create = async (req, res) => {
       Job_Title,
       Current_Status,
       NFC_UID,
-      Primary_Card_Serial
+      Primary_Card_Serial,
+      Phone,
+      Residency_Number,
+      Residency_Expiry
     } = req.body;
 
     // Validate Sponsor_ID exists
@@ -61,7 +64,10 @@ exports.create = async (req, res) => {
       Job_Title,
       Current_Status,
       NFC_UID,
-      Primary_Card_Serial
+      Primary_Card_Serial,
+      Phone,
+      Residency_Number,
+      Residency_Expiry
     });
 
     res.status(201).json(newWorker);
@@ -84,7 +90,10 @@ exports.update = async (req, res) => {
       Job_Title,
       Current_Status,
       NFC_UID,
-      Primary_Card_Serial
+      Primary_Card_Serial,
+      Phone,
+      Residency_Number,
+      Residency_Expiry
     } = req.body;
 
     const worker = await Worker.findByPk(id);
@@ -102,7 +111,10 @@ exports.update = async (req, res) => {
       Job_Title,
       Current_Status,
       NFC_UID,
-      Primary_Card_Serial
+      Primary_Card_Serial,
+      Phone,
+      Residency_Number,
+      Residency_Expiry
     });
 
     res.json(worker);

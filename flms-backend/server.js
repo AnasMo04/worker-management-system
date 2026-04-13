@@ -14,10 +14,12 @@ app.use(express.json()); // لكي يفهم السيرفر البيانات ال
 const authRoutes = require('./routes/authRoutes');
 const workerRoutes = require('./routes/workerRoutes');
 const sponsorRoutes = require('./routes/sponsorRoutes');
+const smartCardRoutes = require('./routes/smartCardRoutes');
 
 app.use('/api/auth', authRoutes); // هكي الرابط حيكون /api/auth/login زي ما تبي الواجهة
 app.use('/api/workers', workerRoutes);
 app.use('/api/sponsors', sponsorRoutes);
+app.use('/api/smart-cards', smartCardRoutes);
 
 // مسار فحص عمل السيرفر
 app.get('/', (req, res) => {

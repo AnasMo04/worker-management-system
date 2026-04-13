@@ -11,6 +11,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       Worker.belongsTo(models.Sponsor, { foreignKey: 'Sponsor_ID' });
+      Worker.hasOne(models.SmartCard, { foreignKey: 'Worker_ID' });
     }
   }
   Worker.init({
@@ -23,7 +24,10 @@ module.exports = (sequelize, DataTypes) => {
     Job_Title: DataTypes.STRING,
     Current_Status: DataTypes.STRING,
     NFC_UID: DataTypes.STRING,
-    Primary_Card_Serial: DataTypes.STRING
+    Primary_Card_Serial: DataTypes.STRING,
+    Phone: DataTypes.STRING,
+    Residency_Number: DataTypes.STRING,
+    Residency_Expiry: DataTypes.DATEONLY
   }, {
     sequelize,
     modelName: 'Worker',

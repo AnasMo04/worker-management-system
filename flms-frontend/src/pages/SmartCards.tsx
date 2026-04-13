@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,37 +8,31 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { CreditCard, Plus, Search, Ban, Link2, History, Shield, AlertTriangle, Wifi, CheckCircle2, Loader2 } from "lucide-react";
+import api from "../api/axiosConfig";
+import { useToast } from "@/hooks/use-toast";
 
 interface SmartCard {
   id: number;
-  serial: string;
-  worker: string | null;
-  workerId: number | null;
-  issue: string;
-  expiry: string;
-  status: "active" | "suspended" | "expired" | "pending";
-  encryption: string;
-  blacklistReason: string | null;
-  history: { date: string; action: string; by: string }[];
+  Card_Serial_No: string;
+  Worker: { Full_Name: string } | null;
+  Worker_ID: number | null;
+  Issue_Date: string;
+  Expiry_Date: string;
+  Is_Active: boolean;
+  Encryption_Version: string;
+  Blacklist_Reason: string | null;
+  history?: { date: string; action: string; by: string }[];
 }
 
-const initialCards: SmartCard[] = [
-  { id: 1, serial: "SC-2026-0001", worker: "محمد أحمد علي", workerId: 101, issue: "2026-01-15", expiry: "2027-01-15", status: "active", encryption: "v3.2", blacklistReason: null, history: [{ date: "2026-01-15", action: "إصدار بطاقة جديدة", by: "أحمد المدير" }, { date: "2026-01-15", action: "ربط بالعامل محمد أحمد علي", by: "أحمد المدير" }] },
-  { id: 2, serial: "SC-2026-0002", worker: "عبدالله كمارا", workerId: 102, issue: "2026-01-20", expiry: "2027-01-20", status: "suspended", encryption: "v3.2", blacklistReason: "انتهاء الإقامة", history: [{ date: "2026-01-20", action: "إصدار بطاقة جديدة", by: "أحمد المدير" }, { date: "2026-02-10", action: "إيقاف البطاقة - انتهاء الإقامة", by: "النظام" }] },
-  { id: 3, serial: "SC-2026-0003", worker: "راجيش كومار", workerId: 103, issue: "2025-11-05", expiry: "2026-11-05", status: "active", encryption: "v3.1", blacklistReason: null, history: [{ date: "2025-11-05", action: "إصدار بطاقة جديدة", by: "سالم العتيبي" }] },
-  { id: 4, serial: "SC-2026-0004", worker: null, workerId: null, issue: "2025-08-12", expiry: "2026-08-12", status: "expired", encryption: "v3.0", blacklistReason: "هروب", history: [{ date: "2025-08-12", action: "إصدار بطاقة جديدة", by: "أحمد المدير" }, { date: "2025-10-01", action: "إلغاء الربط - هروب العامل", by: "النظام" }, { date: "2026-08-12", action: "انتهاء صلاحية البطاقة", by: "النظام" }] },
-  { id: 5, serial: "SC-2026-0005", worker: "جون مارك", workerId: 105, issue: "2026-02-01", expiry: "2027-02-01", status: "active", encryption: "v3.2", blacklistReason: null, history: [{ date: "2026-02-01", action: "إصدار بطاقة جديدة", by: "خالد الفيصل" }] },
-  { id: 6, serial: "SC-2026-0006", worker: null, workerId: null, issue: "2026-02-20", expiry: "2027-02-20", status: "pending", encryption: "v3.2", blacklistReason: null, history: [{ date: "2026-02-20", action: "إصدار بطاقة جديدة - في انتظار الربط", by: "أحمد المدير" }] },
-];
-
-const availableWorkers = [
-  { id: 201, name: "علي حسن محمود" },
-  { id: 202, name: "سعيد عمر بشير" },
-  { id: 203, name: "يوسف إبراهيم" },
-];
+interface Worker {
+  id: number;
+  Full_Name: string;
+}
 
 export default function SmartCards() {
-  const [cards, setCards] = useState<SmartCard[]>(initialCards);
+  const [cards, setCards] = useState<SmartCard[]>([]);
+  const [availableWorkers, setAvailableWorkers] = useState<Worker[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [issueOpen, setIssueOpen] = useState(false);
@@ -48,65 +42,144 @@ export default function SmartCards() {
   const [selectedCard, setSelectedCard] = useState<SmartCard | null>(null);
   const [selectedWorker, setSelectedWorker] = useState("");
   const [cancelReason, setCancelReason] = useState("");
+  const [issueStep, setIssueStep] = useState<"prompt" | "reading" | "done">("prompt");
+  const [nfcUid, setNfcUid] = useState("");
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchCards();
+    fetchWorkers();
+  }, []);
+
+  const fetchCards = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get("/api/smart-cards");
+      setCards(response.data);
+    } catch (error) {
+      console.error("Error fetching cards:", error);
+      toast({ variant: "destructive", title: "خطأ", description: "فشل في تحميل البطاقات." });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchWorkers = async () => {
+    try {
+      const response = await api.get("/api/workers");
+      setAvailableWorkers(response.data);
+    } catch (error) {
+      console.error("Error fetching workers:", error);
+    }
+  };
 
   const filtered = cards.filter((c) => {
-    const matchesSearch = !search || c.serial.includes(search) || (c.worker && c.worker.includes(search));
-    const matchesStatus = statusFilter === "all" || c.status === statusFilter;
+    const matchesSearch = !search || c.Card_Serial_No.toLowerCase().includes(search.toLowerCase()) || (c.Worker && c.Worker.Full_Name.toLowerCase().includes(search.toLowerCase()));
+    const status = c.Is_Active ? "active" : "pending"; // Simplified for filter
+    const matchesStatus = statusFilter === "all" || status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
   const stats = {
     total: cards.length,
-    active: cards.filter((c) => c.status === "active").length,
-    suspended: cards.filter((c) => c.status === "suspended").length,
-    pending: cards.filter((c) => c.status === "pending").length,
+    active: cards.filter((c) => c.Is_Active).length,
+    suspended: 0, // Mocked for now
+    pending: cards.filter((c) => !c.Is_Active).length,
   };
 
-  const [issueStep, setIssueStep] = useState<"prompt" | "reading" | "done">("prompt");
+  const handleIssueCard = async () => {
+    if (!('NDEFReader' in window)) {
+      toast({ variant: "destructive", title: "خطأ", description: "متصفحك لا يدعم تقنية NFC." });
+      return;
+    }
 
-  const handleIssueCard = () => {
-    setIssueStep("reading");
-    // Simulate NFC reader detection
-    setTimeout(() => {
-      const newCard: SmartCard = {
-        id: cards.length + 1,
-        serial: `SC-2026-${String(cards.length + 1).padStart(4, "0")}`,
-        worker: null,
-        workerId: null,
-        issue: new Date().toISOString().split("T")[0],
-        expiry: new Date(Date.now() + 365 * 86400000).toISOString().split("T")[0],
-        status: "pending",
-        encryption: "v3.2",
-        blacklistReason: null,
-        history: [{ date: new Date().toISOString().split("T")[0], action: "إصدار بطاقة جديدة - في انتظار الربط", by: "المستخدم الحالي" }],
+    try {
+      setIssueStep("reading");
+      const ndef = new (window as any).NDEFReader();
+      await ndef.scan();
+
+      ndef.onreading = async (event: any) => {
+        const serialNumber = event.serialNumber;
+        if (!serialNumber) {
+          toast({ variant: "destructive", title: "خطأ", description: "فشل في الحصول على الرقم التعريفي للبطاقة." });
+          setIssueStep("prompt");
+          return;
+        }
+
+        try {
+          // Check for duplicates
+          const dupResponse = await api.get(`/api/smart-cards/check-duplicate?nfc_uid=${serialNumber}`);
+          if (dupResponse.data.isDuplicate) {
+            toast({ variant: "destructive", title: "خطأ", description: "هذه البطاقة مسجلة مسبقاً في النظام." });
+            setIssueStep("prompt");
+            return;
+          }
+
+          // Issue card
+          const response = await api.post("/api/smart-cards/issue", {
+            nfc_uid: serialNumber,
+            encryption_version: "v3.2"
+          });
+
+          setNfcUid(serialNumber);
+          setCards([response.data, ...cards]);
+          setIssueStep("done");
+          toast({ title: "نجاح", description: "تم إصدار البطاقة بنجاح." });
+        } catch (err) {
+          console.error("API Error during issuance:", err);
+          toast({ variant: "destructive", title: "خطأ", description: "فشل في تسجيل البطاقة في النظام." });
+          setIssueStep("prompt");
+        }
       };
-      setCards([newCard, ...cards]);
-      setIssueStep("done");
-    }, 3000);
+
+      ndef.onreadingerror = () => {
+        toast({ variant: "destructive", title: "خطأ", description: "حدث خطأ أثناء قراءة البطاقة." });
+        setIssueStep("prompt");
+      };
+
+    } catch (error) {
+      console.error("NFC Error:", error);
+      toast({ variant: "destructive", title: "خطأ", description: "فشل في تشغيل قارئ NFC." });
+      setIssueStep("prompt");
+    }
   };
 
-  const handleLinkWorker = () => {
+  const handleLinkWorker = async () => {
     if (!selectedCard || !selectedWorker) return;
-    const worker = availableWorkers.find((w) => w.id === Number(selectedWorker));
-    if (!worker) return;
-    setCards(cards.map((c) =>
-      c.id === selectedCard.id
-        ? { ...c, worker: worker.name, workerId: worker.id, status: "active" as const, history: [...c.history, { date: new Date().toISOString().split("T")[0], action: `ربط بالعامل ${worker.name}`, by: "المستخدم الحالي" }] }
-        : c
-    ));
-    setLinkOpen(false);
-    setSelectedWorker("");
+    try {
+      await api.post("/api/smart-cards/link", {
+        card_id: selectedCard.id,
+        worker_id: parseInt(selectedWorker)
+      });
+
+      toast({ title: "تم الربط", description: "تم ربط البطاقة بالعامل بنجاح." });
+      setLinkOpen(false);
+      setSelectedWorker("");
+      fetchCards();
+    } catch (error: any) {
+      console.error("Linking error:", error);
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: error.response?.data?.message || "فشل في ربط البطاقة."
+      });
+    }
   };
 
-  const handleCancelCard = () => {
+  const handleCancelCard = async () => {
     if (!selectedCard || !cancelReason) return;
-    setCards(cards.map((c) =>
-      c.id === selectedCard.id
-        ? { ...c, status: "suspended" as const, blacklistReason: cancelReason, worker: null, workerId: null, history: [...c.history, { date: new Date().toISOString().split("T")[0], action: `إلغاء البطاقة - ${cancelReason}`, by: "المستخدم الحالي" }] }
-        : c
-    ));
-    setCancelOpen(false);
-    setCancelReason("");
+    try {
+      await api.post(`/api/smart-cards/cancel/${selectedCard.id}`, {
+        reason: cancelReason
+      });
+      toast({ title: "تم الإلغاء", description: "تم إلغاء البطاقة بنجاح." });
+      setCancelOpen(false);
+      setCancelReason("");
+      fetchCards();
+    } catch (error) {
+      console.error("Cancellation error:", error);
+      toast({ variant: "destructive", title: "خطأ", description: "فشل في إلغاء البطاقة." });
+    }
   };
 
   return (
@@ -178,35 +251,35 @@ export default function SmartCards() {
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 ? (
+              {loading ? (
+                <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">جاري التحميل...</td></tr>
+              ) : filtered.length === 0 ? (
                 <tr><td colSpan={8} className="p-8 text-center text-muted-foreground">لا توجد بطاقات مطابقة</td></tr>
               ) : (
                 filtered.map((c) => (
                   <tr key={c.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
-                    <td className="p-3 font-mono text-xs">{c.serial}</td>
-                    <td className="p-3 font-medium">{c.worker || <span className="text-muted-foreground italic">غير مرتبطة</span>}</td>
-                    <td className="p-3">{c.issue}</td>
-                    <td className="p-3">{c.expiry}</td>
+                    <td className="p-3 font-mono text-xs">{c.Card_Serial_No}</td>
+                    <td className="p-3 font-medium">{c.Worker?.Full_Name || <span className="text-muted-foreground italic">غير مرتبطة</span>}</td>
+                    <td className="p-3">{c.Issue_Date}</td>
+                    <td className="p-3">{c.Expiry_Date}</td>
                     <td className="p-3">
                       <StatusBadge
-                        variant={c.status === "pending" ? "pending" : c.status === "active" ? "active" : c.status === "suspended" ? "suspended" : "expired"}
-                        label={c.status === "pending" ? "معلّقة" : c.status === "active" ? "نشطة" : c.status === "suspended" ? "موقوفة" : "منتهية"}
+                        variant={!c.Is_Active ? "pending" : "active"}
+                        label={!c.Is_Active ? "معلّقة" : "نشطة"}
                       />
                     </td>
-                    <td className="p-3 font-mono text-xs">{c.encryption}</td>
-                    <td className="p-3 text-xs text-muted-foreground">{c.blacklistReason || "—"}</td>
+                    <td className="p-3 font-mono text-xs">{c.Encryption_Version}</td>
+                    <td className="p-3 text-xs text-muted-foreground">{c.Blacklist_Reason || "—"}</td>
                     <td className="p-3">
                       <div className="flex gap-1">
-                        {(c.status === "pending" || (!c.worker && c.status !== "expired" && c.status !== "suspended")) && (
+                        {!c.Is_Active && (
                           <Button size="sm" variant="outline" className="gap-1 text-xs h-7" onClick={() => { setSelectedCard(c); setLinkOpen(true); }}>
                             <Link2 className="h-3 w-3" /> ربط
                           </Button>
                         )}
-                        {(c.status === "active" || c.status === "pending") && (
-                          <Button size="sm" variant="outline" className="gap-1 text-xs h-7 text-destructive hover:text-destructive" onClick={() => { setSelectedCard(c); setCancelOpen(true); }}>
-                            <Ban className="h-3 w-3" /> إلغاء
-                          </Button>
-                        )}
+                        <Button size="sm" variant="outline" className="gap-1 text-xs h-7 text-destructive hover:text-destructive" onClick={() => { setSelectedCard(c); setCancelOpen(true); }}>
+                          <Ban className="h-3 w-3" /> إلغاء
+                        </Button>
                         <Button size="sm" variant="ghost" className="gap-1 text-xs h-7" onClick={() => { setSelectedCard(c); setHistoryOpen(true); }}>
                           <History className="h-3 w-3" /> السجل
                         </Button>
@@ -243,13 +316,6 @@ export default function SmartCards() {
                   <p className="text-xs text-muted-foreground">تأكد من وضع البطاقة بشكل صحيح على جهاز NFC Reader</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 border border-border">
-                <CreditCard className="h-6 w-6 text-primary shrink-0" />
-                <div>
-                  <p className="font-mono text-sm font-semibold">SC-2026-{String(cards.length + 1).padStart(4, "0")}</p>
-                  <p className="text-xs text-muted-foreground">إصدار التشفير: v3.2</p>
-                </div>
-              </div>
               <div className="p-3 rounded-lg bg-warning/10 border border-warning/20 flex items-start gap-2">
                 <AlertTriangle className="h-4 w-4 text-warning mt-0.5 shrink-0" />
                 <p className="text-xs text-warning">البطاقة ستكون في حالة انتظار حتى يتم ربطها بعامل مسجّل في النظام.</p>
@@ -277,7 +343,7 @@ export default function SmartCards() {
               </div>
               <div className="text-center space-y-1">
                 <p className="font-semibold text-success">تم إصدار البطاقة بنجاح</p>
-                <p className="font-mono text-sm">SC-2026-{String(cards.length).padStart(4, "0")}</p>
+                <p className="font-mono text-sm">UID: {nfcUid}</p>
                 <p className="text-xs text-muted-foreground">البطاقة في انتظار الربط بعامل</p>
               </div>
             </div>
@@ -302,7 +368,7 @@ export default function SmartCards() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>ربط البطاقة بعامل</DialogTitle>
-            <DialogDescription>اختر العامل لربطه بالبطاقة {selectedCard?.serial}</DialogDescription>
+            <DialogDescription>اختر العامل لربطه بالبطاقة {selectedCard?.Card_Serial_No}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <Select value={selectedWorker} onValueChange={setSelectedWorker}>
@@ -311,7 +377,7 @@ export default function SmartCards() {
               </SelectTrigger>
               <SelectContent>
                 {availableWorkers.map((w) => (
-                  <SelectItem key={w.id} value={String(w.id)}>{w.name}</SelectItem>
+                  <SelectItem key={w.id} value={String(w.id)}>{w.Full_Name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -328,7 +394,7 @@ export default function SmartCards() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>إلغاء البطاقة</DialogTitle>
-            <DialogDescription>هل أنت متأكد من إلغاء البطاقة {selectedCard?.serial}؟ هذا الإجراء لا يمكن التراجع عنه.</DialogDescription>
+            <DialogDescription>هل أنت متأكد من إلغاء البطاقة {selectedCard?.Card_Serial_No}؟ هذا الإجراء لا يمكن التراجع عنه.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <Select value={cancelReason} onValueChange={setCancelReason}>
@@ -356,16 +422,16 @@ export default function SmartCards() {
       <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>سجل البطاقة {selectedCard?.serial}</DialogTitle>
-            <DialogDescription>{selectedCard?.worker ? `مرتبطة بـ: ${selectedCard.worker}` : "غير مرتبطة بعامل"}</DialogDescription>
+            <DialogTitle>سجل البطاقة {selectedCard?.Card_Serial_No}</DialogTitle>
+            <DialogDescription>{selectedCard?.Worker ? `مرتبطة بـ: ${selectedCard.Worker.Full_Name}` : "غير مرتبطة بعامل"}</DialogDescription>
           </DialogHeader>
           <div className="py-2">
             <div className="relative space-y-0">
-              {selectedCard?.history.map((h, i) => (
+              {selectedCard?.history?.map((h, i) => (
                 <div key={i} className="flex gap-3 pb-4 last:pb-0">
                   <div className="flex flex-col items-center">
                     <div className="h-2.5 w-2.5 rounded-full bg-primary mt-1.5 shrink-0" />
-                    {i < (selectedCard?.history.length ?? 0) - 1 && <div className="w-px flex-1 bg-border" />}
+                    {i < (selectedCard?.history?.length ?? 0) - 1 && <div className="w-px flex-1 bg-border" />}
                   </div>
                   <div className="pb-2">
                     <p className="text-sm font-medium">{h.action}</p>
@@ -377,6 +443,9 @@ export default function SmartCards() {
                   </div>
                 </div>
               ))}
+              {(!selectedCard?.history || selectedCard.history.length === 0) && (
+                <p className="text-center text-muted-foreground text-sm py-4">لا يوجد سجل لهذه البطاقة</p>
+              )}
             </div>
           </div>
         </DialogContent>
