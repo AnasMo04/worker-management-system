@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,25 +6,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Plus, Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload, type UploadedDoc } from "@/components/DocumentUpload";
+import api from "../api/axiosConfig";
 
 interface Sponsor {
   id: number;
-  name: string;
-  license: string;
-  workers: number;
-  status: string;
-  phone: string;
+  Sponsor_Name: string;
+  Commercial_Reg_No: string;
+  Phone: string;
+  workersCount?: number;
 }
-
-const initialSponsors: Sponsor[] = [
-  { id: 1, name: "شركة البناء الحديث", license: "BL-2025-001", workers: 45, status: "نشط", phone: "091-1234567" },
-  { id: 2, name: "مؤسسة النقل", license: "BL-2025-002", workers: 22, status: "نشط", phone: "091-2345678" },
-  { id: 3, name: "شركة الطاقة", license: "BL-2025-003", workers: 38, status: "نشط", phone: "091-3456789" },
-  { id: 4, name: "مصنع الحديد", license: "BL-2025-004", workers: 15, status: "موقوف", phone: "091-4567890" },
-  { id: 5, name: "مكتب المحاسبة", license: "BL-2025-005", workers: 5, status: "نشط", phone: "091-5678901" },
-  { id: 6, name: "مطعم الواحة", license: "BL-2025-006", workers: 8, status: "نشط", phone: "091-6789012" },
-  { id: 7, name: "شركة الأمن", license: "BL-2025-007", workers: 30, status: "نشط", phone: "091-7890123" },
-];
 
 interface SponsorDocs {
   commercialRegister: UploadedDoc | null;
@@ -37,12 +27,30 @@ const emptyDocs: SponsorDocs = { commercialRegister: null, taxCert: null, licens
 const emptyForm = { name: "", license: "", phone: "" };
 
 export default function Sponsors() {
-  const [sponsors, setSponsors] = useState<Sponsor[]>(initialSponsors);
+  const [sponsors, setSponsors] = useState<Sponsor[]>([]);
+  const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [docs, setDocs] = useState<SponsorDocs>(emptyDocs);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
+
+  useEffect(() => {
+    fetchSponsors();
+  }, []);
+
+  const fetchSponsors = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get("/api/sponsors");
+      setSponsors(response.data);
+    } catch (error) {
+      console.error("Error fetching sponsors:", error);
+      toast({ variant: "destructive", title: "خطأ", description: "فشل في تحميل بيانات الكفلاء." });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -54,22 +62,25 @@ export default function Sponsors() {
     return Object.keys(e).length === 0;
   };
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!validate()) return;
-    const newSponsor: Sponsor = {
-      id: sponsors.length + 1,
-      name: form.name.trim(),
-      license: form.license.trim(),
-      workers: 0,
-      status: "نشط",
-      phone: form.phone.trim(),
-    };
-    setSponsors([newSponsor, ...sponsors]);
-    setAddOpen(false);
-    setForm(emptyForm);
-    setDocs(emptyDocs);
-    setErrors({});
-    toast({ title: "تمت الإضافة", description: `تم تسجيل الكفيل ${newSponsor.name} بنجاح.` });
+    try {
+      const response = await api.post("/api/sponsors", {
+        Sponsor_Name: form.name.trim(),
+        Commercial_Reg_No: form.license.trim(),
+        Phone: form.phone.trim(),
+      });
+
+      setSponsors([response.data, ...sponsors]);
+      setAddOpen(false);
+      setForm(emptyForm);
+      setDocs(emptyDocs);
+      setErrors({});
+      toast({ title: "تمت الإضافة", description: `تم تسجيل الكفيل ${response.data.Sponsor_Name} بنجاح.` });
+    } catch (error) {
+      console.error("Error adding sponsor:", error);
+      toast({ variant: "destructive", title: "خطأ", description: "فشل في تسجيل الكفيل." });
+    }
   };
 
   const handleClose = () => {
@@ -104,19 +115,25 @@ export default function Sponsors() {
               </tr>
             </thead>
             <tbody>
-              {sponsors.map((s) => (
-                <tr key={s.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
-                  <td className="p-3 font-medium">{s.name}</td>
-                  <td className="p-3 font-mono text-xs">{s.license}</td>
-                  <td className="p-3">{s.workers}</td>
-                  <td className="p-3">
-                    <span className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold ${s.status === "نشط" ? "bg-success/15 text-success border-success/20" : "bg-warning/15 text-warning border-warning/20"}`}>
-                      {s.status}
-                    </span>
-                  </td>
-                  <td className="p-3 font-mono text-xs">{s.phone}</td>
-                </tr>
-              ))}
+              {loading ? (
+                <tr><td colSpan={5} className="p-3 text-center">جاري التحميل...</td></tr>
+              ) : sponsors.length === 0 ? (
+                <tr><td colSpan={5} className="p-3 text-center">لا توجد بيانات</td></tr>
+              ) : (
+                sponsors.map((s) => (
+                  <tr key={s.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
+                    <td className="p-3 font-medium">{s.Sponsor_Name}</td>
+                    <td className="p-3 font-mono text-xs">{s.Commercial_Reg_No}</td>
+                    <td className="p-3">{s.workersCount || 0}</td>
+                    <td className="p-3">
+                      <span className={`inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold bg-success/15 text-success border-success/20`}>
+                        نشط
+                      </span>
+                    </td>
+                    <td className="p-3 font-mono text-xs">{s.Phone}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
