@@ -101,6 +101,11 @@ export default function SmartCards() {
   };
 
   const processIssuance = async (serialNumber: string) => {
+    if (!serialNumber || serialNumber.trim() === "") {
+      toast({ variant: "destructive", title: "تنبيه", description: "يرجى تمرير البطاقة على القارئ أولاً." });
+      return;
+    }
+
     try {
       // Check for duplicates
       const dupResponse = await api.get(`/api/smart-cards/check-duplicate?nfc_uid=${serialNumber}`);
@@ -128,8 +133,12 @@ export default function SmartCards() {
   };
 
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && readingValue) {
-      processIssuance(readingValue);
+    if (e.key === "Enter") {
+      if (readingValue) {
+        processIssuance(readingValue);
+      } else {
+        toast({ variant: "destructive", title: "تنبيه", description: "يرجى تمرير البطاقة على القارئ أولاً." });
+      }
     }
   };
 
@@ -332,6 +341,14 @@ export default function SmartCards() {
                 <p className="text-xs text-muted-foreground">يرجى وضع البطاقة على جهاز القراءة</p>
                 <Progress value={66} className="mt-3" />
               </div>
+              <Button
+                onClick={() => processIssuance(readingValue)}
+                variant="outline"
+                className="mt-4 gap-2"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                تأكيد الإصدار
+              </Button>
             </div>
           )}
 
