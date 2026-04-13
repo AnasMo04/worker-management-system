@@ -1,28 +1,14 @@
-import { Bell, Search, Moon, Sun, Smartphone, LogOut } from "lucide-react";
+import { Bell, Search, Moon, Sun, Smartphone } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSearch } from "@/context/SearchContext";
 
 export function AppHeader() {
   const [dark, setDark] = useState(false);
-  const [userName, setUserName] = useState("مستخدم");
   const navigate = useNavigate();
-  const { searchQuery, setSearchQuery } = useSearch();
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
-    const storedName = localStorage.getItem("user_name");
-    if (storedName) {
-      setUserName(storedName);
-    } else {
-      setUserName("مستخدم");
-    }
   }, [dark]);
-
-  const handleLogout = () => {
-    localStorage.clear();
-    navigate("/login");
-  };
 
   return (
     <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6 shrink-0">
@@ -31,8 +17,6 @@ export function AppHeader() {
         <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <input
           type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="بحث..."
           className="w-full h-10 bg-muted rounded-lg pr-10 pl-4 text-sm outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground"
         />
@@ -58,18 +42,12 @@ export function AppHeader() {
           <Smartphone className="w-4 h-4" />
         </button>
         <div className="flex items-center gap-3 mr-2 border-r border-border pr-4">
-          <div className="text-left flex flex-col items-start">
-            <p className="text-sm font-semibold">{userName}</p>
-            <button
-              onClick={handleLogout}
-              className="text-[10px] text-destructive hover:underline flex items-center gap-1 transition-all"
-            >
-              <LogOut className="w-3 h-3" />
-              تسجيل خروج
-            </button>
+          <div className="text-left">
+            <p className="text-sm font-semibold">أحمد المنصوري</p>
+            <p className="text-[11px] text-muted-foreground">مدير النظام</p>
           </div>
           <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-bold">
-            {userName.substring(0, 1)}
+            أم
           </div>
         </div>
       </div>

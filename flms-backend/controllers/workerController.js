@@ -2,11 +2,7 @@ const { Worker, Sponsor } = require('../models');
 
 exports.getAll = async (req, res) => {
   try {
-    const { includeArchived } = req.query;
-    const where = includeArchived === 'true' ? {} : { is_archived: false };
-
     const workers = await Worker.findAll({
-      where,
       include: [{ model: Sponsor, attributes: ['Sponsor_Name'] }]
     });
     res.json(workers);
@@ -41,33 +37,17 @@ exports.create = async (req, res) => {
       Full_Name,
       Nationality,
       Birth_Date,
-      Residence_Address,
+      Job_Title,
       Current_Status,
       NFC_UID,
       Primary_Card_Serial,
-      Passport_Copy,
-      Health_Cert_Copy,
-      Residency_Copy,
-      Personal_Photo_Copy,
-      Category,
-      Document_Type,
-      Health_Cert_Expiry,
-      Freelance,
-      Family_ID,
-      Relationship,
-      Gender
+      Phone,
+      Residency_Number,
+      Residency_Expiry
     } = req.body;
 
-    // Check for duplicate Document Number
-    if (Passport_Number) {
-      const existing = await Worker.findOne({ where: { Passport_Number: Passport_Number.trim() } });
-      if (existing) {
-        return res.status(400).json({ message: 'رقم الوثيقة مسجل مسبقاً في النظام' });
-      }
-    }
-
-    // Validate Sponsor_ID exists (if not freelance)
-    if (Sponsor_ID && !Freelance) {
+    // Validate Sponsor_ID exists
+    if (Sponsor_ID) {
       const sponsor = await Sponsor.findByPk(Sponsor_ID);
       if (!sponsor) {
         return res.status(400).json({ message: 'Invalid Sponsor_ID' });
@@ -75,27 +55,19 @@ exports.create = async (req, res) => {
     }
 
     const newWorker = await Worker.create({
-      Sponsor_ID: Freelance ? null : Sponsor_ID,
+      Sponsor_ID,
       Passport_Number,
       National_ID,
       Full_Name,
       Nationality,
       Birth_Date,
-      Residence_Address,
+      Job_Title,
       Current_Status,
       NFC_UID,
       Primary_Card_Serial,
-      Passport_Copy,
-      Health_Cert_Copy,
-      Residency_Copy,
-      Personal_Photo_Copy,
-      Category,
-      Document_Type,
-      Health_Cert_Expiry,
-      Freelance,
-      Family_ID,
-      Relationship,
-      Gender
+      Phone,
+      Residency_Number,
+      Residency_Expiry
     });
 
     res.status(201).json(newWorker);
@@ -115,21 +87,13 @@ exports.update = async (req, res) => {
       Full_Name,
       Nationality,
       Birth_Date,
-      Residence_Address,
+      Job_Title,
       Current_Status,
       NFC_UID,
       Primary_Card_Serial,
-      Passport_Copy,
-      Health_Cert_Copy,
-      Residency_Copy,
-      Personal_Photo_Copy,
-      Category,
-      Document_Type,
-      Health_Cert_Expiry,
-      Freelance,
-      Family_ID,
-      Relationship,
-      Gender
+      Phone,
+      Residency_Number,
+      Residency_Expiry
     } = req.body;
 
     const worker = await Worker.findByPk(id);
@@ -137,36 +101,20 @@ exports.update = async (req, res) => {
       return res.status(404).json({ message: 'Worker not found' });
     }
 
-    // Check for duplicate Document Number (excluding current)
-    if (Passport_Number && Passport_Number.trim() !== worker.Passport_Number) {
-      const existing = await Worker.findOne({ where: { Passport_Number: Passport_Number.trim() } });
-      if (existing) {
-        return res.status(400).json({ message: 'رقم الوثيقة مسجل مسبقاً في النظام' });
-      }
-    }
-
     await worker.update({
-      Sponsor_ID: Freelance ? null : Sponsor_ID,
+      Sponsor_ID,
       Passport_Number,
       National_ID,
       Full_Name,
       Nationality,
       Birth_Date,
-      Residence_Address,
+      Job_Title,
       Current_Status,
       NFC_UID,
       Primary_Card_Serial,
-      Passport_Copy,
-      Health_Cert_Copy,
-      Residency_Copy,
-      Personal_Photo_Copy,
-      Category,
-      Document_Type,
-      Health_Cert_Expiry,
-      Freelance,
-      Family_ID,
-      Relationship,
-      Gender
+      Phone,
+      Residency_Number,
+      Residency_Expiry
     });
 
     res.json(worker);
@@ -184,8 +132,8 @@ exports.delete = async (req, res) => {
       return res.status(404).json({ message: 'Worker not found' });
     }
 
-    await worker.update({ is_archived: true });
-    res.json({ message: 'تمت أرشفت السجل بنجاح' });
+    await worker.destroy();
+    res.json({ message: 'Worker deleted successfully' });
   } catch (error) {
     console.error('Delete Worker Error:', error);
     res.status(500).json({ message: 'Error deleting worker' });
