@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 // أضفنا Navigate هنا باش نقدروا نحولوا المستخدم لصفحة الدخول
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"; 
 import { AppLayout } from "@/components/AppLayout";
+import { SearchProvider } from "./context/SearchContext";
 
 // استدعاء الصفحات
 import Dashboard from "./pages/Dashboard";
@@ -43,39 +44,43 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
-        <Routes>
-          {/* مسارات عامة (لا تحتاج لتسجيل دخول) */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/security-app" element={<SecurityApp />} />
-          
-          {/* مسارات محمية (كل المنظومة الداخلية) */}
-          <Route
-            path="*"
-            element={
-              <ProtectedRoute>
-                <AppLayout>
-                  <Routes>
-                    <Route path="/" element={<Dashboard />} />
-                    <Route path="/sponsors" element={<Sponsors />} />
-                    <Route path="/workers" element={<Workers />} />
-                    <Route path="/smart-cards" element={<SmartCards />} />
-                    <Route path="/field-logs" element={<FieldLogs />} />
-                    <Route path="/legal-cases" element={<LegalCases />} />
-                    <Route path="/financials" element={<Financials />} />
-                    <Route path="/documents" element={<Documents />} />
-                    <Route path="/devices" element={<Devices />} />
-                    <Route path="/users" element={<UsersPage />} />
-                    <Route path="/audit-trail" element={<AuditTrail />} />
-                    <Route path="/settings" element={<SettingsPage />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </AppLayout>
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </BrowserRouter>
+      <SearchProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* مسارات عامة (لا تحتاج لتسجيل دخول) */}
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/security-app" element={<SecurityApp />} />
+
+            {/* مسارات محمية (كل المنظومة الداخلية) */}
+            <Route
+              path="/*"
+              element={
+                <ProtectedRoute>
+                  <AppLayout>
+                    <Routes>
+                      {/* Redirect root to dashboard */}
+                      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                      <Route path="/dashboard" element={<Dashboard />} />
+                      <Route path="/sponsors" element={<Sponsors />} />
+                      <Route path="/workers" element={<Workers />} />
+                      <Route path="/smart-cards" element={<SmartCards />} />
+                      <Route path="/field-logs" element={<FieldLogs />} />
+                      <Route path="/legal-cases" element={<LegalCases />} />
+                      <Route path="/financials" element={<Financials />} />
+                      <Route path="/documents" element={<Documents />} />
+                      <Route path="/devices" element={<Devices />} />
+                      <Route path="/users" element={<UsersPage />} />
+                      <Route path="/audit-trail" element={<AuditTrail />} />
+                      <Route path="/settings" element={<SettingsPage />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </AppLayout>
+                </ProtectedRoute>
+              }
+            />
+          </Routes>
+        </BrowserRouter>
+      </SearchProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
