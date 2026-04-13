@@ -10,8 +10,14 @@ exports.init = (io) => {
 
   const pythonScript = path.join(__dirname, '../nfc_reader.py');
 
-  // Use 'python3' to execute the script
-  const nfcProcess = spawn('python3', [pythonScript]);
+  // Use absolute path for Windows environment as requested
+  const pythonExe = 'C:\\Python314\\python.exe';
+  const nfcProcess = spawn(pythonExe, [pythonScript]);
+
+  nfcProcess.on('error', (err) => {
+    console.error(`[NFC Python Bridge] CRITICAL ERROR: Failed to start process at ${pythonExe}.`, err.message);
+    console.warn('NFC hardware support will be disabled. Ensure Python is installed at the specified path.');
+  });
 
   nfcProcess.stdout.on('data', (data) => {
     const output = data.toString().trim();
