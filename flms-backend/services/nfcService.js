@@ -1,40 +1,39 @@
-// Note: nfc-pcsc requires native build which may fail in some environments
-// This service provides the logic to listen for card taps and emit UIDs via Socket.io
+const { spawn } = require('child_process');
+const path = require('path');
 
-let nfc;
-try {
-  const { NFC } = require('nfc-pcsc');
-  nfc = new NFC();
-} catch (err) {
-  console.warn('nfc-pcsc not installed or native build failed. NFC hardware support disabled.');
-}
-
+/**
+ * NFC Service: Bridges the ACS hardware reader to the UI via a Python script.
+ * We use a Python bridge (pyscard) because it avoids native build issues with Node.js nfc-pcsc.
+ */
 exports.init = (io) => {
-  if (!nfc) return;
+  console.log('NFC Service: Initializing Python bridge...');
 
-  console.log('NFC Service initialized, listening for readers...');
+  const pythonScript = path.join(__dirname, '../nfc_reader.py');
 
-  nfc.on('reader', (reader) => {
-    console.log(`${reader.reader.name} device attached`);
+  // Use 'python3' to execute the script
+  const nfcProcess = spawn('python3', [pythonScript]);
 
-    reader.on('card', (card) => {
-      // card.uid is the serial number
-      console.log(`Card detected: UID ${card.uid}`);
+  nfcProcess.stdout.on('data', (data) => {
+    const output = data.toString().trim();
+    console.log(`[NFC Python Bridge]: ${output}`);
 
-      // Push UID to all connected clients (specifically the SmartCards page)
-      io.emit('nfc:card-tapped', { uid: card.uid });
-    });
-
-    reader.on('error', (err) => {
-      console.error(`${reader.reader.name} an error occurred`, err);
-    });
-
-    reader.on('end', () => {
-      console.log(`${reader.reader.name} device removed`);
-    });
+    // Look for the UID signature: "UID:ABCDEF1234"
+    if (output.includes('UID:')) {
+      const uid = output.split('UID:')[1].trim();
+      console.log(`[NFC] Pushing UID to clients: ${uid}`);
+      io.emit('nfc:card-tapped', { uid });
+    }
   });
 
-  nfc.on('error', (err) => {
-    console.error('NFC error occurred', err);
+  nfcProcess.stderr.on('data', (data) => {
+    console.error(`[NFC Python Error]: ${data}`);
+  });
+
+  nfcProcess.on('close', (code) => {
+    console.log(`[NFC Python Bridge] Process exited with code ${code}`);
+  });
+
+  process.on('exit', () => {
+    nfcProcess.kill();
   });
 };
