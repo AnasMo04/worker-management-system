@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { io } from "socket.io-client";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,11 +47,28 @@ export default function SmartCards() {
   const [nfcUid, setNfcUid] = useState("");
   const [readingValue, setReadingValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const socketRef = useRef<any>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchCards();
     fetchWorkers();
+
+    // Initialize Socket.io
+    const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    socketRef.current = io(backendUrl);
+
+    socketRef.current.on('nfc:card-tapped', (data: { uid: string }) => {
+      console.log('Received UID from backend:', data.uid);
+      setReadingValue(data.uid);
+      // We can optionally trigger issuance automatically here if issueStep === "reading"
+    });
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -58,6 +76,13 @@ export default function SmartCards() {
       inputRef.current.focus();
     }
   }, [issueStep]);
+
+  useEffect(() => {
+    // If a UID was received from the socket and we are in reading mode, process it
+    if (issueStep === "reading" && readingValue) {
+      processIssuance(readingValue);
+    }
+  }, [readingValue, issueStep]);
 
   const fetchCards = async () => {
     try {
