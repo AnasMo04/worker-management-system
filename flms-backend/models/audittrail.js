@@ -10,7 +10,7 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      // define association here
+      AuditTrail.belongsTo(models.User, { foreignKey: 'Actor_ID' });
     }
   }
   AuditTrail.init({

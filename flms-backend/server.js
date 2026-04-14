@@ -15,11 +15,13 @@ const authRoutes = require('./routes/authRoutes');
 const workerRoutes = require('./routes/workerRoutes');
 const sponsorRoutes = require('./routes/sponsorRoutes');
 const smartCardRoutes = require('./routes/smartCardRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
 
 app.use('/api/auth', authRoutes); // هكي الرابط حيكون /api/auth/login زي ما تبي الواجهة
 app.use('/api/workers', workerRoutes);
 app.use('/api/sponsors', sponsorRoutes);
 app.use('/api/smart-cards', smartCardRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // مسار فحص عمل السيرفر
 app.get('/', (req, res) => {

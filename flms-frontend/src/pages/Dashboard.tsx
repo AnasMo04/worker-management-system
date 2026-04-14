@@ -1,34 +1,56 @@
+import { useState, useEffect } from "react";
 import { KPICard } from "@/components/KPICard";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Users, CreditCard, Scale, Wallet } from "lucide-react";
 import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
 } from "recharts";
+import api from "../api/axiosConfig";
+import { useToast } from "@/hooks/use-toast";
 
-const statusData = [
-  { name: "نشط", value: 12450, color: "hsl(152, 60%, 40%)" },
-  { name: "موقوف", value: 2340, color: "hsl(38, 92%, 50%)" },
-  { name: "منتهي", value: 890, color: "hsl(215, 15%, 50%)" },
-  { name: "هارب", value: 320, color: "hsl(0, 72%, 51%)" },
-];
-
-const recentInspections = [
-  { id: 1, worker: "محمد أحمد علي", officer: "خالد السعيدي", device: "NFC-001", time: "2026-02-23 09:15", result: "active" as const },
-  { id: 2, worker: "عبدالله كمارا", officer: "سالم العبيدي", device: "NFC-003", time: "2026-02-23 08:45", result: "suspended" as const },
-  { id: 3, worker: "راجيش كومار", officer: "خالد السعيدي", device: "NFC-001", time: "2026-02-23 08:30", result: "active" as const },
-  { id: 4, worker: "فيكتور أونيكا", officer: "أحمد الفقيه", device: "NFC-005", time: "2026-02-22 16:20", result: "expired" as const },
-  { id: 5, worker: "جون مارك", officer: "سالم العبيدي", device: "NFC-003", time: "2026-02-22 15:10", result: "runaway" as const },
-];
-
-const recentAudit = [
-  { id: 1, user: "أحمد المنصوري", action: "تحديث بيانات عامل", time: "منذ 5 دقائق" },
-  { id: 2, user: "خالد السعيدي", action: "فحص ميداني جديد", time: "منذ 12 دقيقة" },
-  { id: 3, user: "سالم العبيدي", action: "إصدار بطاقة ذكية", time: "منذ 30 دقيقة" },
-  { id: 4, user: "أحمد الفقيه", action: "فتح قضية قانونية", time: "منذ ساعة" },
-  { id: 5, user: "مريم الشريف", action: "تسجيل دفعة مالية", time: "منذ ساعتين" },
-];
+const statusColors: Record<string, string> = {
+  "active": "hsl(152, 60%, 40%)",
+  "suspended": "hsl(38, 92%, 50%)",
+  "expired": "hsl(215, 15%, 50%)",
+  "runaway": "hsl(0, 72%, 51%)",
+  "نشط": "hsl(152, 60%, 40%)",
+  "موقوف": "hsl(38, 92%, 50%)",
+  "منتهي": "hsl(215, 15%, 50%)",
+  "هارب": "hsl(0, 72%, 51%)",
+};
 
 export default function Dashboard() {
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get("/api/dashboard/summary");
+      setData(response.data);
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+      toast({ variant: "destructive", title: "خطأ", description: "فشل في تحميل بيانات لوحة التحكم." });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="p-8 text-center text-muted-foreground">جاري تحميل لوحة التحكم...</div>;
+  }
+
+  const statusData = data?.statusBreakdown?.map((item: any) => ({
+    name: item.Current_Status,
+    value: parseInt(item.count),
+    color: statusColors[item.Current_Status] || "hsl(215, 15%, 50%)"
+  })) || [];
+
   return (
     <div className="space-y-6">
       <div>
@@ -38,10 +60,10 @@ export default function Dashboard() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard title="إجمالي العمال" value={16000} icon={<Users />} gradient="kpi-gradient-1" change="+125 هذا الشهر" />
-        <KPICard title="البطاقات النشطة" value={12450} icon={<CreditCard />} gradient="kpi-gradient-2" change="78% من الإجمالي" />
-        <KPICard title="القضايا المفتوحة" value={48} icon={<Scale />} gradient="kpi-gradient-3" change="+3 هذا الأسبوع" />
-        <KPICard title="مدفوعات معلقة" value="54,200" icon={<Wallet />} gradient="kpi-gradient-4" change="د.ل" />
+        <KPICard title="إجمالي العمال" value={data?.counts?.totalWorkers || 0} icon={<Users />} gradient="kpi-gradient-1" change="+0 هذا الشهر" />
+        <KPICard title="البطاقات النشطة" value={data?.counts?.activeCards || 0} icon={<CreditCard />} gradient="kpi-gradient-2" change={`${Math.round((data?.counts?.activeCards / data?.counts?.totalWorkers) * 100) || 0}% من الإجمالي`} />
+        <KPICard title="القضايا المفتوحة" value={data?.counts?.openLegalCases || 0} icon={<Scale />} gradient="kpi-gradient-3" change="+0 هذا الأسبوع" />
+        <KPICard title="مدفوعات معلقة" value={data?.counts?.pendingPayments?.toLocaleString() || 0} icon={<Wallet />} gradient="kpi-gradient-4" change="د.ل" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -62,15 +84,19 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {recentInspections.map((item) => (
-                  <tr key={item.id} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
-                    <td className="p-3 font-medium">{item.worker}</td>
-                    <td className="p-3">{item.officer}</td>
-                    <td className="p-3 font-mono text-xs">{item.device}</td>
-                    <td className="p-3 text-muted-foreground text-xs">{item.time}</td>
-                    <td className="p-3"><StatusBadge variant={item.result} /></td>
-                  </tr>
-                ))}
+                {data?.recentInspections?.length === 0 ? (
+                  <tr><td colSpan={5} className="p-4 text-center text-muted-foreground">لا توجد عمليات تفتيش حديثة</td></tr>
+                ) : (
+                  data?.recentInspections?.map((item: any) => (
+                    <tr key={item.id} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
+                      <td className="p-3 font-medium">{item.Worker?.Full_Name || "—"}</td>
+                      <td className="p-3">{item.User?.Name || "—"}</td>
+                      <td className="p-3 font-mono text-xs">{item.Device_ID || "—"}</td>
+                      <td className="p-3 text-muted-foreground text-xs">{new Date(item.Scan_Time).toLocaleString("ar-LY")}</td>
+                      <td className="p-3"><StatusBadge variant={item.Result} /></td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -93,7 +119,7 @@ export default function Dashboard() {
                   paddingAngle={4}
                   dataKey="value"
                 >
-                  {statusData.map((entry, index) => (
+                  {statusData.map((entry: any, index: number) => (
                     <Cell key={index} fill={entry.color} />
                   ))}
                 </Pie>
@@ -111,17 +137,21 @@ export default function Dashboard() {
           <h3 className="font-semibold">آخر النشاطات</h3>
         </div>
         <div className="p-4 space-y-3">
-          {recentAudit.map((item) => (
-            <div key={item.id} className="flex items-center gap-3">
-              <div className="w-2 h-2 rounded-full bg-primary shrink-0" />
-              <div className="flex-1">
-                <span className="font-medium text-sm">{item.user}</span>
-                <span className="text-muted-foreground text-sm mx-2">—</span>
-                <span className="text-sm">{item.action}</span>
+          {data?.recentAuditLogs?.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center">لا توجد نشاطات حديثة</p>
+          ) : (
+            data?.recentAuditLogs?.map((item: any) => (
+              <div key={item.id} className="flex items-center gap-3">
+                <div className="w-2 h-2 rounded-full bg-primary shrink-0" />
+                <div className="flex-1">
+                  <span className="font-medium text-sm">{item.User?.Name || "نظام"}</span>
+                  <span className="text-muted-foreground text-sm mx-2">—</span>
+                  <span className="text-sm">{item.Action_Type}</span>
+                </div>
+                <span className="text-xs text-muted-foreground">{new Date(item.createdAt).toLocaleTimeString("ar-LY")}</span>
               </div>
-              <span className="text-xs text-muted-foreground">{item.time}</span>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       </div>
     </div>
