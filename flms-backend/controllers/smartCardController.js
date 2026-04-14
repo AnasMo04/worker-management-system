@@ -27,6 +27,10 @@ exports.issue = async (req, res) => {
   try {
     const { nfc_uid, encryption_version } = req.body;
 
+    if (!nfc_uid || nfc_uid.trim() === '') {
+      return res.status(400).json({ message: 'NFC UID is required' });
+    }
+
     // Double check duplicate in backend
     const existingCard = await SmartCard.findOne({ where: { NFC_Chip_ID: nfc_uid } });
     if (existingCard) {

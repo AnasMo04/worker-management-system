@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { io } from "socket.io-client";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,13 +45,45 @@ export default function SmartCards() {
   const [cancelReason, setCancelReason] = useState("");
   const [issueStep, setIssueStep] = useState<"prompt" | "reading" | "done">("prompt");
   const [nfcUid, setNfcUid] = useState("");
+  const [readingValue, setReadingValue] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const socketRef = useRef<any>(null);
   const { toast } = useToast();
   const nfcInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchCards();
     fetchWorkers();
+
+    // Initialize Socket.io
+    const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    socketRef.current = io(backendUrl);
+
+    socketRef.current.on('nfc:card-tapped', (data: { uid: string }) => {
+      console.log('Received UID from backend:', data.uid);
+      setReadingValue(data.uid);
+      // We can optionally trigger issuance automatically here if issueStep === "reading"
+    });
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
   }, []);
+
+  useEffect(() => {
+    if (issueStep === "reading" && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [issueStep]);
+
+  useEffect(() => {
+    // If a UID was received from the socket and we are in reading mode, process it
+    if (issueStep === "reading" && readingValue) {
+      processIssuance(readingValue);
+    }
+  }, [readingValue, issueStep]);
 
   const fetchCards = async () => {
     try {
@@ -90,43 +123,48 @@ export default function SmartCards() {
 
   const handleIssueCard = () => {
     setIssueStep("reading");
-    // Hidden input will be focused by useEffect
+    setReadingValue("");
   };
 
-  useEffect(() => {
-    if (issueStep === "reading" && nfcInputRef.current) {
-      nfcInputRef.current.focus();
+  const processIssuance = async (serialNumber: string) => {
+    if (!serialNumber || serialNumber.trim() === "") {
+      toast({ variant: "destructive", title: "تنبيه", description: "يرجى تمرير البطاقة على القارئ أولاً." });
+      return;
     }
   }, [issueStep]);
 
-  const handleNfcInput = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+    try {
+      // Check for duplicates
+      const dupResponse = await api.get(`/api/smart-cards/check-duplicate?nfc_uid=${serialNumber}`);
+      if (dupResponse.data.isDuplicate) {
+        toast({ variant: "destructive", title: "خطأ", description: "هذه البطاقة مسجلة مسبقاً في النظام." });
+        setIssueStep("prompt");
+        return;
+      }
+
+      // Issue card
+      const response = await api.post("/api/smart-cards/issue", {
+        nfc_uid: serialNumber,
+        encryption_version: "v3.2"
+      });
+
+      setNfcUid(serialNumber);
+      setCards([response.data, ...cards]);
+      setIssueStep("done");
+      toast({ title: "نجاح", description: "تم إصدار البطاقة بنجاح." });
+    } catch (err) {
+      console.error("API Error during issuance:", err);
+      toast({ variant: "destructive", title: "خطأ", description: "فشل في تسجيل البطاقة في النظام." });
+      setIssueStep("prompt");
+    }
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
-      const serialNumber = e.currentTarget.value;
-      if (!serialNumber) return;
-
-      try {
-        // Check for duplicates
-        const dupResponse = await api.get(`/api/smart-cards/check-duplicate?nfc_uid=${serialNumber}`);
-        if (dupResponse.data.isDuplicate) {
-          toast({ variant: "destructive", title: "خطأ", description: "هذه البطاقة مسجلة مسبقاً في النظام." });
-          e.currentTarget.value = "";
-          return;
-        }
-
-        // Issue card
-        const response = await api.post("/api/smart-cards/issue", {
-          nfc_uid: serialNumber,
-          encryption_version: "v3.2"
-        });
-
-        setNfcUid(serialNumber);
-        setCards([response.data, ...cards]);
-        setIssueStep("done");
-        toast({ title: "نجاح", description: "تم إصدار البطاقة بنجاح." });
-      } catch (err) {
-        console.error("API Error during issuance:", err);
-        toast({ variant: "destructive", title: "خطأ", description: "فشل في تسجيل البطاقة في النظام." });
-        e.currentTarget.value = "";
+      if (readingValue) {
+        processIssuance(readingValue);
+      } else {
+        toast({ variant: "destructive", title: "تنبيه", description: "يرجى تمرير البطاقة على القارئ أولاً." });
       }
     }
   };
@@ -281,7 +319,7 @@ export default function SmartCards() {
       </div>
 
       {/* Issue New Card Dialog */}
-      <Dialog open={issueOpen} onOpenChange={(o) => { if (!o && issueStep !== "reading") { setIssueOpen(false); setIssueStep("prompt"); } }}>
+      <Dialog open={issueOpen} onOpenChange={(o) => { if (!o) { setIssueOpen(false); setIssueStep("prompt"); setReadingValue(""); } else { setIssueOpen(true); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>إصدار بطاقة NFC جديدة</DialogTitle>
@@ -313,10 +351,13 @@ export default function SmartCards() {
           {issueStep === "reading" && (
             <div className="flex flex-col items-center gap-5 py-8">
               <input
-                ref={nfcInputRef}
+                ref={inputRef}
                 type="text"
-                className="sr-only"
-                onKeyDown={handleNfcInput}
+                value={readingValue}
+                onChange={(e) => setReadingValue(e.target.value)}
+                onKeyDown={handleInputKeyDown}
+                onBlur={() => inputRef.current?.focus()}
+                className="absolute opacity-0 pointer-events-none"
                 autoFocus
               />
               <div className="h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center">
@@ -324,9 +365,17 @@ export default function SmartCards() {
               </div>
               <div className="text-center space-y-2 w-full">
                 <p className="font-semibold">جارٍ قراءة بيانات البطاقة...</p>
-                <p className="text-xs text-muted-foreground">يرجى عدم إزالة البطاقة من جهاز القراءة</p>
+                <p className="text-xs text-muted-foreground">يرجى وضع البطاقة على جهاز القراءة</p>
                 <Progress value={66} className="mt-3" />
               </div>
+              <Button
+                onClick={() => processIssuance(readingValue)}
+                variant="outline"
+                className="mt-4 gap-2"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                تأكيد الإصدار
+              </Button>
             </div>
           )}
 
