@@ -49,6 +49,7 @@ export default function SmartCards() {
   const inputRef = useRef<HTMLInputElement>(null);
   const socketRef = useRef<any>(null);
   const { toast } = useToast();
+  const nfcInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchCards();
@@ -130,6 +131,7 @@ export default function SmartCards() {
       toast({ variant: "destructive", title: "تنبيه", description: "يرجى تمرير البطاقة على القارئ أولاً." });
       return;
     }
+  }, [issueStep]);
 
     try {
       // Check for duplicates
