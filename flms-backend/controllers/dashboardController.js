@@ -16,7 +16,7 @@ exports.getSummary = async (req, res) => {
     // Sum of amounts for pending financials
     const pendingPaymentsResult = await Financial.findAll({
       attributes: [[sequelize.fn('SUM', sequelize.col('Amount')), 'total']],
-      where: { Status: 'pending' }
+      where: { Status: ['Pending', 'pending'] }
     });
     const pendingPayments = pendingPaymentsResult[0].dataValues.total || 0;
 
