@@ -7,6 +7,7 @@ export interface UploadedDoc {
   type: string;
   url: string;
   label: string;
+  file?: File;
 }
 
 interface DocumentUploadProps {
@@ -25,7 +26,7 @@ export function DocumentUpload({ label, required, accept = "image/*,.pdf", value
     const file = e.target.files?.[0];
     if (!file) return;
     const url = URL.createObjectURL(file);
-    onChange({ name: file.name, type: file.type, url, label });
+    onChange({ name: file.name, type: file.type, url, label, file });
   };
 
   const isImage = value?.type?.startsWith("image/");
