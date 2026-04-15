@@ -1,4 +1,33 @@
-const { Worker, Sponsor } = require('../models');
+const { Worker, Sponsor, DocumentsStore, sequelize } = require('../models');
+
+async function syncDocuments(worker, transaction) {
+  const docFields = [
+    { field: 'Passport_Copy', type: 'Passport' },
+    { field: 'Health_Cert_Copy', type: 'Health Certificate' },
+    { field: 'Residency_Copy', type: 'Residency' },
+    { field: 'Personal_Photo_Copy', type: 'Personal Photo' }
+  ];
+
+  for (const doc of docFields) {
+    if (worker[doc.field]) {
+      const [existing, created] = await DocumentsStore.findOrCreate({
+        where: {
+          Worker_ID: worker.id,
+          Doc_Type: doc.type
+        },
+        defaults: {
+          File_Path: worker[doc.field],
+          Doc_Number: worker.Passport_Number
+        },
+        transaction
+      });
+
+      if (!created && existing.File_Path !== worker[doc.field]) {
+        await existing.update({ File_Path: worker[doc.field] }, { transaction });
+      }
+    }
+  }
+}
 
 exports.getAll = async (req, res) => {
   try {
@@ -33,6 +62,7 @@ exports.getById = async (req, res) => {
 };
 
 exports.create = async (req, res) => {
+  const t = await sequelize.transaction();
   try {
     const {
       Sponsor_ID,
@@ -96,16 +126,21 @@ exports.create = async (req, res) => {
       Family_ID,
       Relationship,
       Gender
-    });
+    }, { transaction: t });
+
+    await syncDocuments(newWorker, t);
+    await t.commit();
 
     res.status(201).json(newWorker);
   } catch (error) {
+    await t.rollback();
     console.error('Create Worker Error:', error);
     res.status(500).json({ message: 'Error creating worker' });
   }
 };
 
 exports.update = async (req, res) => {
+  const t = await sequelize.transaction();
   try {
     const { id } = req.params;
     const {
@@ -167,10 +202,14 @@ exports.update = async (req, res) => {
       Family_ID,
       Relationship,
       Gender
-    });
+    }, { transaction: t });
+
+    await syncDocuments(worker, t);
+    await t.commit();
 
     res.json(worker);
   } catch (error) {
+    await t.rollback();
     console.error('Update Worker Error:', error);
     res.status(500).json({ message: 'Error updating worker' });
   }
