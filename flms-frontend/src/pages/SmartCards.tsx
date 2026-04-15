@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { CreditCard, Plus, Search, Ban, Link2, History, Shield, AlertTriangle, Wifi, CheckCircle2, Loader2 } from "lucide-react";
+import { io } from "socket.io-client";
 import api from "../api/axiosConfig";
 import { useToast } from "@/hooks/use-toast";
 
@@ -46,11 +47,29 @@ export default function SmartCards() {
   const [nfcUid, setNfcUid] = useState("");
   const { toast } = useToast();
   const nfcInputRef = useRef<HTMLInputElement>(null);
+  const socketRef = useRef<any>(null);
 
   useEffect(() => {
     fetchCards();
     fetchWorkers();
-  }, []);
+
+    // Initialize Socket.io for NFC hardware support (Dual-mode: WebSocket + Keyboard Fallback)
+    const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    socketRef.current = io(backendUrl);
+
+    socketRef.current.on('nfc:card-tapped', (data: { uid: string }) => {
+      console.log('NFC Card tapped (SmartCards):', data.uid);
+      if (issueOpen && issueStep === "reading") {
+        handleNfcDetection(data.uid);
+      }
+    });
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
+  }, [issueOpen, issueStep]);
 
   const fetchCards = async () => {
     try {
@@ -90,7 +109,6 @@ export default function SmartCards() {
 
   const handleIssueCard = () => {
     setIssueStep("reading");
-    // Hidden input will be focused by useEffect
   };
 
   useEffect(() => {
@@ -99,35 +117,38 @@ export default function SmartCards() {
     }
   }, [issueStep]);
 
-  const handleNfcInput = async (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      const serialNumber = e.currentTarget.value;
-      if (!serialNumber) return;
+  const handleNfcDetection = async (serialNumber: string) => {
+    if (!serialNumber) return;
 
-      try {
-        // Check for duplicates
-        const dupResponse = await api.get(`/api/smart-cards/check-duplicate?nfc_uid=${serialNumber}`);
-        if (dupResponse.data.isDuplicate) {
-          toast({ variant: "destructive", title: "خطأ", description: "هذه البطاقة مسجلة مسبقاً في النظام." });
-          e.currentTarget.value = "";
-          return;
-        }
-
-        // Issue card
-        const response = await api.post("/api/smart-cards/issue", {
-          nfc_uid: serialNumber,
-          encryption_version: "v3.2"
-        });
-
-        setNfcUid(serialNumber);
-        setCards([response.data, ...cards]);
-        setIssueStep("done");
-        toast({ title: "نجاح", description: "تم إصدار البطاقة بنجاح." });
-      } catch (err) {
-        console.error("API Error during issuance:", err);
-        toast({ variant: "destructive", title: "خطأ", description: "فشل في تسجيل البطاقة في النظام." });
-        e.currentTarget.value = "";
+    try {
+      // Check for duplicates
+      const dupResponse = await api.get(`/api/smart-cards/check-duplicate?nfc_uid=${serialNumber}`);
+      if (dupResponse.data.isDuplicate) {
+        toast({ variant: "destructive", title: "خطأ", description: "هذه البطاقة مسجلة مسبقاً في النظام." });
+        if (nfcInputRef.current) nfcInputRef.current.value = "";
+        return;
       }
+
+      // Issue card
+      const response = await api.post("/api/smart-cards/issue", {
+        nfc_uid: serialNumber,
+        encryption_version: "v3.2"
+      });
+
+      setNfcUid(serialNumber);
+      setCards([response.data, ...cards]);
+      setIssueStep("done");
+      toast({ title: "نجاح", description: "تم إصدار البطاقة بنجاح." });
+    } catch (err) {
+      console.error("API Error during issuance:", err);
+      toast({ variant: "destructive", title: "خطأ", description: "فشل في تسجيل البطاقة في النظام." });
+      if (nfcInputRef.current) nfcInputRef.current.value = "";
+    }
+  };
+
+  const handleNfcInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleNfcDetection(e.currentTarget.value);
     }
   };
 

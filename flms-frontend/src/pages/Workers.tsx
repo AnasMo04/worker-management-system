@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,9 +6,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Search, Filter, Edit, Plus, UserPlus, Check, ChevronsUpDown, FileCheck, Users, Trash2 } from "lucide-react";
+import { Search, Filter, Edit, Plus, UserPlus, Check, ChevronsUpDown, FileCheck, Users, Trash2, Wifi } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload, type UploadedDoc } from "@/components/DocumentUpload";
+import { io } from "socket.io-client";
 import api from "../api/axiosConfig";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -66,7 +67,7 @@ const emptyForm = {
   Full_Name: "", Passport_Number: "", Nationality: "", Residence_Address: "", Sponsor_ID: "",
   National_ID: "", Birth_Date: "", Category: "worker", Document_Type: "جواز سفر",
   Health_Cert_Expiry: "", Freelance: false, Family_ID: "", Relationship: "",
-  Gender: "ذكر", Current_Status: "نشط"
+  Gender: "ذكر", Current_Status: "نشط", NFC_UID: ""
 };
 
 interface IndividualDocs {
@@ -93,10 +94,32 @@ export default function Workers() {
   const [isSaving, setIsSaving] = useState(false);
   const [sponsorOpen, setSponsorOpen] = useState(false);
   const { toast } = useToast();
+  const socketRef = useRef<any>(null);
 
   useEffect(() => {
     fetchData();
-  }, [showArchived]);
+
+    // Initialize Socket.io for NFC hardware support
+    const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    socketRef.current = io(backendUrl);
+
+    socketRef.current.on('nfc:card-tapped', (data: { uid: string }) => {
+      console.log('NFC Card tapped (Workers):', data.uid);
+      if (addOpen) {
+        setForm(prev => ({ ...prev, NFC_UID: data.uid }));
+        toast({
+          title: "تم اكتشاف بطاقة",
+          description: `الرقم التسلسلي: ${data.uid}`,
+        });
+      }
+    });
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
+  }, [showArchived, addOpen]);
 
   const fetchData = async () => {
     try {
@@ -172,8 +195,8 @@ export default function Workers() {
       Nationality: ind.Nationality,
       Residence_Address: ind.Residence_Address || "",
       Sponsor_ID: ind.Sponsor_ID?.toString() || "",
-      National_ID: ind.National_ID || "",
-      Birth_Date: ind.Birth_Date || "",
+      National_ID: "", // Standardized field mapping
+      Birth_Date: "",
       Category: ind.Category || "worker",
       Document_Type: ind.Document_Type || "جواز سفر",
       Health_Cert_Expiry: ind.Health_Cert_Expiry || "",
@@ -182,6 +205,7 @@ export default function Workers() {
       Relationship: ind.Relationship || "",
       Gender: ind.Gender || "ذكر",
       Current_Status: ind.Current_Status || "نشط",
+      NFC_UID: ind.NFC_UID || "",
     });
     setDocs({
       passportPhoto: ind.Passport_Copy ? { name: "مستند مرفق", url: ind.Passport_Copy, type: "application/pdf", label: "صورة الوثيقة" } : null,
@@ -367,6 +391,22 @@ export default function Workers() {
                       <SelectItem value="أنثى">أنثى</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="flex items-center gap-2">
+                    <Wifi className="w-3.5 h-3.5 text-primary" />
+                    رقم البطاقة الذكية (NFC UID)
+                  </Label>
+                  <Input
+                    value={form.NFC_UID}
+                    onChange={(e) => setForm({ ...form, NFC_UID: e.target.value })}
+                    placeholder="مرر البطاقة على القارئ..."
+                    className="font-mono bg-muted/30"
+                  />
+                  <p className="text-[10px] text-muted-foreground italic">سيتم ملء هذا الحقل تلقائياً عند تمرير بطاقة NFC مفعلة.</p>
                 </div>
               </div>
 

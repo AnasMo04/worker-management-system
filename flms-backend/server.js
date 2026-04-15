@@ -1,9 +1,12 @@
 const express = require('express');
 const cors = require('cors');
+const http = require('http');
 require('dotenv').config();
 const db = require('./models');
+const { initNFC } = require('./services/nfcService');
 
 const app = express();
+const server = http.createServer(app);
 
 app.use(cors());
 app.use(express.json());
@@ -21,8 +24,11 @@ app.use('/api/smart-cards', smartCardRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 
 app.get('/', (req, res) => {
-    res.send('Welcome! FLMS System Server is running successfully with Sequelize.');
+    res.send('Welcome! FLMS System Server is running successfully with Sequelize and NFC Support.');
 });
+
+// Initialize NFC Service with Socket.io
+initNFC(server);
 
 const PORT = process.env.PORT || 3000;
 
@@ -32,7 +38,7 @@ async function startServer() {
     await db.sequelize.sync({ alter: true });
     console.log(' Database synchronized successfully.');
 
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
       console.log(` Server is running successfully on: http://localhost:${PORT}`);
     });
   } catch (error) {
