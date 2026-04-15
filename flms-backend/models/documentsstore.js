@@ -10,11 +10,13 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      // define association here
+      DocumentsStore.belongsTo(models.Worker, { foreignKey: 'Worker_ID' });
+      DocumentsStore.belongsTo(models.Sponsor, { foreignKey: 'Sponsor_ID' });
     }
   }
   DocumentsStore.init({
     Worker_ID: DataTypes.INTEGER,
+    Sponsor_ID: DataTypes.INTEGER,
     Doc_Type: DataTypes.STRING,
     Doc_Number: DataTypes.STRING,
     Issue_Date: DataTypes.DATEONLY,

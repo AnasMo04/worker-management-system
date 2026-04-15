@@ -1,4 +1,35 @@
-const { Sponsor, Worker, Sequelize } = require('../models');
+const { Sponsor, Worker, DocumentsStore, Sequelize, sequelize } = require('../models');
+
+async function syncSponsorDocuments(sponsor, transaction) {
+  const docFields = [
+    { field: 'Commercial_Reg_Copy', type: 'Commercial Registration' },
+    { field: 'Tax_Cert_Copy', type: 'Tax Certificate' },
+    { field: 'License_Copy', type: 'License' },
+    { field: 'Auth_Letter_Copy', type: 'Authorization Letter' },
+    { field: 'Owner_Photo', type: 'Owner Photo' },
+    { field: 'Identity_Copy', type: 'Identity Copy' }
+  ];
+
+  for (const doc of docFields) {
+    if (sponsor[doc.field]) {
+      const [existing, created] = await DocumentsStore.findOrCreate({
+        where: {
+          Sponsor_ID: sponsor.id,
+          Doc_Type: doc.type
+        },
+        defaults: {
+          File_Path: sponsor[doc.field],
+          Doc_Number: sponsor.Commercial_Reg_No
+        },
+        transaction
+      });
+
+      if (!created && existing.File_Path !== sponsor[doc.field]) {
+        await existing.update({ File_Path: sponsor[doc.field] }, { transaction });
+      }
+    }
+  }
+}
 
 exports.getAll = async (req, res) => {
   try {
@@ -57,6 +88,7 @@ exports.getById = async (req, res) => {
 };
 
 exports.create = async (req, res) => {
+  const t = await sequelize.transaction();
   try {
     const {
       Commercial_Reg_No,
@@ -92,16 +124,21 @@ exports.create = async (req, res) => {
       Owner_Email,
       Owner_Photo,
       Identity_Copy
-    });
+    }, { transaction: t });
+
+    await syncSponsorDocuments(newSponsor, t);
+    await t.commit();
 
     res.status(201).json(newSponsor);
   } catch (error) {
+    await t.rollback();
     console.error('Create Sponsor Error:', error);
     res.status(500).json({ message: 'Error creating sponsor' });
   }
 };
 
 exports.update = async (req, res) => {
+  const t = await sequelize.transaction();
   try {
     const { id } = req.params;
     const {
@@ -143,10 +180,14 @@ exports.update = async (req, res) => {
       Owner_Email,
       Owner_Photo,
       Identity_Copy
-    });
+    }, { transaction: t });
+
+    await syncSponsorDocuments(sponsor, t);
+    await t.commit();
 
     res.json(sponsor);
   } catch (error) {
+    await t.rollback();
     console.error('Update Sponsor Error:', error);
     res.status(500).json({ message: 'Error updating sponsor' });
   }
