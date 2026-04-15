@@ -4,8 +4,21 @@ exports.getSummary = async (req, res) => {
   try {
     const totalWorkers = await Worker.count();
     const activeCards = await SmartCard.count({ where: { Is_Active: true } });
-    const openLegalCases = await LegalCase.count({ where: { Status: 'Open' } });
-    const pendingPayments = await Financial.count({ where: { Status: 'Pending' } });
+
+    // Using simple count as a placeholder if Status might be different in actual DB
+    // In many systems 'Open' or 'pending' are common
+    const openLegalCases = await LegalCase.count({
+        where: {
+            Status: ['Open', 'pending', 'active']
+        }
+    });
+
+    // Sum of amounts for pending financials
+    const pendingPaymentsResult = await Financial.findAll({
+      attributes: [[sequelize.fn('SUM', sequelize.col('Amount')), 'total']],
+      where: { Status: 'pending' }
+    });
+    const pendingPayments = pendingPaymentsResult[0].dataValues.total || 0;
 
     const statusBreakdown = await Worker.findAll({
       attributes: ['Current_Status', [sequelize.fn('COUNT', sequelize.col('id')), 'count']],
