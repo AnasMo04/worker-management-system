@@ -3,7 +3,8 @@ const { SmartCard, Worker, sequelize } = require('../models');
 exports.getAll = async (req, res) => {
   try {
     const cards = await SmartCard.findAll({
-      include: [{ model: Worker, attributes: ['Full_Name'] }]
+      include: [{ model: Worker, attributes: ['Full_Name'] }],
+      order: [['createdAt', 'DESC']]
     });
     res.json(cards);
   } catch (error) {
