@@ -64,6 +64,16 @@ exports.getById = async (req, res) => {
 exports.create = async (req, res) => {
   const t = await sequelize.transaction();
   try {
+    const data = req.body;
+
+    // Handle files if uploaded via multer
+    if (req.files) {
+      if (req.files.passportPhoto) data.Passport_Copy = req.files.passportPhoto[0].path.replace(/\\/g, '/');
+      if (req.files.healthCert) data.Health_Cert_Copy = req.files.healthCert[0].path.replace(/\\/g, '/');
+      if (req.files.residencyPhoto) data.Residency_Copy = req.files.residencyPhoto[0].path.replace(/\\/g, '/');
+      if (req.files.personalPhoto) data.Personal_Photo_Copy = req.files.personalPhoto[0].path.replace(/\\/g, '/');
+    }
+
     const {
       Sponsor_ID,
       Passport_Number,
@@ -105,27 +115,27 @@ exports.create = async (req, res) => {
     }
 
     const newWorker = await Worker.create({
-      Sponsor_ID: Freelance ? null : Sponsor_ID,
-      Passport_Number,
-      National_ID,
-      Full_Name,
-      Nationality,
-      Birth_Date,
-      Residence_Address,
-      Current_Status,
-      NFC_UID,
-      Primary_Card_Serial,
-      Passport_Copy,
-      Health_Cert_Copy,
-      Residency_Copy,
-      Personal_Photo_Copy,
-      Category,
-      Document_Type,
-      Health_Cert_Expiry,
-      Freelance,
-      Family_ID,
-      Relationship,
-      Gender
+      Sponsor_ID: data.Freelance ? null : data.Sponsor_ID,
+      Passport_Number: data.Passport_Number,
+      National_ID: data.National_ID,
+      Full_Name: data.Full_Name,
+      Nationality: data.Nationality,
+      Birth_Date: data.Birth_Date,
+      Residence_Address: data.Residence_Address,
+      Current_Status: data.Current_Status,
+      NFC_UID: data.NFC_UID,
+      Primary_Card_Serial: data.Primary_Card_Serial,
+      Passport_Copy: data.Passport_Copy,
+      Health_Cert_Copy: data.Health_Cert_Copy,
+      Residency_Copy: data.Residency_Copy,
+      Personal_Photo_Copy: data.Personal_Photo_Copy,
+      Category: data.Category,
+      Document_Type: data.Document_Type,
+      Health_Cert_Expiry: data.Health_Cert_Expiry,
+      Freelance: data.Freelance,
+      Family_ID: data.Family_ID,
+      Relationship: data.Relationship,
+      Gender: data.Gender
     }, { transaction: t });
 
     await syncDocuments(newWorker, t);
@@ -143,6 +153,16 @@ exports.update = async (req, res) => {
   const t = await sequelize.transaction();
   try {
     const { id } = req.params;
+    const data = req.body;
+
+    // Handle files if uploaded via multer
+    if (req.files) {
+      if (req.files.passportPhoto) data.Passport_Copy = req.files.passportPhoto[0].path.replace(/\\/g, '/');
+      if (req.files.healthCert) data.Health_Cert_Copy = req.files.healthCert[0].path.replace(/\\/g, '/');
+      if (req.files.residencyPhoto) data.Residency_Copy = req.files.residencyPhoto[0].path.replace(/\\/g, '/');
+      if (req.files.personalPhoto) data.Personal_Photo_Copy = req.files.personalPhoto[0].path.replace(/\\/g, '/');
+    }
+
     const {
       Sponsor_ID,
       Passport_Number,
@@ -181,27 +201,27 @@ exports.update = async (req, res) => {
     }
 
     await worker.update({
-      Sponsor_ID: Freelance ? null : Sponsor_ID,
-      Passport_Number,
-      National_ID,
-      Full_Name,
-      Nationality,
-      Birth_Date,
-      Residence_Address,
-      Current_Status,
-      NFC_UID,
-      Primary_Card_Serial,
-      Passport_Copy,
-      Health_Cert_Copy,
-      Residency_Copy,
-      Personal_Photo_Copy,
-      Category,
-      Document_Type,
-      Health_Cert_Expiry,
-      Freelance,
-      Family_ID,
-      Relationship,
-      Gender
+      Sponsor_ID: data.Freelance ? null : data.Sponsor_ID,
+      Passport_Number: data.Passport_Number,
+      National_ID: data.National_ID,
+      Full_Name: data.Full_Name,
+      Nationality: data.Nationality,
+      Birth_Date: data.Birth_Date,
+      Residence_Address: data.Residence_Address,
+      Current_Status: data.Current_Status,
+      NFC_UID: data.NFC_UID,
+      Primary_Card_Serial: data.Primary_Card_Serial,
+      Passport_Copy: data.Passport_Copy,
+      Health_Cert_Copy: data.Health_Cert_Copy,
+      Residency_Copy: data.Residency_Copy,
+      Personal_Photo_Copy: data.Personal_Photo_Copy,
+      Category: data.Category,
+      Document_Type: data.Document_Type,
+      Health_Cert_Expiry: data.Health_Cert_Expiry,
+      Freelance: data.Freelance,
+      Family_ID: data.Family_ID,
+      Relationship: data.Relationship,
+      Gender: data.Gender
     }, { transaction: t });
 
     await syncDocuments(worker, t);

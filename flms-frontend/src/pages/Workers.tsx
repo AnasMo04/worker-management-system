@@ -182,21 +182,33 @@ export default function Workers() {
     if (!validate()) return;
     try {
       setIsSaving(true);
-      const payload = {
-        ...form,
-        Sponsor_ID: (form.Freelance || form.Category === "dependent" || !form.Sponsor_ID) ? null : parseInt(form.Sponsor_ID),
-        Passport_Copy: docs.passportPhoto?.url || null,
-        Health_Cert_Copy: docs.healthCert?.url || null,
-        Residency_Copy: docs.residencyPhoto?.url || null,
-        Personal_Photo_Copy: docs.personalPhoto?.url || null,
-      };
+
+      const formData = new FormData();
+      Object.entries(form).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          formData.append(key, value.toString());
+        }
+      });
+
+      // Override Sponsor_ID logic
+      const sponsorId = (form.Freelance || form.Category === "dependent" || !form.Sponsor_ID) ? null : form.Sponsor_ID;
+      if (sponsorId) formData.set("Sponsor_ID", sponsorId);
+      else formData.delete("Sponsor_ID");
+
+      // Append files if they are new (blob URLs indicate new selection)
+      if (docs.passportPhoto?.file) formData.append("passportPhoto", docs.passportPhoto.file);
+      if (docs.healthCert?.file) formData.append("healthCert", docs.healthCert.file);
+      if (docs.residencyPhoto?.file) formData.append("residencyPhoto", docs.residencyPhoto.file);
+      if (docs.personalPhoto?.file) formData.append("personalPhoto", docs.personalPhoto.file);
+
+      const config = { headers: { 'Content-Type': 'multipart/form-data' } };
 
       if (editMode && selectedId) {
-        await api.put(`/api/workers/${selectedId}`, payload);
-        toast({ title: "تم التحديث", description: `تم تحديث بيانات ${payload.Full_Name} بنجاح.` });
+        await api.put(`/api/workers/${selectedId}`, formData, config);
+        toast({ title: "تم التحديث", description: `تم تحديث بيانات ${form.Full_Name} بنجاح.` });
       } else {
-        await api.post("/api/workers", payload);
-        toast({ title: "تمت الإضافة", description: `تم تسجيل ${payload.Full_Name} بنجاح.` });
+        await api.post("/api/workers", formData, config);
+        toast({ title: "تمت الإضافة", description: `تم تسجيل ${form.Full_Name} بنجاح.` });
       }
 
       handleClose();
@@ -231,11 +243,14 @@ export default function Workers() {
       Current_Status: ind.Current_Status || "نشط",
       NFC_UID: ind.NFC_UID || "",
     });
+    const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    const getFullUrl = (p: string) => p.startsWith('http') ? p : `${backendUrl}/${p}`;
+
     setDocs({
-      passportPhoto: ind.Passport_Copy ? { name: "مستند مرفق", url: ind.Passport_Copy, type: "application/pdf", label: "صورة الوثيقة" } : null,
-      healthCert: ind.Health_Cert_Copy ? { name: "مستند مرفق", url: ind.Health_Cert_Copy, type: "application/pdf", label: "الشهادة الصحية" } : null,
-      residencyPhoto: ind.Residency_Copy ? { name: "مستند مرفق", url: ind.Residency_Copy, type: "application/pdf", label: "صورة الإقامة" } : null,
-      personalPhoto: ind.Personal_Photo_Copy ? { name: "صورة مرفقة", url: ind.Personal_Photo_Copy, type: "image/jpeg", label: "صورة شخصية" } : null,
+      passportPhoto: ind.Passport_Copy ? { name: "مستند مرفق", url: getFullUrl(ind.Passport_Copy), type: "application/pdf", label: "صورة الوثيقة" } : null,
+      healthCert: ind.Health_Cert_Copy ? { name: "مستند مرفق", url: getFullUrl(ind.Health_Cert_Copy), type: "application/pdf", label: "الشهادة الصحية" } : null,
+      residencyPhoto: ind.Residency_Copy ? { name: "مستند مرفق", url: getFullUrl(ind.Residency_Copy), type: "application/pdf", label: "صورة الإقامة" } : null,
+      personalPhoto: ind.Personal_Photo_Copy ? { name: "صورة مرفقة", url: getFullUrl(ind.Personal_Photo_Copy), type: "image/jpeg", label: "صورة شخصية" } : null,
     });
     setAddOpen(true);
   };

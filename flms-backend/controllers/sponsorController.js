@@ -90,6 +90,17 @@ exports.getById = async (req, res) => {
 exports.create = async (req, res) => {
   const t = await sequelize.transaction();
   try {
+    const data = req.body;
+
+    if (req.files) {
+      if (req.files.commercialReg) data.Commercial_Reg_Copy = req.files.commercialReg[0].path.replace(/\\/g, '/');
+      if (req.files.taxCert) data.Tax_Cert_Copy = req.files.taxCert[0].path.replace(/\\/g, '/');
+      if (req.files.license) data.License_Copy = req.files.license[0].path.replace(/\\/g, '/');
+      if (req.files.authLetter) data.Auth_Letter_Copy = req.files.authLetter[0].path.replace(/\\/g, '/');
+      if (req.files.ownerPhoto) data.Owner_Photo = req.files.ownerPhoto[0].path.replace(/\\/g, '/');
+      if (req.files.identityCopy) data.Identity_Copy = req.files.identityCopy[0].path.replace(/\\/g, '/');
+    }
+
     const {
       Commercial_Reg_No,
       Sponsor_Name,
@@ -109,21 +120,21 @@ exports.create = async (req, res) => {
     } = req.body;
 
     const newSponsor = await Sponsor.create({
-      Commercial_Reg_No,
-      Sponsor_Name,
-      Phone,
-      Email,
-      Address,
-      Commercial_Reg_Copy,
-      Tax_Cert_Copy,
-      License_Copy,
-      Auth_Letter_Copy,
-      Owner_Name,
-      Owner_National_ID,
-      Owner_Phone,
-      Owner_Email,
-      Owner_Photo,
-      Identity_Copy
+      Commercial_Reg_No: data.Commercial_Reg_No,
+      Sponsor_Name: data.Sponsor_Name,
+      Phone: data.Phone,
+      Email: data.Email,
+      Address: data.Address,
+      Commercial_Reg_Copy: data.Commercial_Reg_Copy,
+      Tax_Cert_Copy: data.Tax_Cert_Copy,
+      License_Copy: data.License_Copy,
+      Auth_Letter_Copy: data.Auth_Letter_Copy,
+      Owner_Name: data.Owner_Name,
+      Owner_National_ID: data.Owner_National_ID,
+      Owner_Phone: data.Owner_Phone,
+      Owner_Email: data.Owner_Email,
+      Owner_Photo: data.Owner_Photo,
+      Identity_Copy: data.Identity_Copy
     }, { transaction: t });
 
     await syncSponsorDocuments(newSponsor, t);
@@ -141,6 +152,17 @@ exports.update = async (req, res) => {
   const t = await sequelize.transaction();
   try {
     const { id } = req.params;
+    const data = req.body;
+
+    if (req.files) {
+      if (req.files.commercialReg) data.Commercial_Reg_Copy = req.files.commercialReg[0].path.replace(/\\/g, '/');
+      if (req.files.taxCert) data.Tax_Cert_Copy = req.files.taxCert[0].path.replace(/\\/g, '/');
+      if (req.files.license) data.License_Copy = req.files.license[0].path.replace(/\\/g, '/');
+      if (req.files.authLetter) data.Auth_Letter_Copy = req.files.authLetter[0].path.replace(/\\/g, '/');
+      if (req.files.ownerPhoto) data.Owner_Photo = req.files.ownerPhoto[0].path.replace(/\\/g, '/');
+      if (req.files.identityCopy) data.Identity_Copy = req.files.identityCopy[0].path.replace(/\\/g, '/');
+    }
+
     const {
       Commercial_Reg_No,
       Sponsor_Name,
@@ -165,21 +187,21 @@ exports.update = async (req, res) => {
     }
 
     await sponsor.update({
-      Commercial_Reg_No,
-      Sponsor_Name,
-      Phone,
-      Email,
-      Address,
-      Commercial_Reg_Copy,
-      Tax_Cert_Copy,
-      License_Copy,
-      Auth_Letter_Copy,
-      Owner_Name,
-      Owner_National_ID,
-      Owner_Phone,
-      Owner_Email,
-      Owner_Photo,
-      Identity_Copy
+      Commercial_Reg_No: data.Commercial_Reg_No,
+      Sponsor_Name: data.Sponsor_Name,
+      Phone: data.Phone,
+      Email: data.Email,
+      Address: data.Address,
+      Commercial_Reg_Copy: data.Commercial_Reg_Copy,
+      Tax_Cert_Copy: data.Tax_Cert_Copy,
+      License_Copy: data.License_Copy,
+      Auth_Letter_Copy: data.Auth_Letter_Copy,
+      Owner_Name: data.Owner_Name,
+      Owner_National_ID: data.Owner_National_ID,
+      Owner_Phone: data.Owner_Phone,
+      Owner_Email: data.Owner_Email,
+      Owner_Photo: data.Owner_Photo,
+      Identity_Copy: data.Identity_Copy
     }, { transaction: t });
 
     await syncSponsorDocuments(sponsor, t);

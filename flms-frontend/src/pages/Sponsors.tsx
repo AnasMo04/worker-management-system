@@ -90,30 +90,34 @@ export default function Sponsors() {
     if (!validate()) return;
     try {
       setIsSaving(true);
-      const payload = {
-        Sponsor_Name: form.name.trim(),
-        Commercial_Reg_No: form.license.trim(),
-        Phone: form.phone.trim(),
-        Email: form.email.trim(),
-        Address: form.address.trim(),
-        Commercial_Reg_Copy: docs.commercialRegister?.url || null,
-        Tax_Cert_Copy: docs.taxCert?.url || null,
-        License_Copy: docs.licenseCopy?.url || null,
-        Auth_Letter_Copy: docs.authLetter?.url || null,
-        Owner_Name: form.ownerName.trim(),
-        Owner_National_ID: form.ownerNationalID.trim(),
-        Owner_Phone: form.ownerPhone.trim(),
-        Owner_Email: form.ownerEmail.trim(),
-        Owner_Photo: docs.ownerPhoto?.url || null,
-        Identity_Copy: docs.identityCopy?.url || null,
-      };
+
+      const formData = new FormData();
+      formData.append("Sponsor_Name", form.name.trim());
+      formData.append("Commercial_Reg_No", form.license.trim());
+      formData.append("Phone", form.phone.trim());
+      formData.append("Email", form.email.trim());
+      formData.append("Address", form.address.trim());
+      formData.append("Owner_Name", form.ownerName.trim());
+      formData.append("Owner_National_ID", form.ownerNationalID.trim());
+      formData.append("Owner_Phone", form.ownerPhone.trim());
+      formData.append("Owner_Email", form.ownerEmail.trim());
+
+      // Append files if they are new
+      if (docs.commercialRegister?.file) formData.append("commercialReg", docs.commercialRegister.file);
+      if (docs.taxCert?.file) formData.append("taxCert", docs.taxCert.file);
+      if (docs.licenseCopy?.file) formData.append("license", docs.licenseCopy.file);
+      if (docs.authLetter?.file) formData.append("authLetter", docs.authLetter.file);
+      if (docs.ownerPhoto?.file) formData.append("ownerPhoto", docs.ownerPhoto.file);
+      if (docs.identityCopy?.file) formData.append("identityCopy", docs.identityCopy.file);
+
+      const config = { headers: { 'Content-Type': 'multipart/form-data' } };
 
       if (editMode && selectedId) {
-        await api.put(`/api/sponsors/${selectedId}`, payload);
-        toast({ title: "تم التحديث", description: `تم تحديث بيانات الجهة ${payload.Sponsor_Name} بنجاح.` });
+        await api.put(`/api/sponsors/${selectedId}`, formData, config);
+        toast({ title: "تم التحديث", description: `تم تحديث بيانات الجهة ${form.name} بنجاح.` });
       } else {
-        await api.post("/api/sponsors", payload);
-        toast({ title: "تمت الإضافة", description: `تم تسجيل الجهة ${payload.Sponsor_Name} بنجاح.` });
+        await api.post("/api/sponsors", formData, config);
+        toast({ title: "تمت الإضافة", description: `تم تسجيل الجهة ${form.name} بنجاح.` });
       }
 
       handleClose();
@@ -141,13 +145,16 @@ export default function Sponsors() {
       ownerPhone: entity.Owner_Phone || "",
       ownerEmail: entity.Owner_Email || "",
     });
+    const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    const getFullUrl = (p: string) => p.startsWith('http') ? p : `${backendUrl}/${p}`;
+
     setDocs({
-      commercialRegister: entity.Commercial_Reg_Copy ? { name: "مستند مرفق", url: entity.Commercial_Reg_Copy, type: "application/pdf", label: "صورة القيد/السجل" } : null,
-      taxCert: entity.Tax_Cert_Copy ? { name: "مستند مرفق", url: entity.Tax_Cert_Copy, type: "application/pdf", label: "الشهادة الضريبية" } : null,
-      licenseCopy: entity.License_Copy ? { name: "مستند مرفق", url: entity.License_Copy, type: "application/pdf", label: "نسخة الترخيص" } : null,
-      authLetter: entity.Auth_Letter_Copy ? { name: "مستند مرفق", url: entity.Auth_Letter_Copy, type: "application/pdf", label: "خطاب التفويض" } : null,
-      ownerPhoto: entity.Owner_Photo ? { name: "صورة مرفقة", url: entity.Owner_Photo, type: "image/jpeg", label: "صورة المالك" } : null,
-      identityCopy: entity.Identity_Copy ? { name: "مستند مرفق", url: entity.Identity_Copy, type: "application/pdf", label: "إثبات الهوية" } : null,
+      commercialRegister: entity.Commercial_Reg_Copy ? { name: "مستند مرفق", url: getFullUrl(entity.Commercial_Reg_Copy), type: "application/pdf", label: "صورة القيد/السجل" } : null,
+      taxCert: entity.Tax_Cert_Copy ? { name: "مستند مرفق", url: getFullUrl(entity.Tax_Cert_Copy), type: "application/pdf", label: "الشهادة الضريبية" } : null,
+      licenseCopy: entity.License_Copy ? { name: "مستند مرفق", url: getFullUrl(entity.License_Copy), type: "application/pdf", label: "نسخة الترخيص" } : null,
+      authLetter: entity.Auth_Letter_Copy ? { name: "مستند مرفق", url: getFullUrl(entity.Auth_Letter_Copy), type: "application/pdf", label: "خطاب التفويض" } : null,
+      ownerPhoto: entity.Owner_Photo ? { name: "صورة مرفقة", url: getFullUrl(entity.Owner_Photo), type: "image/jpeg", label: "صورة المالك" } : null,
+      identityCopy: entity.Identity_Copy ? { name: "مستند مرفق", url: getFullUrl(entity.Identity_Copy), type: "application/pdf", label: "إثبات الهوية" } : null,
     });
     setEntityType(entity.Owner_Name ? "business" : "university");
     setAddOpen(true);
