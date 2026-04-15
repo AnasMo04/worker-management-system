@@ -418,22 +418,6 @@ export default function Workers() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="flex items-center gap-2">
-                    <Wifi className="w-3.5 h-3.5 text-primary" />
-                    رقم البطاقة الذكية (NFC UID)
-                  </Label>
-                  <Input
-                    value={form.NFC_UID}
-                    onChange={(e) => setForm({ ...form, NFC_UID: e.target.value })}
-                    placeholder="مرر البطاقة على القارئ..."
-                    className="font-mono bg-muted/30"
-                  />
-                  <p className="text-[10px] text-muted-foreground italic">سيتم ملء هذا الحقل تلقائياً عند تمرير بطاقة NFC مفعلة.</p>
-                </div>
-              </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label>الجنسية</Label>

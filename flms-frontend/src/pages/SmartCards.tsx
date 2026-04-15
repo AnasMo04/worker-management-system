@@ -312,7 +312,7 @@ export default function SmartCards() {
       </div>
 
       {/* Issue New Card Dialog */}
-      <Dialog open={issueOpen} onOpenChange={(o) => { if (!o) { setIssueOpen(false); setIssueStep("prompt"); setReadingValue(""); } }}>
+      <Dialog open={issueOpen} onOpenChange={(o) => { if (!o) { setIssueOpen(false); setIssueStep("prompt"); setReadingValue(""); setNfcUid(""); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>إصدار بطاقة NFC جديدة</DialogTitle>
