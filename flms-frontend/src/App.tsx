@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"; 
 import { AppLayout } from "@/components/AppLayout";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { SearchProvider } from "@/context/SearchContext";
 
 // استدعاء الصفحات
 import Dashboard from "./pages/Dashboard";
@@ -81,7 +82,9 @@ const App = () => (
       <Toaster />
       <Sonner />
       <AuthProvider>
-        <AppContent />
+        <SearchProvider>
+          <AppContent />
+        </SearchProvider>
       </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>

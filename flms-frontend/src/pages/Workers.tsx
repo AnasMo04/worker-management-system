@@ -257,6 +257,7 @@ export default function Workers() {
                 <th className="text-right p-3 font-medium">رقم الوثيقة</th>
                 <th className="text-right p-3 font-medium">الجنسية</th>
                 <th className="text-right p-3 font-medium">جهة الاستضافة / العمل</th>
+                <th className="text-right p-3 font-medium">NFC UID</th>
                 <th className="text-right p-3 font-medium">رقم العائلة</th>
                 <th className="text-right p-3 font-medium">الحالة</th>
                 <th className="text-right p-3 font-medium text-center">المستندات</th>
@@ -284,6 +285,7 @@ export default function Workers() {
                       <br/>
                       <span className="text-[10px] text-muted-foreground">{w.Residence_Address}</span>
                     </td>
+                    <td className="p-3 font-mono text-[10px] text-muted-foreground">{w.NFC_UID || "—"}</td>
                     <td className="p-3 font-mono text-xs text-blue-500 font-bold">{w.Family_ID || "—"}</td>
                     <td className="p-3">
                       <StatusBadge
