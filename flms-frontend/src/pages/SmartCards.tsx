@@ -45,6 +45,7 @@ export default function SmartCards() {
   const [cancelReason, setCancelReason] = useState("");
   const [issueStep, setIssueStep] = useState<"prompt" | "reading" | "done">("prompt");
   const [nfcUid, setNfcUid] = useState("");
+  const [readingValue, setReadingValue] = useState("");
   const { toast } = useToast();
   const nfcInputRef = useRef<HTMLInputElement>(null);
   const socketRef = useRef<any>(null);
@@ -70,6 +71,12 @@ export default function SmartCards() {
       }
     };
   }, [issueOpen, issueStep]);
+
+  useEffect(() => {
+    if (issueStep === "reading" && readingValue) {
+      handleNfcDetection(readingValue);
+    }
+  }, [readingValue, issueStep]);
 
   const fetchCards = async () => {
     try {
@@ -108,6 +115,7 @@ export default function SmartCards() {
   };
 
   const handleIssueCard = () => {
+    setReadingValue("");
     setIssueStep("reading");
   };
 
@@ -118,13 +126,14 @@ export default function SmartCards() {
   }, [issueStep]);
 
   const handleNfcDetection = async (serialNumber: string) => {
-    if (!serialNumber) return;
+    if (!serialNumber || serialNumber.trim() === "") return;
 
     try {
       // Check for duplicates
       const dupResponse = await api.get(`/api/smart-cards/check-duplicate?nfc_uid=${serialNumber}`);
       if (dupResponse.data.isDuplicate) {
         toast({ variant: "destructive", title: "خطأ", description: "هذه البطاقة مسجلة مسبقاً في النظام." });
+        setReadingValue("");
         if (nfcInputRef.current) nfcInputRef.current.value = "";
         return;
       }
@@ -142,13 +151,14 @@ export default function SmartCards() {
     } catch (err) {
       console.error("API Error during issuance:", err);
       toast({ variant: "destructive", title: "خطأ", description: "فشل في تسجيل البطاقة في النظام." });
+      setReadingValue("");
       if (nfcInputRef.current) nfcInputRef.current.value = "";
     }
   };
 
   const handleNfcInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
-      handleNfcDetection(e.currentTarget.value);
+      handleNfcDetection(readingValue);
     }
   };
 
@@ -302,7 +312,7 @@ export default function SmartCards() {
       </div>
 
       {/* Issue New Card Dialog */}
-      <Dialog open={issueOpen} onOpenChange={(o) => { if (!o && issueStep !== "reading") { setIssueOpen(false); setIssueStep("prompt"); } }}>
+      <Dialog open={issueOpen} onOpenChange={(o) => { if (!o) { setIssueOpen(false); setIssueStep("prompt"); setReadingValue(""); } }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>إصدار بطاقة NFC جديدة</DialogTitle>
@@ -336,8 +346,11 @@ export default function SmartCards() {
               <input
                 ref={nfcInputRef}
                 type="text"
-                className="sr-only"
+                value={readingValue}
+                onChange={(e) => setReadingValue(e.target.value)}
                 onKeyDown={handleNfcInput}
+                onBlur={() => nfcInputRef.current?.focus()}
+                className="absolute opacity-0 pointer-events-none"
                 autoFocus
               />
               <div className="h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center">

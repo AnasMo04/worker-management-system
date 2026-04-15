@@ -114,7 +114,31 @@ export default function Workers() {
       }
     });
 
+    // Keyboard Emulator Listener
+    let buffer = "";
+    let lastTime = Date.now();
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!addOpen) return;
+
+      const now = Date.now();
+      if (now - lastTime > 50) buffer = "";
+      lastTime = now;
+
+      if (e.key === "Enter") {
+        if (buffer.length >= 4) { // Typical NFC UIDs are at least 4 bytes
+          setForm(prev => ({ ...prev, NFC_UID: buffer }));
+          toast({ title: "تمت القراءة (محاكي)", description: `UID: ${buffer}` });
+          buffer = "";
+        }
+      } else if (e.key.length === 1) {
+        buffer += e.key;
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
     return () => {
+      window.removeEventListener("keydown", handleKeyDown);
       if (socketRef.current) {
         socketRef.current.disconnect();
       }
