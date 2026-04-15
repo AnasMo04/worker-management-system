@@ -35,14 +35,18 @@ export default function Dashboard() {
       setData(response.data);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
-      toast({ variant: "destructive", title: "خطأ", description: "فشل في تحميل بيانات لوحة التحكم." });
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "فشل في تحميل بيانات لوحة التحكم. تأكد من تسجيل الدخول."
+      });
     } finally {
       setLoading(false);
     }
   };
 
   if (loading) {
-    return <div className="p-8 text-center text-muted-foreground">جاري تحميل لوحة التحكم...</div>;
+    return <div className="p-8 text-center text-muted-foreground animate-pulse">جاري تحميل لوحة التحكم...</div>;
   }
 
   const statusData = data?.statusBreakdown?.map((item: any) => ({
@@ -60,17 +64,42 @@ export default function Dashboard() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard title="إجمالي العمال" value={data?.counts?.totalWorkers || 0} icon={<Users />} gradient="kpi-gradient-1" change="+0 هذا الشهر" />
-        <KPICard title="البطاقات النشطة" value={data?.counts?.activeCards || 0} icon={<CreditCard />} gradient="kpi-gradient-2" change={`${Math.round((data?.counts?.activeCards / data?.counts?.totalWorkers) * 100) || 0}% من الإجمالي`} />
-        <KPICard title="القضايا المفتوحة" value={data?.counts?.openLegalCases || 0} icon={<Scale />} gradient="kpi-gradient-3" change="+0 هذا الأسبوع" />
-        <KPICard title="مدفوعات معلقة" value={data?.counts?.pendingPayments?.toLocaleString() || 0} icon={<Wallet />} gradient="kpi-gradient-4" change="د.ل" />
+        <KPICard
+          title="إجمالي العمال"
+          value={data?.counts?.totalWorkers || 0}
+          icon={<Users />}
+          gradient="kpi-gradient-1"
+          change="محدث الآن"
+        />
+        <KPICard
+          title="البطاقات النشطة"
+          value={data?.counts?.activeCards || 0}
+          icon={<CreditCard />}
+          gradient="kpi-gradient-2"
+          change={`${data?.counts?.totalWorkers ? Math.round((data?.counts?.activeCards / data?.counts?.totalWorkers) * 100) : 0}% من الإجمالي`}
+        />
+        <KPICard
+          title="القضايا المفتوحة"
+          value={data?.counts?.openLegalCases || 0}
+          icon={<Scale />}
+          gradient="kpi-gradient-3"
+          change="قضايا قيد المتابعة"
+        />
+        <KPICard
+          title="مدفوعات معلقة"
+          value={(data?.counts?.pendingPayments || 0).toLocaleString("ar-LY")}
+          icon={<Wallet />}
+          gradient="kpi-gradient-4"
+          change="دينار ليبي"
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Inspections */}
         <div className="lg:col-span-2 bg-card rounded-lg border border-border shadow-sm">
-          <div className="p-4 border-b border-border">
+          <div className="p-4 border-b border-border flex justify-between items-center">
             <h3 className="font-semibold">آخر عمليات التفتيش</h3>
+            <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">ميداني</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -84,16 +113,18 @@ export default function Dashboard() {
                 </tr>
               </thead>
               <tbody>
-                {data?.recentInspections?.length === 0 ? (
-                  <tr><td colSpan={5} className="p-4 text-center text-muted-foreground">لا توجد عمليات تفتيش حديثة</td></tr>
+                {!data?.recentInspections || data.recentInspections.length === 0 ? (
+                  <tr><td colSpan={5} className="p-8 text-center text-muted-foreground italic">لا توجد عمليات تفتيش حديثة</td></tr>
                 ) : (
-                  data?.recentInspections?.map((item: any) => (
-                    <tr key={item.id} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
+                  data.recentInspections.map((item: any) => (
+                    <tr key={item.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
                       <td className="p-3 font-medium">{item.Worker?.Full_Name || "—"}</td>
                       <td className="p-3">{item.User?.Name || "—"}</td>
                       <td className="p-3 font-mono text-xs">{item.Device_ID || "—"}</td>
-                      <td className="p-3 text-muted-foreground text-xs">{new Date(item.Scan_Time).toLocaleString("ar-LY")}</td>
-                      <td className="p-3"><StatusBadge variant={item.Result} /></td>
+                      <td className="p-3 text-muted-foreground text-xs">
+                        {item.Scan_Time ? new Date(item.Scan_Time).toLocaleString("ar-LY") : "—"}
+                      </td>
+                      <td className="p-3"><StatusBadge variant={item.Result as any} /></td>
                     </tr>
                   ))
                 )}
@@ -108,25 +139,34 @@ export default function Dashboard() {
             <h3 className="font-semibold">توزيع حالات العمال</h3>
           </div>
           <div className="p-4">
-            <ResponsiveContainer width="100%" height={220}>
-              <PieChart>
-                <Pie
-                  data={statusData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={80}
-                  paddingAngle={4}
-                  dataKey="value"
-                >
-                  {statusData.map((entry: any, index: number) => (
-                    <Cell key={index} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value: number) => value.toLocaleString("ar-LY")} />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+            {statusData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie
+                    data={statusData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {statusData.map((entry: any, index: number) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{ direction: 'rtl', textAlign: 'right' }}
+                    formatter={(value: number) => [value.toLocaleString("ar-LY"), "العدد"]}
+                  />
+                  <Legend verticalAlign="bottom" height={36}/>
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[220px] flex items-center justify-center text-muted-foreground text-sm italic">
+                لا توجد بيانات متاحة للمخطط
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -134,21 +174,24 @@ export default function Dashboard() {
       {/* Recent Audit */}
       <div className="bg-card rounded-lg border border-border shadow-sm">
         <div className="p-4 border-b border-border">
-          <h3 className="font-semibold">آخر النشاطات</h3>
+          <h3 className="font-semibold">آخر النشاطات على النظام</h3>
         </div>
-        <div className="p-4 space-y-3">
-          {data?.recentAuditLogs?.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center">لا توجد نشاطات حديثة</p>
+        <div className="p-4 space-y-4">
+          {!data?.recentAuditLogs || data.recentAuditLogs.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4 italic">لا توجد نشاطات حديثة مسجلة</p>
           ) : (
-            data?.recentAuditLogs?.map((item: any) => (
-              <div key={item.id} className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-primary shrink-0" />
-                <div className="flex-1">
-                  <span className="font-medium text-sm">{item.User?.Name || "نظام"}</span>
-                  <span className="text-muted-foreground text-sm mx-2">—</span>
-                  <span className="text-sm">{item.Action_Type}</span>
+            data.recentAuditLogs.map((item: any) => (
+              <div key={item.id} className="flex items-center gap-3 group">
+                <div className="w-2 h-2 rounded-full bg-primary/40 group-hover:bg-primary transition-colors shrink-0" />
+                <div className="flex-1 border-b border-border/50 pb-2 group-last:border-0">
+                  <div className="flex justify-between items-start">
+                    <span className="font-medium text-sm">{item.User?.Name || "نظام"}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {item.createdAt ? new Date(item.createdAt).toLocaleTimeString("ar-LY") : ""}
+                    </span>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-0.5">{item.Action_Type}</p>
                 </div>
-                <span className="text-xs text-muted-foreground">{new Date(item.createdAt).toLocaleTimeString("ar-LY")}</span>
               </div>
             ))
           )}
