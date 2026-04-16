@@ -23,3 +23,15 @@ dist-ssr
 *.sln
 *.sw?
 /flms-backend/.env
+/flms-frontend/.env
+/flms-frontend/.env
+/flms-backend/uploads/healthCert-1776336553350-916920223.HEIC
+/flms-backend/uploads/healthCert-1776338745672-882734163.jpg
+/flms-backend/uploads/passportPhoto-1776336553314-845854561.HEIC
+/flms-backend/uploads/passportPhoto-1776338745664-643654536.jpg
+/flms-backend/uploads/personalPhoto-1776336553397-595391971.pdf
+/flms-backend/uploads/personalPhoto-1776338745682-499623044.jpg
+/flms-backend/uploads/residencyPhoto-1776336553390-668093753.pdf
+/flms-backend/uploads/residencyPhoto-1776338745680-262672904.jpg
+/flms-frontend/.env
+/flms-frontend/.env
