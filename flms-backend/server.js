@@ -12,6 +12,9 @@ app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 
+const auditMiddleware = require('./middleware/auditMiddleware');
+app.use(auditMiddleware);
+
 const authRoutes = require('./routes/authRoutes');
 const workerRoutes = require('./routes/workerRoutes');
 const sponsorRoutes = require('./routes/sponsorRoutes');
@@ -19,6 +22,7 @@ const smartCardRoutes = require('./routes/smartCardRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const documentRoutes = require('./routes/documentRoutes');
 const userRoutes = require('./routes/userRoutes');
+const auditRoutes = require('./routes/auditRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/workers', workerRoutes);
@@ -27,6 +31,7 @@ app.use('/api/smart-cards', smartCardRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/audit', auditRoutes);
 
 app.get('/', (req, res) => {
     res.send('Welcome! FLMS System Server is running successfully with Sequelize and NFC Support.');
