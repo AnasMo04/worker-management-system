@@ -11,6 +11,7 @@ import { CreditCard, Plus, Search, Ban, Link2, History, Shield, AlertTriangle, W
 import { io } from "socket.io-client";
 import api from "../api/axiosConfig";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "../context/AuthContext";
 
 interface SmartCard {
   id: number;
@@ -31,6 +32,7 @@ interface Worker {
 }
 
 export default function SmartCards() {
+  const { hasPermission } = useAuth();
   const [cards, setCards] = useState<SmartCard[]>([]);
   const [availableWorkers, setAvailableWorkers] = useState<Worker[]>([]);
   const [loading, setLoading] = useState(true);
@@ -207,10 +209,12 @@ export default function SmartCards() {
           <h2 className="text-2xl font-bold">إدارة البطاقات الذكية</h2>
           <p className="text-muted-foreground text-sm">إصدار وإدارة بطاقات NFC للعمال</p>
         </div>
-        <Button onClick={() => setIssueOpen(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          إصدار بطاقة جديدة
-        </Button>
+        {hasPermission('smartcards', 'create') && (
+          <Button onClick={() => setIssueOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            إصدار بطاقة جديدة
+          </Button>
+        )}
       </div>
 
       {/* KPI Cards */}
@@ -290,14 +294,16 @@ export default function SmartCards() {
                     <td className="p-3 text-xs text-muted-foreground">{c.Blacklist_Reason || "—"}</td>
                     <td className="p-3">
                       <div className="flex gap-1">
-                        {!c.Is_Active && (
+                        {!c.Is_Active && hasPermission('smartcards', 'edit') && (
                           <Button size="sm" variant="outline" className="gap-1 text-xs h-7" onClick={() => { setSelectedCard(c); setLinkOpen(true); }}>
                             <Link2 className="h-3 w-3" /> ربط
                           </Button>
                         )}
-                        <Button size="sm" variant="outline" className="gap-1 text-xs h-7 text-destructive hover:text-destructive" onClick={() => { setSelectedCard(c); setCancelOpen(true); }}>
-                          <Ban className="h-3 w-3" /> إلغاء
-                        </Button>
+                        {hasPermission('smartcards', 'delete') && (
+                          <Button size="sm" variant="outline" className="gap-1 text-xs h-7 text-destructive hover:text-destructive" onClick={() => { setSelectedCard(c); setCancelOpen(true); }}>
+                            <Ban className="h-3 w-3" /> إلغاء
+                          </Button>
+                        )}
                         <Button size="sm" variant="ghost" className="gap-1 text-xs h-7" onClick={() => { setSelectedCard(c); setHistoryOpen(true); }}>
                           <History className="h-3 w-3" /> السجل
                         </Button>

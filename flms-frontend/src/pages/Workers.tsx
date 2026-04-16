@@ -15,6 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import { useSearch } from "../context/SearchContext";
+import { useAuth } from "../context/AuthContext";
 
 interface Individual {
   id: number;
@@ -79,6 +80,7 @@ interface IndividualDocs {
 const emptyDocs: IndividualDocs = { passportPhoto: null, healthCert: null, residencyPhoto: null, personalPhoto: null };
 
 export default function Workers() {
+  const { hasPermission } = useAuth();
   const [individuals, setIndividuals] = useState<Individual[]>([]);
   const [sponsors, setSponsors] = useState<Sponsor[]>([]);
   const [loading, setLoading] = useState(true);
@@ -283,10 +285,12 @@ export default function Workers() {
           <h2 className="text-2xl font-bold">إدارة الأجانب</h2>
           <p className="text-muted-foreground text-sm">إدارة بيانات العمال، الطلاب، والعائلات</p>
         </div>
-        <Button onClick={() => setAddOpen(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          إضافة فرد
-        </Button>
+        {hasPermission('workers', 'create') && (
+          <Button onClick={() => setAddOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            إضافة فرد
+          </Button>
+        )}
       </div>
 
       <div className="bg-card rounded-lg border border-border p-4 flex flex-wrap gap-3 items-center">
@@ -365,10 +369,12 @@ export default function Workers() {
                     </td>
                     <td className="p-3">
                       <div className="flex items-center gap-1">
-                        <button onClick={() => handleEditClick(w)} className="w-8 h-8 rounded-md bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
-                          <Edit className="w-3.5 h-3.5" />
-                        </button>
-                        {!w.is_archived && (
+                        {hasPermission('workers', 'edit') && (
+                          <button onClick={() => handleEditClick(w)} className="w-8 h-8 rounded-md bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+                            <Edit className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {hasPermission('workers', 'delete') && !w.is_archived && (
                           <button
                             onClick={() => handleDelete(w.id)}
                             title="نقل للأرشيف"

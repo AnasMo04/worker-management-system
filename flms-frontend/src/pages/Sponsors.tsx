@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload, type UploadedDoc } from "@/components/DocumentUpload";
 import api from "../api/axiosConfig";
 import { useSearch } from "@/context/SearchContext";
+import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 
 interface HostingEntity {
@@ -46,6 +47,7 @@ const emptyDocs: EntityDocs = { commercialRegister: null, taxCert: null, license
 const emptyForm = { name: "", license: "", phone: "", email: "", address: "", ownerName: "", ownerNationalID: "", ownerPhone: "", ownerEmail: "" };
 
 export default function Sponsors() {
+  const { hasPermission } = useAuth();
   const [entities, setEntities] = useState<HostingEntity[]>([]);
   const [loading, setLoading] = useState(true);
   const [showArchived, setShowArchived] = useState(false);
@@ -202,10 +204,12 @@ export default function Sponsors() {
             <Switch checked={showArchived} onCheckedChange={setShowArchived} id="archived-toggle-spon" />
             <Label htmlFor="archived-toggle-spon" className="text-xs cursor-pointer font-medium">عرض الأرشيف</Label>
           </div>
-          <Button onClick={() => setAddOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            إضافة جهة
-          </Button>
+          {hasPermission('sponsors', 'create') && (
+            <Button onClick={() => setAddOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              إضافة جهة
+            </Button>
+          )}
         </div>
       </div>
 
@@ -252,10 +256,12 @@ export default function Sponsors() {
                     </td>
                     <td className="p-3">
                       <div className="flex items-center gap-1">
-                        <button onClick={() => handleEditClick(s)} className="w-8 h-8 rounded-md bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
-                          <Edit className="w-3.5 h-3.5" />
-                        </button>
-                        {!s.is_archived && (
+                        {hasPermission('sponsors', 'edit') && (
+                          <button onClick={() => handleEditClick(s)} className="w-8 h-8 rounded-md bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
+                            <Edit className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {hasPermission('sponsors', 'delete') && !s.is_archived && (
                           <button onClick={() => handleDelete(s.id)} className="w-8 h-8 rounded-md bg-muted flex items-center justify-center text-destructive hover:bg-destructive/10 transition-colors">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
