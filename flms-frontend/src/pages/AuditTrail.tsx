@@ -13,6 +13,8 @@ interface AuditLog {
   Actor_ID: number;
   Action_Type: string;
   Target_Ref: string;
+  Target_Name: string;
+  Description: string;
   Timestamp: string;
   Details: string;
   User?: { Name: string };
@@ -100,18 +102,36 @@ export default function AuditTrail() {
                   className="bg-muted/30 hover:bg-muted/50 border border-border rounded-xl p-4 cursor-pointer transition-all hover:translate-x-[-4px]"
                 >
                   <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-sm">{log.User?.Name || "نظام"}</span>
+                    <div className="space-y-1 flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-bold text-sm text-primary">{log.User?.Name || "نظام"}</span>
                         <StatusBadge
-                          variant={log.Action_Type === 'DELETE' ? 'deported' : log.Action_Type === 'UPDATE' ? 'suspended' : 'active'}
-                          label={log.Action_Type === 'CREATE' ? 'إضافة' : log.Action_Type === 'UPDATE' ? 'تعديل' : 'حذف'}
+                          variant={
+                            log.Action_Type === 'DELETE' ? 'deported' :
+                            log.Action_Type === 'UPDATE' ? 'suspended' :
+                            log.Action_Type === 'LOGIN' ? 'active' : 'active'
+                          }
+                          label={
+                            log.Action_Type === 'CREATE' ? 'إضافة' :
+                            log.Action_Type === 'UPDATE' ? 'تعديل' :
+                            log.Action_Type === 'LOGIN' ? 'دخول' : 'حذف'
+                          }
                         />
                       </div>
-                      <p className="text-xs font-mono text-muted-foreground flex items-center gap-1">
-                        <ArrowRight className="w-3 h-3" />
-                        {log.Target_Ref}
+                      <p className="text-sm font-medium leading-relaxed">
+                        {log.Description || `${log.Action_Type} على ${log.Target_Ref}`}
                       </p>
+                      <div className="flex items-center gap-4 mt-2">
+                        <p className="text-[10px] font-mono text-muted-foreground flex items-center gap-1">
+                          <ArrowRight className="w-3 h-3" />
+                          {log.Target_Ref}
+                        </p>
+                        {log.Target_Name && log.Target_Name !== 'N/A' && (
+                          <p className="text-[10px] font-bold text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                            الهدف: {log.Target_Name}
+                          </p>
+                        )}
+                      </div>
                     </div>
                     <div className="text-right space-y-1">
                       <div className="flex items-center gap-1.5 text-xs text-muted-foreground justify-end">
