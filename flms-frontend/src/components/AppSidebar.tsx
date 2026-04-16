@@ -1,5 +1,6 @@
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 import {
   LayoutDashboard, Users, Briefcase, CreditCard, ClipboardList,
   Scale, Wallet, FileText, Smartphone, UserCog, Activity, Settings, Shield,
@@ -7,21 +8,22 @@ import {
 
 const navItems = [
   { title: "لوحة التحكم", url: "/", icon: LayoutDashboard },
-  { title: "الكفلاء", url: "/sponsors", icon: Briefcase },
-  { title: "العمال", url: "/workers", icon: Users },
-  { title: "البطاقات الذكية", url: "/smart-cards", icon: CreditCard },
-  { title: "سجلات التفتيش", url: "/field-logs", icon: ClipboardList },
-  { title: "القضايا القانونية", url: "/legal-cases", icon: Scale },
-  { title: "المالية", url: "/financials", icon: Wallet },
-  { title: "المستندات", url: "/documents", icon: FileText },
-  { title: "الأجهزة", url: "/devices", icon: Smartphone },
-  { title: "المستخدمون", url: "/users", icon: UserCog },
-  { title: "سجل المراجعة", url: "/audit-trail", icon: Activity },
-  { title: "الإعدادات", url: "/settings", icon: Settings },
+  { title: "الجهات المستضيفة", url: "/sponsors", icon: Briefcase, category: "sponsors" },
+  { title: "الأجانب", url: "/workers", icon: Users, category: "workers" },
+  { title: "البطاقات الذكية", url: "/smart-cards", icon: CreditCard, category: "smartcards" },
+  { title: "سجلات التفتيش", url: "/field-logs", icon: ClipboardList, category: "reports" },
+  { title: "القضايا القانونية", url: "/legal-cases", icon: Scale, category: "reports" },
+  { title: "المالية", url: "/financials", icon: Wallet, category: "finance" },
+  { title: "المستندات", url: "/documents", icon: FileText, category: "workers" },
+  { title: "الأجهزة", url: "/devices", icon: Smartphone, category: "reports" },
+  { title: "المستخدمون", url: "/users", icon: UserCog, category: "users" },
+  { title: "سجل المراجعة", url: "/audit-trail", icon: Activity, category: "users" },
+  { title: "الإعدادات", url: "/settings", icon: Settings, category: "users" },
 ];
 
 export function AppSidebar() {
   const location = useLocation();
+  const { hasPermission } = useAuth();
 
   return (
     <aside className="w-64 min-h-screen bg-sidebar text-sidebar-foreground border-l border-sidebar-border flex flex-col shrink-0">
@@ -41,6 +43,7 @@ export function AppSidebar() {
       {/* Navigation */}
       <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
         {navItems.map((item) => {
+          if (item.category && !hasPermission(item.category, 'view')) return null;
           const isActive = location.pathname === item.url;
           return (
             <NavLink

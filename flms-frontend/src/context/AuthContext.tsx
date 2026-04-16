@@ -6,6 +6,7 @@ interface AuthContextType {
   login: (userData: any, token: string) => void;
   logout: () => void;
   isAuthenticated: boolean;
+  hasPermission: (category: string, action: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -41,8 +42,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem("user");
   };
 
+  const hasPermission = (category: string, action: string) => {
+    if (!user) return false;
+    if (user.role === 'admin') return true;
+
+    const permissions = user.permissions || {};
+    return permissions[category]?.includes(action) || false;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token }}>
+    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token, hasPermission }}>
       {children}
     </AuthContext.Provider>
   );

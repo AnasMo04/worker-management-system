@@ -27,7 +27,7 @@ exports.login = async (req, res) => {
 
     // 4. نصنعوا التوكن (Token) باش يقعد مسجل دخول
     const token = jwt.sign(
-      { id: user.id, role: user.Role },
+      { id: user.id, role: user.Role, permissions: user.Permissions },
       process.env.JWT_SECRET || 'Flms_Secret_Key_2026_Top_Secret', // يفضل تحطها في ملف .env
       { expiresIn: '12h' } // التوكن يكمل بعد 12 ساعة
     );
@@ -40,7 +40,8 @@ exports.login = async (req, res) => {
         id: user.id,
         name: user.Name,
         username: user.Username,
-        role: user.Role
+        role: user.Role,
+        permissions: user.Permissions
       }
     });
 
