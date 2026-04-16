@@ -17,6 +17,8 @@ module.exports = (sequelize, DataTypes) => {
     Actor_ID: DataTypes.INTEGER,
     Action_Type: DataTypes.STRING,
     Target_Ref: DataTypes.STRING,
+    Target_Name: DataTypes.STRING,
+    Description: DataTypes.TEXT,
     Timestamp: DataTypes.DATE,
     Details: DataTypes.TEXT
   }, {
