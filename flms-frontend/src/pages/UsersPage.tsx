@@ -157,7 +157,7 @@ export default function UsersPage() {
       resetForm();
       fetchUsers();
     } catch (error: any) {
-      toast({ variant: "destructive", title: "خطأ", description: error.response?.data?.message || "فشل في حفظ البيانات." });
+      toast({ variant: "destructive", title: "خطأ", description: error.response.data.message || "فشل في حفظ البيانات." });
     } finally {
       setIsSaving(false);
     }
@@ -186,7 +186,7 @@ export default function UsersPage() {
       toast({ title: "تم الحذف", description: "تم حذف المستخدم من النظام." });
       fetchUsers();
     } catch (error: any) {
-      toast({ variant: "destructive", title: "خطأ", description: error.response?.data?.message || "فشل في الحذف." });
+      toast({ variant: "destructive", title: "خطأ", description: error.response.data.message || "فشل في الحذف." });
     }
   };
 
@@ -264,7 +264,7 @@ export default function UsersPage() {
                           <Edit className="h-3.5 w-3.5" />
                         </Button>
                       )}
-                      {hasPermission('users', 'delete') && u.id !== currentUser?.id && (
+                      {hasPermission('users', 'delete') && u.id !== currentUser.id && (
                         <Button variant="outline" size="sm" className="h-8 w-8 p-0 text-destructive hover:text-destructive" onClick={() => handleDelete(u.id)}>
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>

@@ -40,7 +40,7 @@ export default function LoginPage() {
       
     } catch (error: any) {
       // التقاط الخطأ من السيرفر وعرضه
-      setErrorMsg(error.response?.data?.message || 'حدث خطأ في الاتصال بالخادم. تأكد من تشغيل السيرفر.');
+      setErrorMsg(error.response.data.message || 'حدث خطأ في الاتصال بالخادم. تأكد من تشغيل السيرفر.');
     } finally {
       setLoading(false);
     }

@@ -166,7 +166,7 @@ export default function Workers() {
 
   const filtered = individuals.filter((i) => {
     const q = searchQuery.toLowerCase();
-    const matchSearch = i.Full_Name?.toLowerCase().includes(q) || i.Passport_Number?.toLowerCase().includes(q) || i.Family_ID?.toLowerCase().includes(q);
+    const matchSearch = i.Full_Name.toLowerCase().includes(q) || i.Passport_Number.toLowerCase().includes(q) || i.Family_ID.toLowerCase().includes(q);
     const matchStatus = statusFilter === "الكل" || i.Current_Status === statusFilter;
     return matchSearch && matchStatus;
   });
@@ -198,10 +198,10 @@ export default function Workers() {
       else formData.delete("Sponsor_ID");
 
       // Append files if they are new (blob URLs indicate new selection)
-      if (docs.passportPhoto?.file) formData.append("passportPhoto", docs.passportPhoto.file);
-      if (docs.healthCert?.file) formData.append("healthCert", docs.healthCert.file);
-      if (docs.residencyPhoto?.file) formData.append("residencyPhoto", docs.residencyPhoto.file);
-      if (docs.personalPhoto?.file) formData.append("personalPhoto", docs.personalPhoto.file);
+      if (docs.passportPhoto.file) formData.append("passportPhoto", docs.passportPhoto.file);
+      if (docs.healthCert.file) formData.append("healthCert", docs.healthCert.file);
+      if (docs.residencyPhoto.file) formData.append("residencyPhoto", docs.residencyPhoto.file);
+      if (docs.personalPhoto.file) formData.append("personalPhoto", docs.personalPhoto.file);
 
       const config = { headers: { 'Content-Type': 'multipart/form-data' } };
 
@@ -217,7 +217,7 @@ export default function Workers() {
       fetchData();
     } catch (error: any) {
       console.error("Error saving individual:", error);
-      const msg = error.response?.data?.message || "فشل في حفظ البيانات.";
+      const msg = error.response.data.message || "فشل في حفظ البيانات.";
       toast({ variant: "destructive", title: "خطأ", description: msg });
     } finally {
       setIsSaving(false);
@@ -232,7 +232,7 @@ export default function Workers() {
       Passport_Number: ind.Passport_Number,
       Nationality: ind.Nationality,
       Residence_Address: ind.Residence_Address || "",
-      Sponsor_ID: ind.Sponsor_ID?.toString() || "",
+      Sponsor_ID: ind.Sponsor_ID.toString() || "",
       National_ID: "", // Standardized field mapping
       Birth_Date: "",
       Category: ind.Category || "worker",
@@ -342,13 +342,13 @@ export default function Workers() {
                     <td className="p-3 font-medium">{w.Full_Name}</td>
                     <td className="p-3">
                       <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold">
-                        {categories.find(c => c.id === w.Category)?.label || w.Category}
+                        {categories.find(c => c.id === w.Category).label || w.Category}
                       </span>
                     </td>
                     <td className="p-3 font-mono text-xs">{w.Passport_Number}</td>
                     <td className="p-3">{w.Nationality}</td>
                     <td className="p-3 text-xs">
-                      {w.Freelance ? "يعمل لحسابه" : (w.Sponsor?.Sponsor_Name || "—")}
+                      {w.Freelance ? "يعمل لحسابه" : (w.Sponsor.Sponsor_Name || "—")}
                       <br/>
                       <span className="text-[10px] text-muted-foreground">{w.Residence_Address}</span>
                     </td>
@@ -356,7 +356,7 @@ export default function Workers() {
                     <td className="p-3 font-mono text-xs text-blue-500 font-bold">{w.Family_ID || "—"}</td>
                     <td className="p-3">
                       <StatusBadge
-                        variant={statusOptions.find(o => o.value === w.Current_Status)?.variant as any || "default"}
+                        variant={statusOptions.find(o => o.value === w.Current_Status).variant as any || "default"}
                         label={w.Current_Status}
                       />
                     </td>
@@ -509,7 +509,7 @@ export default function Workers() {
                   <Popover open={sponsorOpen} onOpenChange={setSponsorOpen}>
                     <PopoverTrigger asChild>
                       <Button variant="outline" role="combobox" className="w-full justify-between font-normal">
-                        {form.Sponsor_ID ? sponsors.find((s) => s.id.toString() === form.Sponsor_ID)?.Sponsor_Name : "اختر الجهة المستضيفة..."}
+                        {form.Sponsor_ID ? sponsors.find((s) => s.id.toString() === form.Sponsor_ID).Sponsor_Name : "اختر الجهة المستضيفة..."}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>

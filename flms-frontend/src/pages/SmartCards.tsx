@@ -181,7 +181,7 @@ export default function SmartCards() {
       toast({
         variant: "destructive",
         title: "خطأ",
-        description: error.response?.data?.message || "فشل في ربط البطاقة."
+        description: error.response.data.message || "فشل في ربط البطاقة."
       });
     }
   };
@@ -281,7 +281,7 @@ export default function SmartCards() {
                 filtered.map((c) => (
                   <tr key={c.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
                     <td className="p-3 font-mono text-xs">{c.Card_Serial_No}</td>
-                    <td className="p-3 font-medium">{c.Worker?.Full_Name || <span className="text-muted-foreground italic">غير مرتبطة</span>}</td>
+                    <td className="p-3 font-medium">{c.Worker.Full_Name || <span className="text-muted-foreground italic">غير مرتبطة</span>}</td>
                     <td className="p-3">{c.Issue_Date}</td>
                     <td className="p-3">{c.Expiry_Date}</td>
                     <td className="p-3">
@@ -355,7 +355,7 @@ export default function SmartCards() {
                 value={readingValue}
                 onChange={(e) => setReadingValue(e.target.value)}
                 onKeyDown={handleNfcInput}
-                onBlur={() => nfcInputRef.current?.focus()}
+                onBlur={() => nfcInputRef.current.focus()}
                 className="absolute opacity-0 pointer-events-none"
                 autoFocus
               />
@@ -402,7 +402,7 @@ export default function SmartCards() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>ربط البطاقة بعامل</DialogTitle>
-            <DialogDescription>اختر العامل لربطه بالبطاقة {selectedCard?.Card_Serial_No}</DialogDescription>
+            <DialogDescription>اختر العامل لربطه بالبطاقة {selectedCard.Card_Serial_No}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <Select value={selectedWorker} onValueChange={setSelectedWorker}>
@@ -428,7 +428,7 @@ export default function SmartCards() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>إلغاء البطاقة</DialogTitle>
-            <DialogDescription>هل أنت متأكد من إلغاء البطاقة {selectedCard?.Card_Serial_No}؟ هذا الإجراء لا يمكن التراجع عنه.</DialogDescription>
+            <DialogDescription>هل أنت متأكد من إلغاء البطاقة {selectedCard.Card_Serial_No}؟ هذا الإجراء لا يمكن التراجع عنه.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <Select value={cancelReason} onValueChange={setCancelReason}>
@@ -456,16 +456,16 @@ export default function SmartCards() {
       <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>سجل البطاقة {selectedCard?.Card_Serial_No}</DialogTitle>
-            <DialogDescription>{selectedCard?.Worker ? `مرتبطة بـ: ${selectedCard.Worker.Full_Name}` : "غير مرتبطة بعامل"}</DialogDescription>
+            <DialogTitle>سجل البطاقة {selectedCard.Card_Serial_No}</DialogTitle>
+            <DialogDescription>{selectedCard.Worker ? `مرتبطة بـ: ${selectedCard.Worker.Full_Name}` : "غير مرتبطة بعامل"}</DialogDescription>
           </DialogHeader>
           <div className="py-2">
             <div className="relative space-y-0">
-              {selectedCard?.history?.map((h, i) => (
+              {selectedCard.history.map((h, i) => (
                 <div key={i} className="flex gap-3 pb-4 last:pb-0">
                   <div className="flex flex-col items-center">
                     <div className="h-2.5 w-2.5 rounded-full bg-primary mt-1.5 shrink-0" />
-                    {i < (selectedCard?.history?.length ?? 0) - 1 && <div className="w-px flex-1 bg-border" />}
+                    {i < (selectedCard.history.length ?? 0) - 1 && <div className="w-px flex-1 bg-border" />}
                   </div>
                   <div className="pb-2">
                     <p className="text-sm font-medium">{h.action}</p>
@@ -477,7 +477,7 @@ export default function SmartCards() {
                   </div>
                 </div>
               ))}
-              {(!selectedCard?.history || selectedCard.history.length === 0) && (
+              {(!selectedCard.history || selectedCard.history.length === 0) && (
                 <p className="text-center text-muted-foreground text-sm py-4">لا يوجد سجل لهذه البطاقة</p>
               )}
             </div>

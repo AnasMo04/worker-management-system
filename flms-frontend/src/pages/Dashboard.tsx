@@ -1,201 +1,161 @@
 import { useState, useEffect } from "react";
+import { formatDateTime, formatNumber, formatTime } from "../utils/formatDate";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { KPICard } from "@/components/KPICard";
 import { StatusBadge } from "@/components/StatusBadge";
-import { Users, CreditCard, Scale, Wallet } from "lucide-react";
 import {
-  PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
+  Users, CreditCard, ShieldAlert, Wallet,
+  TrendingUp, Clock, AlertCircle, CheckCircle2
+} from "lucide-react";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, Cell, PieChart, Pie
 } from "recharts";
 import api from "../api/axiosConfig";
-import { useToast } from "@/hooks/use-toast";
-
-const statusColors: Record<string, string> = {
-  "active": "hsl(152, 60%, 40%)",
-  "suspended": "hsl(38, 92%, 50%)",
-  "expired": "hsl(215, 15%, 50%)",
-  "runaway": "hsl(0, 72%, 51%)",
-  "نشط": "hsl(152, 60%, 40%)",
-  "موقوف": "hsl(38, 92%, 50%)",
-  "منتهي": "hsl(215, 15%, 50%)",
-  "هارب": "hsl(0, 72%, 51%)",
-};
 
 export default function Dashboard() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
 
   useEffect(() => {
-    fetchDashboardData();
+    fetchSummary();
   }, []);
 
-  const fetchDashboardData = async () => {
+  const fetchSummary = async () => {
     try {
       setLoading(true);
       const response = await api.get("/api/dashboard/summary");
       setData(response.data);
     } catch (error) {
-      console.error("Error fetching dashboard data:", error);
-      toast({
-        variant: "destructive",
-        title: "خطأ",
-        description: "فشل في تحميل بيانات لوحة التحكم. تأكد من تسجيل الدخول."
-      });
+      console.error("Error fetching dashboard summary:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) {
-    return <div className="p-8 text-center text-muted-foreground animate-pulse">جاري تحميل لوحة التحكم...</div>;
-  }
+  if (loading) return <div className="p-8 text-center">جاري تحميل لوحة التحكم...</div>;
 
-  const statusData = data?.statusBreakdown?.map((item: any) => ({
-    name: item.Current_Status,
-    value: parseInt(item.count),
-    color: statusColors[item.Current_Status] || "hsl(215, 15%, 50%)"
-  })) || [];
+  const statusColors: any = {
+    "نشط": "#10b981",
+    "موقوف": "#f59e0b",
+    "مرحّل": "#ef4444",
+    "خارج البلاد": "#64748b"
+  };
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">لوحة التحكم</h2>
-        <p className="text-muted-foreground text-sm">نظرة عامة على نظام إدارة العمالة الأجنبية</p>
+        <h2 className="text-2xl font-bold text-foreground">نظرة عامة</h2>
+        <p className="text-muted-foreground text-sm">إحصائيات المنظومة والنشاط الأخير</p>
       </div>
 
-      {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
-          title="إجمالي العمال"
-          value={data?.counts?.totalWorkers || 0}
-          icon={<Users />}
-          gradient="kpi-gradient-1"
-          change="محدث الآن"
+          title="إجمالي الأجانب"
+          value={formatNumber(data?.counts?.workers || 0)}
+          icon={Users}
+          trend="+12% من الشهر الماضي"
+          color="text-primary"
         />
         <KPICard
           title="البطاقات النشطة"
-          value={data?.counts?.activeCards || 0}
-          icon={<CreditCard />}
-          gradient="kpi-gradient-2"
-          change={`${data?.counts?.totalWorkers ? Math.round((data?.counts?.activeCards / data?.counts?.totalWorkers) * 100) : 0}% من الإجمالي`}
+          value={formatNumber(data?.counts?.activeCards || 0)}
+          icon={CreditCard}
+          color="text-success"
         />
         <KPICard
           title="القضايا المفتوحة"
-          value={data?.counts?.openLegalCases || 0}
-          icon={<Scale />}
-          gradient="kpi-gradient-3"
-          change="قضايا قيد المتابعة"
+          value={formatNumber(data?.counts?.openCases || 0)}
+          icon={ShieldAlert}
+          color="text-destructive"
         />
         <KPICard
-          title="مدفوعات معلقة"
-          value={(data?.counts?.pendingPayments || 0).toLocaleString("ar-LY")}
-          icon={<Wallet />}
-          gradient="kpi-gradient-4"
-          change="دينار ليبي"
+          title="إجمالي المالية المعلقة"
+          value={formatNumber(data?.counts?.pendingPayments || 0)}
+          icon={Wallet}
+          trend="د.ل"
+          color="text-warning"
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Inspections */}
-        <div className="lg:col-span-2 bg-card rounded-lg border border-border shadow-sm">
-          <div className="p-4 border-b border-border flex justify-between items-center">
-            <h3 className="font-semibold">آخر عمليات التفتيش</h3>
-            <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">ميداني</span>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border text-muted-foreground">
-                  <th className="text-right p-3 font-medium">العامل</th>
-                  <th className="text-right p-3 font-medium">الضابط</th>
-                  <th className="text-right p-3 font-medium">الجهاز</th>
-                  <th className="text-right p-3 font-medium">الوقت</th>
-                  <th className="text-right p-3 font-medium">النتيجة</th>
-                </tr>
-              </thead>
-              <tbody>
-                {!data?.recentInspections || data.recentInspections.length === 0 ? (
-                  <tr><td colSpan={5} className="p-8 text-center text-muted-foreground italic">لا توجد عمليات تفتيش حديثة</td></tr>
-                ) : (
-                  data.recentInspections.map((item: any) => (
-                    <tr key={item.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
-                      <td className="p-3 font-medium">{item.Worker?.Full_Name || "—"}</td>
-                      <td className="p-3">{item.User?.Name || "—"}</td>
-                      <td className="p-3 font-mono text-xs">{item.Device_ID || "—"}</td>
-                      <td className="p-3 text-muted-foreground text-xs">
-                        {item.Scan_Time ? new Date(item.Scan_Time).toLocaleString("ar-LY") : "—"}
-                      </td>
-                      <td className="p-3"><StatusBadge variant={item.Result as any} /></td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">توزيع الحالات (إحصائيات)</CardTitle>
+          </CardHeader>
+          <CardContent className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={data?.statusBreakdown || []}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                <XAxis dataKey="status" fontSize={12} stroke="hsl(var(--muted-foreground))" />
+                <YAxis fontSize={12} stroke="hsl(var(--muted-foreground))" />
+                <Tooltip
+                  cursor={{fill: 'hsl(var(--muted)/0.2)'}}
+                  contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '8px' }}
+                  formatter={(value: number) => [formatNumber(value), "العدد"]}
+                />
+                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  {(data?.statusBreakdown || []).map((entry: any, index: number) => (
+                    <Cell key={`cell-${index}`} fill={statusColors[entry.status] || "#3b82f6"} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
 
-        {/* Status Chart */}
-        <div className="bg-card rounded-lg border border-border shadow-sm">
-          <div className="p-4 border-b border-border">
-            <h3 className="font-semibold">توزيع حالات العمال</h3>
-          </div>
-          <div className="p-4">
-            {statusData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={220}>
-                <PieChart>
-                  <Pie
-                    data={statusData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {statusData.map((entry: any, index: number) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{ direction: 'rtl', textAlign: 'right' }}
-                    formatter={(value: number) => [value.toLocaleString("ar-LY"), "العدد"]}
-                  />
-                  <Legend verticalAlign="bottom" height={36}/>
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-[220px] flex items-center justify-center text-muted-foreground text-sm italic">
-                لا توجد بيانات متاحة للمخطط
-              </div>
-            )}
-          </div>
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">آخر الفحوصات الميدانية</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {(data?.recentLogs || []).map((item: any) => (
+                <div key={item.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30 border border-border">
+                  <div className="p-2 rounded-full bg-primary/10">
+                    <TrendingUp className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold truncate">{item.Worker?.Full_Name || "عامل غير معروف"}</p>
+                    <p className="text-[10px] text-muted-foreground">{item.Result || "تم الفحص بنجاح"}</p>
+                    <div className="flex items-center gap-1.5 mt-1 text-[10px] text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      {item.Scan_Time ? formatDateTime(item.Scan_Time) : "—"}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Recent Audit */}
-      <div className="bg-card rounded-lg border border-border shadow-sm">
-        <div className="p-4 border-b border-border">
-          <h3 className="font-semibold">آخر النشاطات على النظام</h3>
-        </div>
-        <div className="p-4 space-y-4">
-          {!data?.recentAuditLogs || data.recentAuditLogs.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4 italic">لا توجد نشاطات حديثة مسجلة</p>
-          ) : (
-            data.recentAuditLogs.map((item: any) => (
-              <div key={item.id} className="flex items-center gap-3 group">
-                <div className="w-2 h-2 rounded-full bg-primary/40 group-hover:bg-primary transition-colors shrink-0" />
-                <div className="flex-1 border-b border-border/50 pb-2 group-last:border-0">
-                  <div className="flex justify-between items-start">
-                    <span className="font-medium text-sm">{item.User?.Name || "نظام"}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {item.createdAt ? new Date(item.createdAt).toLocaleTimeString("ar-LY") : ""}
-                    </span>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">سجل النشاط التقني</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {(data?.auditLogs || []).map((item: any) => (
+                <div key={item.id} className="flex items-center justify-between py-2 border-b last:border-0 border-border">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold">{item.User?.Name || "نظام"}</p>
+                      <p className="text-[10px] text-muted-foreground">{item.Action_Type}</p>
+                    </div>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-0.5">{item.Action_Type}</p>
+                  <div className="text-right">
+                    <p className="text-[10px] font-mono">{formatTime(item.createdAt)}</p>
+                  </div>
                 </div>
-              </div>
-            ))
-          )}
-        </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

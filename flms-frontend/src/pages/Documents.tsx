@@ -1,3 +1,4 @@
+import { formatDate } from "../utils/formatDate";
 import { useState, useEffect } from "react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Search, FileText, Download, ExternalLink, Calendar, User } from "lucide-react";
@@ -42,10 +43,10 @@ export default function Documents() {
   };
 
   const filtered = documents.filter((d) => {
-    const name = d.Worker?.Full_Name || d.Sponsor?.Sponsor_Name || "";
+    const name = d.Worker.Full_Name || d.Sponsor.Sponsor_Name || "";
     return name.toLowerCase().includes(search.toLowerCase()) ||
            d.Doc_Type.toLowerCase().includes(search.toLowerCase()) ||
-           d.Doc_Number?.toLowerCase().includes(search.toLowerCase());
+           d.Doc_Number.toLowerCase().includes(search.toLowerCase());
   });
 
   const getFileUrl = (path: string) => {
@@ -101,7 +102,7 @@ export default function Documents() {
                     <td className="p-3 font-medium">
                       <div className="flex items-center gap-2">
                         <User className="w-3.5 h-3.5 text-muted-foreground" />
-                        {d.Worker?.Full_Name || d.Sponsor?.Sponsor_Name || "—"}
+                        {d.Worker.Full_Name || d.Sponsor.Sponsor_Name || "—"}
                       </div>
                     </td>
                     <td className="p-3">
@@ -114,7 +115,7 @@ export default function Documents() {
                     <td className="p-3 text-xs">
                       <div className="flex items-center gap-1.5 text-muted-foreground">
                         <Calendar className="w-3 h-3" />
-                        {new Date(d.createdAt).toLocaleDateString('ar-EG')}
+                        {formatDate(d.createdAt)}
                       </div>
                     </td>
                     <td className="p-3 text-xs">{d.Expiry_Date || "—"}</td>

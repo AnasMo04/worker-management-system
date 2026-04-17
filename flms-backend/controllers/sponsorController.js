@@ -45,12 +45,13 @@ exports.getAll = async (req, res) => {
               SELECT COUNT(*)
               FROM Workers AS worker
               WHERE
-                worker.Sponsor_ID = Sponsor.id
+                worker.Sponsor_ID = Sponsor.id AND worker.is_archived = false
             )`),
             'workersCount'
           ]
         ]
-      }
+      },
+      order: [['createdAt', 'DESC']]
     });
     res.json(sponsors);
   } catch (error) {
@@ -70,7 +71,7 @@ exports.getById = async (req, res) => {
               SELECT COUNT(*)
               FROM Workers AS worker
               WHERE
-                worker.Sponsor_ID = Sponsor.id
+                worker.Sponsor_ID = Sponsor.id AND worker.is_archived = false
             )`),
             'workersCount'
           ]
@@ -101,24 +102,6 @@ exports.create = async (req, res) => {
       if (req.files.identityCopy) data.Identity_Copy = req.files.identityCopy[0].path.replace(/\\/g, '/');
     }
 
-    const {
-      Commercial_Reg_No,
-      Sponsor_Name,
-      Phone,
-      Email,
-      Address,
-      Commercial_Reg_Copy,
-      Tax_Cert_Copy,
-      License_Copy,
-      Auth_Letter_Copy,
-      Owner_Name,
-      Owner_National_ID,
-      Owner_Phone,
-      Owner_Email,
-      Owner_Photo,
-      Identity_Copy
-    } = req.body;
-
     const newSponsor = await Sponsor.create({
       Commercial_Reg_No: data.Commercial_Reg_No,
       Sponsor_Name: data.Sponsor_Name,
@@ -142,7 +125,7 @@ exports.create = async (req, res) => {
 
     res.status(201).json(newSponsor);
   } catch (error) {
-    await t.rollback();
+    if (t) await t.rollback();
     console.error('Create Sponsor Error:', error);
     res.status(500).json({ message: 'Error creating sponsor' });
   }
@@ -163,24 +146,6 @@ exports.update = async (req, res) => {
       if (req.files.identityCopy) data.Identity_Copy = req.files.identityCopy[0].path.replace(/\\/g, '/');
     }
 
-    const {
-      Commercial_Reg_No,
-      Sponsor_Name,
-      Phone,
-      Email,
-      Address,
-      Commercial_Reg_Copy,
-      Tax_Cert_Copy,
-      License_Copy,
-      Auth_Letter_Copy,
-      Owner_Name,
-      Owner_National_ID,
-      Owner_Phone,
-      Owner_Email,
-      Owner_Photo,
-      Identity_Copy
-    } = req.body;
-
     const sponsor = await Sponsor.findByPk(id);
     if (!sponsor) {
       return res.status(404).json({ message: 'Sponsor not found' });
@@ -192,16 +157,16 @@ exports.update = async (req, res) => {
       Phone: data.Phone,
       Email: data.Email,
       Address: data.Address,
-      Commercial_Reg_Copy: data.Commercial_Reg_Copy,
-      Tax_Cert_Copy: data.Tax_Cert_Copy,
-      License_Copy: data.License_Copy,
-      Auth_Letter_Copy: data.Auth_Letter_Copy,
+      Commercial_Reg_Copy: data.Commercial_Reg_Copy || sponsor.Commercial_Reg_Copy,
+      Tax_Cert_Copy: data.Tax_Cert_Copy || sponsor.Tax_Cert_Copy,
+      License_Copy: data.License_Copy || sponsor.License_Copy,
+      Auth_Letter_Copy: data.Auth_Letter_Copy || sponsor.Auth_Letter_Copy,
       Owner_Name: data.Owner_Name,
       Owner_National_ID: data.Owner_National_ID,
       Owner_Phone: data.Owner_Phone,
       Owner_Email: data.Owner_Email,
-      Owner_Photo: data.Owner_Photo,
-      Identity_Copy: data.Identity_Copy
+      Owner_Photo: data.Owner_Photo || sponsor.Owner_Photo,
+      Identity_Copy: data.Identity_Copy || sponsor.Identity_Copy
     }, { transaction: t });
 
     await syncSponsorDocuments(sponsor, t);
@@ -209,7 +174,7 @@ exports.update = async (req, res) => {
 
     res.json(sponsor);
   } catch (error) {
-    await t.rollback();
+    if (t) await t.rollback();
     console.error('Update Sponsor Error:', error);
     res.status(500).json({ message: 'Error updating sponsor' });
   }
@@ -223,7 +188,6 @@ exports.delete = async (req, res) => {
       return res.status(404).json({ message: 'Sponsor not found' });
     }
 
-    // Check if sponsor has workers before archiving (optional)
     const workersCount = await Worker.count({ where: { Sponsor_ID: id, is_archived: false } });
     if (workersCount > 0) {
       return res.status(400).json({ message: 'لا يمكن أرشفة الجهة لوجود أفراد مسجلين عليها' });
