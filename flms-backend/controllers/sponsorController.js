@@ -43,9 +43,9 @@ exports.getAll = async (req, res) => {
           [
             Sequelize.literal(`(
               SELECT COUNT(*)
-              FROM Workers AS worker
+              FROM Workers
               WHERE
-                worker.Sponsor_ID = Sponsor.id AND worker.is_archived = false
+                Workers.Sponsor_ID = Sponsor.id AND Workers.is_archived = false
             )`),
             'workersCount'
           ]
@@ -69,9 +69,9 @@ exports.getById = async (req, res) => {
           [
             Sequelize.literal(`(
               SELECT COUNT(*)
-              FROM Workers AS worker
+              FROM Workers
               WHERE
-                worker.Sponsor_ID = Sponsor.id AND worker.is_archived = false
+                Workers.Sponsor_ID = Sponsor.id AND Workers.is_archived = false
             )`),
             'workersCount'
           ]

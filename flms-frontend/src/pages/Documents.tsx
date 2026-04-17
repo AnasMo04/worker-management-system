@@ -115,10 +115,10 @@ export default function Documents() {
                     <td className="p-3 text-xs">
                       <div className="flex items-center gap-1.5 text-muted-foreground">
                         <Calendar className="w-3 h-3" />
-                        {formatDate(d.createdAt)}
+                        {formatDateTime(d.createdAt)}
                       </div>
                     </td>
-                    <td className="p-3 text-xs">{d.Expiry_Date || "—"}</td>
+                    <td className="p-3 text-xs">{d.Expiry_Date ? formatDate(d.Expiry_Date) : "—"}</td>
                     <td className="p-3">
                       <div className="flex gap-2">
                         <a

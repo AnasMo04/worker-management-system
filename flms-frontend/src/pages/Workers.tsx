@@ -232,7 +232,7 @@ export default function Workers() {
       Passport_Number: ind.Passport_Number,
       Nationality: ind.Nationality,
       Residence_Address: ind.Residence_Address || "",
-      Sponsor_ID: ind.Sponsor_ID.toString() || "",
+      Sponsor_ID: ind.Sponsor_ID ? ind.Sponsor_ID.toString() : "",
       National_ID: "", // Standardized field mapping
       Birth_Date: "",
       Category: ind.Category || "worker",
