@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Filter, Calendar, User, Activity, Eye, ArrowRight, ShieldAlert, Monitor, Globe, ChevronLeft, Diff } from "lucide-react";
+import { ArrowRight, ShieldAlert, Monitor, Globe, ChevronLeft, Diff } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatDateTime } from "../utils/formatDate";
 
 interface AuditLog {
   id: number;
@@ -47,8 +48,8 @@ export default function AuditTrail() {
   };
 
   const filtered = logs.filter(l =>
-    l.User?.Name.toLowerCase().includes(search.toLowerCase()) ||
-    l.Description?.toLowerCase().includes(search.toLowerCase()) ||
+    l.User.Name.toLowerCase().includes(search.toLowerCase()) ||
+    l.Description.toLowerCase().includes(search.toLowerCase()) ||
     l.Target_Ref.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -139,7 +140,7 @@ export default function AuditTrail() {
                   <div className="flex items-start justify-between">
                     <div className="space-y-1 flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-bold text-sm text-primary">{log.User?.Name || "نظام"}</span>
+                        <span className="font-bold text-sm text-primary">{log.User.Name || "نظام"}</span>
                         <StatusBadge
                           variant={
                             log.Action_Type === 'DELETE' ? 'deported' :
@@ -172,9 +173,9 @@ export default function AuditTrail() {
                       </div>
                     </div>
                     <div className="text-right space-y-1">
-                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground justify-end">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground justify-end font-mono">
                         <Calendar className="w-3.5 h-3.5" />
-                        {new Date(log.createdAt).toLocaleString('ar-EG')}
+                        {formatDateTime(log.createdAt)}
                       </div>
                       <div className="flex items-center gap-1 text-[10px] text-muted-foreground justify-end">
                         <Globe className="w-3 h-3" />
@@ -198,12 +199,12 @@ export default function AuditTrail() {
               </div>
               <div>
                 <h3 className="text-lg font-bold">تفاصيل العملية التشغيلية</h3>
-                <p className="text-xs text-slate-400 font-mono">Log ID: #{selectedLog?.id}</p>
+                <p className="text-xs text-slate-400 font-mono">Log ID: #{selectedLog.id}</p>
               </div>
             </div>
             <div className="text-left">
               <p className="text-xs text-slate-400">توقيت العملية</p>
-              <p className="text-sm font-bold font-mono">{selectedLog && new Date(selectedLog.createdAt).toLocaleString('ar-EG')}</p>
+              <p className="text-sm font-bold font-mono">{selectedLog && formatDateTime(selectedLog.createdAt)}</p>
             </div>
           </div>
 
@@ -217,7 +218,7 @@ export default function AuditTrail() {
                       <Label className="text-[10px] text-muted-foreground font-bold">المستخدم المسؤول</Label>
                       <p className="text-sm font-bold flex items-center gap-2">
                         <User className="w-4 h-4 text-primary" />
-                        {selectedLog.User?.Name}
+                        {selectedLog.User.Name}
                       </p>
                     </div>
                     <div className="p-4 bg-muted/40 rounded-2xl border border-border space-y-1">

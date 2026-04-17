@@ -36,7 +36,8 @@ exports.getAll = async (req, res) => {
 
     const workers = await Worker.findAll({
       where,
-      include: [{ model: Sponsor, attributes: ['Sponsor_Name'] }]
+      include: [{ model: Sponsor, attributes: ['Sponsor_Name'] }],
+      order: [['createdAt', 'DESC']]
     });
     res.json(workers);
   } catch (error) {
@@ -66,7 +67,6 @@ exports.create = async (req, res) => {
   try {
     const data = req.body;
 
-    // Handle files if uploaded via multer
     if (req.files) {
       if (req.files.passportPhoto) data.Passport_Copy = req.files.passportPhoto[0].path.replace(/\\/g, '/');
       if (req.files.healthCert) data.Health_Cert_Copy = req.files.healthCert[0].path.replace(/\\/g, '/');
@@ -74,48 +74,17 @@ exports.create = async (req, res) => {
       if (req.files.personalPhoto) data.Personal_Photo_Copy = req.files.personalPhoto[0].path.replace(/\\/g, '/');
     }
 
-    const {
-      Sponsor_ID,
-      Passport_Number,
-      National_ID,
-      Full_Name,
-      Nationality,
-      Birth_Date,
-      Residence_Address,
-      Current_Status,
-      NFC_UID,
-      Primary_Card_Serial,
-      Passport_Copy,
-      Health_Cert_Copy,
-      Residency_Copy,
-      Personal_Photo_Copy,
-      Category,
-      Document_Type,
-      Health_Cert_Expiry,
-      Freelance,
-      Family_ID,
-      Relationship,
-      Gender
-    } = req.body;
-
-    // Check for duplicate Document Number
-    if (Passport_Number) {
-      const existing = await Worker.findOne({ where: { Passport_Number: Passport_Number.trim() } });
+    if (data.Passport_Number) {
+      const existing = await Worker.findOne({ where: { Passport_Number: data.Passport_Number.trim() } });
       if (existing) {
         return res.status(400).json({ message: 'رقم الوثيقة مسجل مسبقاً في النظام' });
       }
     }
 
-    // Validate Sponsor_ID exists (if not freelance)
-    if (Sponsor_ID && !Freelance) {
-      const sponsor = await Sponsor.findByPk(Sponsor_ID);
-      if (!sponsor) {
-        return res.status(400).json({ message: 'Invalid Sponsor_ID' });
-      }
-    }
+    const isFreelance = data.Freelance === 'true' || data.Freelance === true;
 
     const newWorker = await Worker.create({
-      Sponsor_ID: data.Freelance ? null : data.Sponsor_ID,
+      Sponsor_ID: isFreelance ? null : (data.Sponsor_ID ? parseInt(data.Sponsor_ID) : null),
       Passport_Number: data.Passport_Number,
       National_ID: data.National_ID,
       Full_Name: data.Full_Name,
@@ -132,7 +101,7 @@ exports.create = async (req, res) => {
       Category: data.Category,
       Document_Type: data.Document_Type,
       Health_Cert_Expiry: data.Health_Cert_Expiry,
-      Freelance: data.Freelance,
+      Freelance: isFreelance,
       Family_ID: data.Family_ID,
       Relationship: data.Relationship,
       Gender: data.Gender
@@ -143,7 +112,7 @@ exports.create = async (req, res) => {
 
     res.status(201).json(newWorker);
   } catch (error) {
-    await t.rollback();
+    if (t) await t.rollback();
     console.error('Create Worker Error:', error);
     res.status(500).json({ message: 'Error creating worker' });
   }
@@ -155,7 +124,6 @@ exports.update = async (req, res) => {
     const { id } = req.params;
     const data = req.body;
 
-    // Handle files if uploaded via multer
     if (req.files) {
       if (req.files.passportPhoto) data.Passport_Copy = req.files.passportPhoto[0].path.replace(/\\/g, '/');
       if (req.files.healthCert) data.Health_Cert_Copy = req.files.healthCert[0].path.replace(/\\/g, '/');
@@ -163,45 +131,22 @@ exports.update = async (req, res) => {
       if (req.files.personalPhoto) data.Personal_Photo_Copy = req.files.personalPhoto[0].path.replace(/\\/g, '/');
     }
 
-    const {
-      Sponsor_ID,
-      Passport_Number,
-      National_ID,
-      Full_Name,
-      Nationality,
-      Birth_Date,
-      Residence_Address,
-      Current_Status,
-      NFC_UID,
-      Primary_Card_Serial,
-      Passport_Copy,
-      Health_Cert_Copy,
-      Residency_Copy,
-      Personal_Photo_Copy,
-      Category,
-      Document_Type,
-      Health_Cert_Expiry,
-      Freelance,
-      Family_ID,
-      Relationship,
-      Gender
-    } = req.body;
-
     const worker = await Worker.findByPk(id);
     if (!worker) {
       return res.status(404).json({ message: 'Worker not found' });
     }
 
-    // Check for duplicate Document Number (excluding current)
-    if (Passport_Number && Passport_Number.trim() !== worker.Passport_Number) {
-      const existing = await Worker.findOne({ where: { Passport_Number: Passport_Number.trim() } });
+    if (data.Passport_Number && data.Passport_Number.trim() !== worker.Passport_Number) {
+      const existing = await Worker.findOne({ where: { Passport_Number: data.Passport_Number.trim() } });
       if (existing) {
         return res.status(400).json({ message: 'رقم الوثيقة مسجل مسبقاً في النظام' });
       }
     }
 
+    const isFreelance = data.Freelance === 'true' || data.Freelance === true;
+
     await worker.update({
-      Sponsor_ID: data.Freelance ? null : data.Sponsor_ID,
+      Sponsor_ID: isFreelance ? null : (data.Sponsor_ID ? parseInt(data.Sponsor_ID) : null),
       Passport_Number: data.Passport_Number,
       National_ID: data.National_ID,
       Full_Name: data.Full_Name,
@@ -211,14 +156,14 @@ exports.update = async (req, res) => {
       Current_Status: data.Current_Status,
       NFC_UID: data.NFC_UID,
       Primary_Card_Serial: data.Primary_Card_Serial,
-      Passport_Copy: data.Passport_Copy,
-      Health_Cert_Copy: data.Health_Cert_Copy,
-      Residency_Copy: data.Residency_Copy,
-      Personal_Photo_Copy: data.Personal_Photo_Copy,
+      Passport_Copy: data.Passport_Copy || worker.Passport_Copy,
+      Health_Cert_Copy: data.Health_Cert_Copy || worker.Health_Cert_Copy,
+      Residency_Copy: data.Residency_Copy || worker.Residency_Copy,
+      Personal_Photo_Copy: data.Personal_Photo_Copy || worker.Personal_Photo_Copy,
       Category: data.Category,
       Document_Type: data.Document_Type,
       Health_Cert_Expiry: data.Health_Cert_Expiry,
-      Freelance: data.Freelance,
+      Freelance: isFreelance,
       Family_ID: data.Family_ID,
       Relationship: data.Relationship,
       Gender: data.Gender
@@ -229,7 +174,7 @@ exports.update = async (req, res) => {
 
     res.json(worker);
   } catch (error) {
-    await t.rollback();
+    if (t) await t.rollback();
     console.error('Update Worker Error:', error);
     res.status(500).json({ message: 'Error updating worker' });
   }

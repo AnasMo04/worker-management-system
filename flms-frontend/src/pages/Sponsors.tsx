@@ -105,12 +105,12 @@ export default function Sponsors() {
       formData.append("Owner_Email", form.ownerEmail.trim());
 
       // Append files if they are new
-      if (docs.commercialRegister?.file) formData.append("commercialReg", docs.commercialRegister.file);
-      if (docs.taxCert?.file) formData.append("taxCert", docs.taxCert.file);
-      if (docs.licenseCopy?.file) formData.append("license", docs.licenseCopy.file);
-      if (docs.authLetter?.file) formData.append("authLetter", docs.authLetter.file);
-      if (docs.ownerPhoto?.file) formData.append("ownerPhoto", docs.ownerPhoto.file);
-      if (docs.identityCopy?.file) formData.append("identityCopy", docs.identityCopy.file);
+      if (docs.commercialRegister.file) formData.append("commercialReg", docs.commercialRegister.file);
+      if (docs.taxCert.file) formData.append("taxCert", docs.taxCert.file);
+      if (docs.licenseCopy.file) formData.append("license", docs.licenseCopy.file);
+      if (docs.authLetter.file) formData.append("authLetter", docs.authLetter.file);
+      if (docs.ownerPhoto.file) formData.append("ownerPhoto", docs.ownerPhoto.file);
+      if (docs.identityCopy.file) formData.append("identityCopy", docs.identityCopy.file);
 
       const config = { headers: { 'Content-Type': 'multipart/form-data' } };
 
@@ -126,7 +126,7 @@ export default function Sponsors() {
       fetchEntities();
     } catch (error: any) {
       console.error("Error saving entity:", error);
-      const msg = error.response?.data?.message || "فشل في حفظ البيانات.";
+      const msg = error.response.data.message || "فشل في حفظ البيانات.";
       toast({ variant: "destructive", title: "خطأ", description: msg });
     } finally {
       setIsSaving(false);
@@ -170,7 +170,7 @@ export default function Sponsors() {
       fetchEntities();
     } catch (error: any) {
       console.error("Error archiving entity:", error);
-      const msg = error.response?.data?.message || "فشل في أرشفة البيانات.";
+      const msg = error.response.data.message || "فشل في أرشفة البيانات.";
       toast({ variant: "destructive", title: "خطأ", description: msg });
     }
   };
@@ -187,8 +187,8 @@ export default function Sponsors() {
   const filtered = entities.filter((s) => {
     const query = searchQuery.toLowerCase();
     return (
-      s.Sponsor_Name?.toLowerCase().includes(query) ||
-      s.Commercial_Reg_No?.toLowerCase().includes(query)
+      s.Sponsor_Name.toLowerCase().includes(query) ||
+      s.Commercial_Reg_No.toLowerCase().includes(query)
     );
   });
 
