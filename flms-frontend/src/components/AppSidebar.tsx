@@ -26,7 +26,7 @@ export function AppSidebar() {
   const { hasPermission } = useAuth();
 
   return (
-    <aside className="w-64 min-h-screen bg-sidebar text-sidebar-foreground border-l border-sidebar-border flex flex-col shrink-0">
+    <aside className="w-64 h-screen bg-sidebar text-sidebar-foreground border-l border-sidebar-border flex flex-col shrink-0 sticky top-0">
       {/* Logo */}
       <div className="p-5 border-b border-sidebar-border">
         <div className="flex items-center gap-3">

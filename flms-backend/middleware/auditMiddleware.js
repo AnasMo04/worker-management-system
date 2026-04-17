@@ -8,6 +8,24 @@ const getModelByUrl = (url) => {
   return null;
 };
 
+const redactSensitiveData = (obj) => {
+  if (!obj || typeof obj !== 'object') return obj;
+
+  const sensitiveKeys = ['password', 'token', 'secret', 'Password', 'Token', 'Secret'];
+  const redacted = Array.isArray(obj) ? [] : {};
+
+  for (let key in obj) {
+    if (sensitiveKeys.some(k => key.includes(k))) {
+      redacted[key] = '[REDACTED]';
+    } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+      redacted[key] = redactSensitiveData(obj[key]);
+    } else {
+      redacted[key] = obj[key];
+    }
+  }
+  return redacted;
+};
+
 const auditMiddleware = async (req, res, next) => {
   const isLogin = req.originalUrl.includes('/api/auth/login') && req.method === 'POST';
   const isStateChanging = ['POST', 'PUT', 'DELETE'].includes(req.method);
@@ -28,7 +46,10 @@ const auditMiddleware = async (req, res, next) => {
       const id = req.params.id || req.originalUrl.split('/').pop();
       if (Model && id && !isNaN(id)) {
         oldData = await Model.findByPk(id);
-        if (oldData) oldData = oldData.get({ plain: true });
+        if (oldData) {
+          oldData = oldData.get({ plain: true });
+          oldData = redactSensitiveData(oldData);
+        }
       }
     } catch (e) {
       console.error('Audit Pre-fetch Error:', e);
@@ -90,7 +111,7 @@ const auditMiddleware = async (req, res, next) => {
         let details = {
           method: req.method,
           url: req.originalUrl,
-          body: req.method === 'DELETE' ? {} : req.body,
+          body: redactSensitiveData(req.method === 'DELETE' ? {} : req.body),
           oldData,
           ip: req.ip,
           userAgent: req.get('User-Agent')
