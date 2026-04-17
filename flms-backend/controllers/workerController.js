@@ -153,7 +153,7 @@ exports.update = async (req, res) => {
       Full_Name: data.Full_Name,
       Nationality: data.Nationality,
       Birth_Date: data.Birth_Date,
-      Residence_Address: data.Residence_Address || worker.Residence_Address,
+      Residence_Address: data.Residence_Address,
       Current_Status: data.Current_Status,
       NFC_UID: data.NFC_UID,
       Primary_Card_Serial: data.Primary_Card_Serial,
