@@ -5,11 +5,11 @@ import { KPICard } from "@/components/KPICard";
 import { StatusBadge } from "@/components/StatusBadge";
 import {
   Users, CreditCard, ShieldAlert, Wallet,
-  TrendingUp, Clock, AlertCircle, CheckCircle2
+  TrendingUp, Clock, Activity
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, Cell, PieChart, Pie
+  Tooltip, ResponsiveContainer, Cell
 } from "recharts";
 import api from "../api/axiosConfig";
 
@@ -33,7 +33,7 @@ export default function Dashboard() {
     }
   };
 
-  if (loading) return <div className="p-8 text-center">جاري تحميل لوحة التحكم...</div>;
+  if (loading) return <div className="p-8 text-center text-muted-foreground">جاري تحميل لوحة التحكم...</div>;
 
   const statusColors: any = {
     "نشط": "#10b981",
@@ -53,26 +53,26 @@ export default function Dashboard() {
         <KPICard
           title="إجمالي الأجانب"
           value={formatNumber(data?.counts?.workers || 0)}
-          icon={Users}
+          icon={<Users className="h-5 w-5" />}
           trend="+12% من الشهر الماضي"
           color="text-primary"
         />
         <KPICard
           title="البطاقات النشطة"
           value={formatNumber(data?.counts?.activeCards || 0)}
-          icon={CreditCard}
+          icon={<CreditCard className="h-5 w-5" />}
           color="text-success"
         />
         <KPICard
           title="القضايا المفتوحة"
           value={formatNumber(data?.counts?.openCases || 0)}
-          icon={ShieldAlert}
+          icon={<ShieldAlert className="h-5 w-5" />}
           color="text-destructive"
         />
         <KPICard
           title="إجمالي المالية المعلقة"
           value={formatNumber(data?.counts?.pendingPayments || 0)}
-          icon={Wallet}
+          icon={<Wallet className="h-5 w-5" />}
           trend="د.ل"
           color="text-warning"
         />
@@ -125,6 +125,9 @@ export default function Dashboard() {
                   </div>
                 </div>
               ))}
+              {(data?.recentLogs || []).length === 0 && (
+                <p className="text-center text-xs text-muted-foreground py-10">لا توجد فحوصات حديثة</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -141,7 +144,7 @@ export default function Dashboard() {
                 <div key={item.id} className="flex items-center justify-between py-2 border-b last:border-0 border-border">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <Activity className="h-4 w-4 text-muted-foreground" />
                     </div>
                     <div>
                       <p className="text-xs font-bold">{item.User?.Name || "نظام"}</p>
@@ -153,6 +156,9 @@ export default function Dashboard() {
                   </div>
                 </div>
               ))}
+              {(data?.auditLogs || []).length === 0 && (
+                <p className="text-center text-xs text-muted-foreground py-10">لا توجد سجلات حديثة</p>
+              )}
             </div>
           </CardContent>
         </Card>

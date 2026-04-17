@@ -1,24 +1,29 @@
-import { formatNumber } from "../utils/formatDate";
 import { ReactNode } from "react";
 
 interface KPICardProps {
   title: string;
   value: string | number;
   icon: ReactNode;
-  gradient: string;
-  change?: string;
+  trend?: string;
+  color?: string;
 }
 
-export function KPICard({ title, value, icon, gradient, change }: KPICardProps) {
+export function KPICard({ title, value, icon, trend, color = "text-primary" }: KPICardProps) {
   return (
-    <div className={`${gradient} rounded-lg p-5 text-primary-foreground shadow-md animate-fade-in`}>
+    <div className="bg-card rounded-xl border border-border p-5 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm opacity-85 mb-1">{title}</p>
-          <p className="text-3xl font-bold">{value?}</p>
-          {change && <p className="text-xs mt-1 opacity-75">{change}</p>}
+        <div className="space-y-1">
+          <p className="text-xs font-medium text-muted-foreground">{title}</p>
+          <p className="text-2xl font-bold">{value}</p>
+          {trend && (
+            <p className="text-[10px] font-medium text-muted-foreground">
+              {trend}
+            </p>
+          )}
         </div>
-        <div className="opacity-80 text-3xl">{icon}</div>
+        <div className={`p-3 rounded-xl bg-muted ${color}`}>
+          {icon}
+        </div>
       </div>
     </div>
   );
