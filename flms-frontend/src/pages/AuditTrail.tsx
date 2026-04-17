@@ -5,7 +5,9 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Search, Filter, Calendar, User, Activity, Eye, ArrowRight, ShieldAlert, Monitor, Globe } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Search, Filter, Calendar, User, Activity, Eye, ArrowRight, ShieldAlert, Monitor, Globe, ChevronLeft, Diff } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AuditLog {
@@ -46,16 +48,47 @@ export default function AuditTrail() {
 
   const filtered = logs.filter(l =>
     l.User?.Name.toLowerCase().includes(search.toLowerCase()) ||
-    l.Action_Type.toLowerCase().includes(search.toLowerCase()) ||
+    l.Description?.toLowerCase().includes(search.toLowerCase()) ||
     l.Target_Ref.toLowerCase().includes(search.toLowerCase())
   );
 
   const getLogDetails = (detailsStr: string) => {
     try {
-      return JSON.parse(detailsStr);
+      return JSON.parse(detailsStr) || {};
     } catch (e) {
+      console.error("Failed to parse log details", e);
       return {};
     }
+  };
+
+  const renderDiff = (oldData: any, newData: any) => {
+    if (!oldData) return <p className="text-xs text-muted-foreground italic">لا توجد بيانات سابقة للمقارنة.</p>;
+
+    // We only care about keys that exist in newData or changed from oldData
+    const changes = Object.keys(newData).filter(key =>
+      newData[key] !== oldData[key] &&
+      typeof newData[key] !== 'object' &&
+      key !== 'updatedAt'
+    );
+
+    if (changes.length === 0) return <p className="text-xs text-muted-foreground italic">لم يتم رصد تغييرات في الحقول الأساسية.</p>;
+
+    return (
+      <div className="space-y-3">
+        {changes.map(key => (
+          <div key={key} className="grid grid-cols-2 gap-4 items-center p-2 rounded-lg bg-background border border-border/50 text-[11px]">
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase">{key} (قبل)</span>
+              <p className="text-destructive font-mono truncate">{String(oldData[key] || '—')}</p>
+            </div>
+            <div className="space-y-1 border-r pr-4">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase">{key} (بعد)</span>
+              <p className="text-success font-mono truncate">{String(newData[key] || '—')}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -71,7 +104,7 @@ export default function AuditTrail() {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="بحث بالمستخدم، العملية، أو المسار..."
+            placeholder="بحث بالوصف، المستخدم، أو المسار..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pr-9"
@@ -90,16 +123,18 @@ export default function AuditTrail() {
             filtered.map((log) => (
               <div key={log.id} className="relative pr-10 pb-8 last:pb-0 group">
                 <div className={cn(
-                  "absolute right-0 top-1.5 w-9 h-9 rounded-full border-4 border-card flex items-center justify-center z-10 transition-colors",
-                  log.Action_Type === 'DELETE' ? "bg-destructive text-white" :
-                  log.Action_Type === 'UPDATE' ? "bg-primary text-white" : "bg-success text-white"
+                  "absolute right-0 top-1.5 w-9 h-9 rounded-full border-4 border-card flex items-center justify-center z-10 transition-all group-hover:scale-110",
+                  log.Action_Type === 'DELETE' ? "bg-destructive text-white shadow-lg shadow-destructive/20" :
+                  log.Action_Type === 'UPDATE' ? "bg-primary text-white shadow-lg shadow-primary/20" :
+                  log.Action_Type === 'LOGIN' ? "bg-blue-500 text-white shadow-lg shadow-blue-500/20" :
+                  "bg-success text-white shadow-lg shadow-success/20"
                 )}>
-                  <Activity className="w-4 h-4" />
+                  {log.Action_Type === 'LOGIN' ? <User className="w-4 h-4" /> : <Activity className="w-4 h-4" />}
                 </div>
 
                 <div
                   onClick={() => { setSelectedLog(log); setModalOpen(true); }}
-                  className="bg-muted/30 hover:bg-muted/50 border border-border rounded-xl p-4 cursor-pointer transition-all hover:translate-x-[-4px]"
+                  className="bg-muted/30 hover:bg-muted/50 border border-border rounded-xl p-4 cursor-pointer transition-all hover:translate-x-[-4px] hover:shadow-md"
                 >
                   <div className="flex items-start justify-between">
                     <div className="space-y-1 flex-1">
@@ -131,6 +166,9 @@ export default function AuditTrail() {
                             الهدف: {log.Target_Name}
                           </p>
                         )}
+                        <span className="text-[10px] text-primary font-bold flex items-center gap-1 mr-auto opacity-0 group-hover:opacity-100 transition-opacity">
+                          عرض التفاصيل <ChevronLeft className="w-3 h-3" />
+                        </span>
                       </div>
                     </div>
                     <div className="text-right space-y-1">
@@ -152,52 +190,100 @@ export default function AuditTrail() {
       </div>
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ShieldAlert className="h-5 w-5 text-primary" />
-              تفاصيل العملية التقنية
-            </DialogTitle>
-          </DialogHeader>
-
-          {selectedLog && (
-            <div className="space-y-6 py-4">
-              <div className="grid grid-cols-3 gap-4">
-                <div className="p-3 bg-muted/50 rounded-xl border border-border">
-                  <Label className="text-[10px] text-muted-foreground">المستخدم المسؤول</Label>
-                  <p className="text-sm font-bold flex items-center gap-2 mt-1">
-                    <User className="w-3.5 h-3.5" />
-                    {selectedLog.User?.Name}
-                  </p>
-                </div>
-                <div className="p-3 bg-muted/50 rounded-xl border border-border">
-                  <Label className="text-[10px] text-muted-foreground">نوع العملية</Label>
-                  <p className="text-sm font-bold mt-1">{selectedLog.Action_Type}</p>
-                </div>
-                <div className="p-3 bg-muted/50 rounded-xl border border-border">
-                  <Label className="text-[10px] text-muted-foreground">عنوان IP</Label>
-                  <p className="text-sm font-mono mt-1">{getLogDetails(selectedLog.Details).ip}</p>
-                </div>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col p-0 border-none shadow-2xl">
+          <div className="p-6 bg-slate-950 text-white flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center border border-primary/30">
+                <ShieldAlert className="w-6 h-6 text-primary" />
               </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs font-bold">بيانات الطلب (Technical Payload)</Label>
-                <div className="bg-slate-950 text-slate-200 p-4 rounded-xl font-mono text-xs overflow-x-auto border-2 border-slate-800 shadow-inner rtl-grid">
-                  <pre>{JSON.stringify(getLogDetails(selectedLog.Details).body, null, 2)}</pre>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs font-bold text-muted-foreground">بصمة المتصفح والجهاز (User Agent)</Label>
-                <div className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg border border-border">
-                  <Monitor className="w-4 h-4 mt-0.5 text-muted-foreground" />
-                  <p className="text-[11px] leading-relaxed break-all font-mono">
-                    {getLogDetails(selectedLog.Details).userAgent}
-                  </p>
-                </div>
+              <div>
+                <h3 className="text-lg font-bold">تفاصيل العملية التشغيلية</h3>
+                <p className="text-xs text-slate-400 font-mono">Log ID: #{selectedLog?.id}</p>
               </div>
             </div>
-          )}
+            <div className="text-left">
+              <p className="text-xs text-slate-400">توقيت العملية</p>
+              <p className="text-sm font-bold font-mono">{selectedLog && new Date(selectedLog.createdAt).toLocaleString('ar-EG')}</p>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-6 bg-background space-y-6">
+            {selectedLog && (() => {
+              const details = getLogDetails(selectedLog.Details);
+              return (
+                <>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="p-4 bg-muted/40 rounded-2xl border border-border space-y-1">
+                      <Label className="text-[10px] text-muted-foreground font-bold">المستخدم المسؤول</Label>
+                      <p className="text-sm font-bold flex items-center gap-2">
+                        <User className="w-4 h-4 text-primary" />
+                        {selectedLog.User?.Name}
+                      </p>
+                    </div>
+                    <div className="p-4 bg-muted/40 rounded-2xl border border-border space-y-1">
+                      <Label className="text-[10px] text-muted-foreground font-bold">نوع العملية</Label>
+                      <div className="flex items-center gap-2">
+                        <Activity className="w-4 h-4 text-primary" />
+                        <span className="text-sm font-bold uppercase">{selectedLog.Action_Type}</span>
+                      </div>
+                    </div>
+                    <div className="p-4 bg-muted/40 rounded-2xl border border-border space-y-1">
+                      <Label className="text-[10px] text-muted-foreground font-bold">عنوان IP والجهاز</Label>
+                      <p className="text-sm font-mono flex items-center gap-2">
+                        <Globe className="w-4 h-4 text-primary" />
+                        {details.ip || "127.0.0.1"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <Tabs defaultValue="overview" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 bg-muted/50 p-1 h-12 rounded-xl mb-4">
+                      <TabsTrigger value="overview" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                        <Diff className="w-4 h-4 ml-2" /> مقارنة البيانات
+                      </TabsTrigger>
+                      <TabsTrigger value="raw" className="rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                        <Eye className="w-4 h-4 ml-2" /> البيانات الخام (JSON)
+                      </TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="overview" className="mt-0 focus-visible:ring-0">
+                      <div className="p-5 border-2 border-dashed border-border rounded-2xl space-y-4">
+                        <h4 className="text-xs font-bold flex items-center gap-2 text-primary">
+                          <Diff className="w-3.5 h-3.5" /> مخلص التغييرات المكتشفة
+                        </h4>
+                        {selectedLog.Action_Type === 'UPDATE' ? (
+                          renderDiff(details.oldData, details.body)
+                        ) : (
+                          <div className="text-center py-6">
+                            <p className="text-sm text-muted-foreground">هذه العملية من نوع {selectedLog.Action_Type}، لا توجد مقارنة "قبل/بعد".</p>
+                            <p className="text-[10px] mt-1 text-muted-foreground">راجع البيانات الخام في التبويب الآخر.</p>
+                          </div>
+                        )}
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="raw" className="mt-0 focus-visible:ring-0">
+                      <div className="space-y-2">
+                        <div className="bg-slate-950 text-slate-200 p-5 rounded-2xl font-mono text-[11px] overflow-x-auto border-2 border-slate-900 shadow-inner rtl-grid max-h-[300px]">
+                          <pre>{JSON.stringify(details, null, 2)}</pre>
+                        </div>
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-muted-foreground">بصمة المتصفح (User Agent String)</Label>
+                    <div className="flex items-start gap-3 p-4 bg-muted/20 rounded-xl border border-border border-dashed">
+                      <Monitor className="w-5 h-5 mt-0.5 text-muted-foreground" />
+                      <p className="text-[10px] leading-relaxed break-all font-mono text-muted-foreground">
+                        {details.userAgent}
+                      </p>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

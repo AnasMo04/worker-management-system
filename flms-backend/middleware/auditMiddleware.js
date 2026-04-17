@@ -1,7 +1,14 @@
-const { AuditTrail } = require('../models');
+const { AuditTrail, Worker, Sponsor, User, SmartCard } = require('../models');
+
+const getModelByUrl = (url) => {
+  if (url.includes('/api/workers')) return Worker;
+  if (url.includes('/api/sponsors')) return Sponsor;
+  if (url.includes('/api/users')) return User;
+  if (url.includes('/api/smart-cards')) return SmartCard;
+  return null;
+};
 
 const auditMiddleware = async (req, res, next) => {
-  // Only capture state-changing requests and LOGIN
   const isLogin = req.originalUrl.includes('/api/auth/login') && req.method === 'POST';
   const isStateChanging = ['POST', 'PUT', 'DELETE'].includes(req.method);
 
@@ -9,9 +16,23 @@ const auditMiddleware = async (req, res, next) => {
     return next();
   }
 
-  // Skip audit logs themselves
   if (req.originalUrl.includes('/api/audit')) {
     return next();
+  }
+
+  // Pre-fetch old data for updates and deletes
+  let oldData = null;
+  if (['PUT', 'DELETE'].includes(req.method)) {
+    try {
+      const Model = getModelByUrl(req.originalUrl);
+      const id = req.params.id || req.originalUrl.split('/').pop();
+      if (Model && id && !isNaN(id)) {
+        oldData = await Model.findByPk(id);
+        if (oldData) oldData = oldData.get({ plain: true });
+      }
+    } catch (e) {
+      console.error('Audit Pre-fetch Error:', e);
+    }
   }
 
   const originalSend = res.send;
@@ -36,29 +57,28 @@ const auditMiddleware = async (req, res, next) => {
         const body = req.body || {};
         const url = req.originalUrl;
 
-        // Human-Readable Descriptions logic
         if (isLogin) {
           description = `قام المستخدم (${actorName}) بتسجيل الدخول للنظام`;
           targetName = actorName;
         } else if (url.includes('/api/workers')) {
-          const name = body.Full_Name || 'عامل';
+          const name = body.Full_Name || (oldData && oldData.Full_Name) || 'عامل';
           targetName = name;
           if (actionType === 'CREATE') description = `إضافة عامل جديد: ${name}`;
           else if (actionType === 'UPDATE') description = `تعديل بيانات العامل: ${name}`;
           else description = `أرشفة سجل العامل: ${name}`;
         } else if (url.includes('/api/sponsors')) {
-          const name = body.Sponsor_Name || 'جهة';
+          const name = body.Sponsor_Name || (oldData && oldData.Sponsor_Name) || 'جهة';
           targetName = name;
           if (actionType === 'CREATE') description = `إضافة جهة مستضيفة جديدة: ${name}`;
           else if (actionType === 'UPDATE') description = `تعديل بيانات الجهة: ${name}`;
           else description = `أرشفة سجل الجهة: ${name}`;
         } else if (url.includes('/api/smart-cards')) {
-          targetName = body.nfc_uid || 'بطاقة';
+          targetName = body.nfc_uid || (oldData && oldData.NFC_Chip_ID) || 'بطاقة';
           if (url.includes('/issue')) description = `إصدار بطاقة ذكية جديدة: ${targetName}`;
           else if (url.includes('/link')) description = `ربط بطاقة ذكية بعامل`;
           else if (url.includes('/cancel')) description = `إلغاء بطاقة ذكية`;
         } else if (url.includes('/api/users')) {
-          const name = body.Name || 'مستخدم';
+          const name = body.Name || (oldData && oldData.Name) || 'مستخدم';
           targetName = name;
           if (actionType === 'CREATE') description = `إنشاء حساب مستخدم جديد: ${name}`;
           else if (actionType === 'UPDATE') description = `تعديل صلاحيات/بيانات المستخدم: ${name}`;
@@ -71,6 +91,7 @@ const auditMiddleware = async (req, res, next) => {
           method: req.method,
           url: req.originalUrl,
           body: req.method === 'DELETE' ? {} : req.body,
+          oldData,
           ip: req.ip,
           userAgent: req.get('User-Agent')
         };
