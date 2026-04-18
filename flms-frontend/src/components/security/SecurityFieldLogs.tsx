@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ArrowRight, Search, CheckCircle2, AlertTriangle, Clock, Filter } from "lucide-react";
+import { formatDateTime } from "../../utils/formatDate";
 
 interface Props {
   onBack: () => void;
@@ -66,7 +67,7 @@ export function SecurityFieldLogs({ onBack }: Props) {
               </div>
               <div className="flex items-center justify-between text-[10px] text-[hsl(210,20%,40%)]">
                 <span>{log.location}</span>
-                <span>{log.time} • {log.date}</span>
+                <span>{formatDateTime(`${log.date} ${log.time.replace(' ص', ' AM').replace(' م', ' PM')}`)}</span>
               </div>
             </div>
           </div>

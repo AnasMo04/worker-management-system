@@ -1,4 +1,4 @@
-import { formatDate } from "../utils/formatDate";
+import { formatDate, formatDateTime } from "../utils/formatDate";
 import { useState, useEffect } from "react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Search, FileText, Download, ExternalLink, Calendar, User } from "lucide-react";
@@ -118,7 +118,7 @@ export default function Documents() {
                         {formatDateTime(d.createdAt)}
                       </div>
                     </td>
-                    <td className="p-3 text-xs">{d.Expiry_Date ? formatDate(d.Expiry_Date) : "—"}</td>
+                    <td className="p-3 text-xs">{d.Expiry_Date ? formatDateTime(d.Expiry_Date) : "—"}</td>
                     <td className="p-3">
                       <div className="flex gap-2">
                         <a

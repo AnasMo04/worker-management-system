@@ -152,7 +152,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] font-mono">{formatTime(item.createdAt)}</p>
+                    <p className="text-[10px] font-mono">{formatDateTime(item.createdAt)}</p>
                   </div>
                 </div>
               ))}

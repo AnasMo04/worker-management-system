@@ -4,6 +4,7 @@ import {
   User, Smartphone, Wifi, WifiOff, Bell, ChevronLeft,
   AlertTriangle, CheckCircle2, Clock,
 } from "lucide-react";
+import { formatDateTime } from "../../utils/formatDate";
 
 interface Props {
   navigate: (s: SecurityScreen) => void;
@@ -24,9 +25,9 @@ export function SecurityDashboard({ navigate }: Props) {
   ];
 
   const recentScans = [
-    { name: "محمد أحمد", time: "10:30 ص", status: "valid" },
-    { name: "عبدالله سالم", time: "09:45 ص", status: "violation" },
-    { name: "رحمن كريم", time: "09:15 ص", status: "valid" },
+    { name: "محمد أحمد", time: "2026-02-25 10:30:00", status: "valid" },
+    { name: "عبدالله سالم", time: "2026-02-25 09:45:00", status: "violation" },
+    { name: "رحمن كريم", time: "2026-02-25 09:15:00", status: "valid" },
   ];
 
   return (
@@ -109,7 +110,7 @@ export function SecurityDashboard({ navigate }: Props) {
                 </div>
                 <div>
                   <p className="text-sm text-[hsl(210,20%,90%)] font-medium">{scan.name}</p>
-                  <p className="text-[10px] text-[hsl(210,20%,40%)]">{scan.time}</p>
+                  <p className="text-[10px] text-[hsl(210,20%,40%)]">{formatDateTime(scan.time)}</p>
                 </div>
               </div>
               {scan.status === "valid" ? (

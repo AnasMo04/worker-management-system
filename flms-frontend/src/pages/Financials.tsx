@@ -1,4 +1,4 @@
-import { formatCurrency } from "../utils/formatDate";
+import { formatCurrency, formatDateTime } from "../utils/formatDate";
 import { StatusBadge } from "@/components/StatusBadge";
 
 const transactions = [
@@ -52,7 +52,7 @@ export default function Financials() {
                   <td className="p-3">{t.type}</td>
                   <td className="p-3 font-semibold">{formatCurrency(t.amount)}</td>
                   <td className="p-3"><StatusBadge variant={t.status} /></td>
-                  <td className="p-3 text-xs">{t.date}</td>
+                  <td className="p-3 text-xs">{formatDateTime(t.date)}</td>
                 </tr>
               ))}
             </tbody>

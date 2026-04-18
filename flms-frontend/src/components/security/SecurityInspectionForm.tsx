@@ -12,7 +12,6 @@ import { Textarea } from "@/components/ui/textarea";
 
 export function SecurityInspectionForm() {
   const now = new Date();
-  const timeStr = formatTime(now);
 
   return (
     <div className="space-y-6">
@@ -27,8 +26,7 @@ export function SecurityInspectionForm() {
           </div>
         </div>
         <div className="text-right">
-          <p className="text-xs font-bold font-mono">{timeStr}</p>
-          <p className="text-[10px] text-muted-foreground">{formatDate(now)}</p>
+          <p className="text-xs font-bold font-mono">{formatDateTime(now)}</p>
         </div>
       </div>
       {/* Form content remains but using forced formats */}

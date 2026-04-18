@@ -1,4 +1,5 @@
 import { StatusBadge } from "@/components/StatusBadge";
+import { formatDateTime } from "../utils/formatDate";
 
 const devices = [
   { id: 1, name: "NFC-001", model: "ACR1252U", officer: "خالد السعيدي", lastSync: "2026-02-23 09:15", active: true },
@@ -33,7 +34,7 @@ export default function Devices() {
                   <td className="p-3 font-mono text-xs font-medium">{d.name}</td>
                   <td className="p-3 text-xs">{d.model}</td>
                   <td className="p-3">{d.officer}</td>
-                  <td className="p-3 text-xs">{d.lastSync}</td>
+                  <td className="p-3 text-xs">{formatDateTime(d.lastSync)}</td>
                   <td className="p-3"><StatusBadge variant={d.active ? "active" : "expired"} label={d.active ? "نشط" : "غير نشط"} /></td>
                 </tr>
               ))}

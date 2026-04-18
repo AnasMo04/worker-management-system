@@ -144,10 +144,9 @@ exports.update = async (req, res) => {
     }
 
     const isFreelance = data.Freelance === 'true' || data.Freelance === true;
-    const sponsorId = isFreelance ? null : (data.Sponsor_ID && data.Sponsor_ID !== 'null' ? parseInt(data.Sponsor_ID) : null);
 
     await worker.update({
-      Sponsor_ID: sponsorId,
+      Sponsor_ID: isFreelance ? null : (data.Sponsor_ID ? parseInt(data.Sponsor_ID) : null),
       Passport_Number: data.Passport_Number,
       National_ID: data.National_ID,
       Full_Name: data.Full_Name,

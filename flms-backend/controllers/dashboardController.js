@@ -2,7 +2,7 @@ const { Worker, SmartCard, LegalCase, Financial, FieldLog, AuditTrail, User, Dev
 
 exports.getSummary = async (req, res) => {
   try {
-    const totalWorkers = await Worker.count({ where: { is_archived: false } });
+    const totalWorkers = await Worker.count();
     const activeCards = await SmartCard.count({ where: { Is_Active: true } });
 
     // Using simple count as a placeholder if Status might be different in actual DB
@@ -46,7 +46,6 @@ exports.getSummary = async (req, res) => {
     res.json({
       counts: {
         totalWorkers,
-        workers: totalWorkers,
         activeCards,
         openLegalCases,
         pendingPayments

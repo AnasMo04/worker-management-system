@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { X } from "lucide-react";
+import { formatDateTime } from "../utils/formatDate";
 
 const cases = [
   { id: 1, number: "LC-2026-001", worker: "عبدالله كمارا", type: "مخالفة إقامة", status: "pending" as const, date: "2026-02-20", description: "تجاوز مدة الإقامة المحددة بدون تجديد" },
@@ -39,7 +40,7 @@ export default function LegalCases() {
                   <td className="p-3 font-medium">{c.worker}</td>
                   <td className="p-3">{c.type}</td>
                   <td className="p-3"><StatusBadge variant={c.status} /></td>
-                  <td className="p-3 text-xs">{c.date}</td>
+                  <td className="p-3 text-xs">{formatDateTime(c.date)}</td>
                   <td className="p-3">
                     <button onClick={() => setSelected(c)} className="text-xs text-primary hover:underline font-medium">عرض التفاصيل</button>
                   </td>
@@ -62,7 +63,7 @@ export default function LegalCases() {
               <div className="flex justify-between"><span className="text-muted-foreground">العامل:</span><span className="font-medium">{selected.worker}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">نوع المخالفة:</span><span>{selected.type}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">الحالة:</span><StatusBadge variant={selected.status} /></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">التاريخ:</span><span>{selected.date}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">التاريخ:</span><span>{formatDateTime(selected.date)}</span></div>
               <div><span className="text-muted-foreground">الوصف:</span><p className="mt-1">{selected.description}</p></div>
             </div>
           </div>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ArrowRight, Scale, ChevronLeft, Calendar, Tag } from "lucide-react";
+import { formatDateTime } from "../../utils/formatDate";
 
 interface Props {
   onBack: () => void;
@@ -81,7 +82,7 @@ export function SecurityLegalCases({ onBack }: Props) {
               <div className="flex items-center justify-between text-[10px] text-[hsl(210,20%,40%)]">
                 <div className="flex items-center gap-1">
                   <Calendar className="w-3 h-3" />
-                  {c.date}
+                  {formatDateTime(c.date)}
                 </div>
                 <span>{c.worker}</span>
               </div>

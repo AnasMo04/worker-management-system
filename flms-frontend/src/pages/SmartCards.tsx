@@ -12,7 +12,7 @@ import { io } from "socket.io-client";
 import api from "../api/axiosConfig";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "../context/AuthContext";
-import { formatDate, formatDateTime } from "../utils/formatDate";
+import { formatDateTime } from "../utils/formatDate";
 
 interface SmartCard {
   id: number;
@@ -283,8 +283,8 @@ export default function SmartCards() {
                   <tr key={c.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
                     <td className="p-3 font-mono text-xs">{c.Card_Serial_No}</td>
                     <td className="p-3 font-medium">{c.Worker?.Full_Name || <span className="text-muted-foreground italic">غير مرتبطة</span>}</td>
-                    <td className="p-3">{formatDate(c.Issue_Date)}</td>
-                    <td className="p-3">{formatDate(c.Expiry_Date)}</td>
+                    <td className="p-3">{formatDateTime(c.Issue_Date)}</td>
+                    <td className="p-3">{formatDateTime(c.Expiry_Date)}</td>
                     <td className="p-3">
                       <StatusBadge
                         variant={!c.Is_Active ? "pending" : "active"}
