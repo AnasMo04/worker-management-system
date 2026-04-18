@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Filter, Calendar, User, Activity, Eye, ArrowRight, ShieldAlert, Monitor, Globe, ChevronLeft, Diff } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatDateTime } from "@/utils/formatDate";
 
 interface AuditLog {
   id: number;
@@ -174,7 +175,7 @@ export default function AuditTrail() {
                     <div className="text-right space-y-1">
                       <div className="flex items-center gap-1.5 text-xs text-muted-foreground justify-end">
                         <Calendar className="w-3.5 h-3.5" />
-                        {new Date(log.createdAt).toLocaleString('ar-EG')}
+                        {formatDateTime(log.createdAt)}
                       </div>
                       <div className="flex items-center gap-1 text-[10px] text-muted-foreground justify-end">
                         <Globe className="w-3 h-3" />
@@ -203,7 +204,7 @@ export default function AuditTrail() {
             </div>
             <div className="text-left">
               <p className="text-xs text-slate-400">توقيت العملية</p>
-              <p className="text-sm font-bold font-mono">{selectedLog && new Date(selectedLog.createdAt).toLocaleString('ar-EG')}</p>
+              <p className="text-sm font-bold font-mono">{selectedLog && formatDateTime(selectedLog.createdAt)}</p>
             </div>
           </div>
 
