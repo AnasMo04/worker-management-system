@@ -4,6 +4,7 @@ import { Search, FileText, Download, ExternalLink, Calendar, User } from "lucide
 import { Input } from "@/components/ui/input";
 import api from "../api/axiosConfig";
 import { useToast } from "@/hooks/use-toast";
+import { formatDateTime, formatDate } from "@/utils/formatDate";
 
 interface Document {
   id: number;
@@ -114,10 +115,10 @@ export default function Documents() {
                     <td className="p-3 text-xs">
                       <div className="flex items-center gap-1.5 text-muted-foreground">
                         <Calendar className="w-3 h-3" />
-                        {new Date(d.createdAt).toLocaleDateString('ar-EG')}
+                        {formatDateTime(d.createdAt)}
                       </div>
                     </td>
-                    <td className="p-3 text-xs">{d.Expiry_Date || "—"}</td>
+                    <td className="p-3 text-xs">{formatDate(d.Expiry_Date)}</td>
                     <td className="p-3">
                       <div className="flex gap-2">
                         <a

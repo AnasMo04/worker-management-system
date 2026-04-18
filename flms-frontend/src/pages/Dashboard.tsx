@@ -7,6 +7,7 @@ import {
 } from "recharts";
 import api from "../api/axiosConfig";
 import { useToast } from "@/hooks/use-toast";
+import { formatDateTime } from "@/utils/formatDate";
 
 const statusColors: Record<string, string> = {
   "active": "hsl(152, 60%, 40%)",
@@ -122,7 +123,7 @@ export default function Dashboard() {
                       <td className="p-3">{item.User?.Name || "—"}</td>
                       <td className="p-3 font-mono text-xs">{item.Device_ID || "—"}</td>
                       <td className="p-3 text-muted-foreground text-xs">
-                        {item.Scan_Time ? new Date(item.Scan_Time).toLocaleString("ar-LY") : "—"}
+                        {formatDateTime(item.Scan_Time)}
                       </td>
                       <td className="p-3"><StatusBadge variant={item.Result as any} /></td>
                     </tr>
@@ -187,7 +188,7 @@ export default function Dashboard() {
                   <div className="flex justify-between items-start">
                     <span className="font-medium text-sm">{item.User?.Name || "نظام"}</span>
                     <span className="text-xs text-muted-foreground">
-                      {item.createdAt ? new Date(item.createdAt).toLocaleTimeString("ar-LY") : ""}
+                      {formatDateTime(item.createdAt)}
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground mt-0.5">{item.Action_Type}</p>
