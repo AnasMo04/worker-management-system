@@ -12,6 +12,9 @@ import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload, type UploadedDoc } from "@/components/DocumentUpload";
 import { io } from "socket.io-client";
 import Fuse from "fuse.js";
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 import api from "../api/axiosConfig";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -93,6 +96,14 @@ export default function Workers() {
   const [genderFilter, setGenderFilter] = useState("all");
   const [nationalityFilter, setNationalityFilter] = useState("all");
   const [expiryMonthFilter, setExpiryMonthFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [freelanceFilter, setFreelanceFilter] = useState("all");
+  const [docTypeFilter, setDocTypeFilter] = useState("all");
+  const [relationshipFilter, setRelationshipFilter] = useState("all");
+  const [expiryFrom, setExpiryFrom] = useState("");
+  const [expiryTo, setExpiryTo] = useState("");
+  const [createdFrom, setCreatedFrom] = useState("");
+  const [createdTo, setCreatedTo] = useState("");
   const [addOpen, setAddOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -214,9 +225,40 @@ export default function Workers() {
         matchMonth = false;
       }
 
-      return matchStatus && matchSponsor && matchGender && matchNationality && matchMonth;
+    // 7. Category Logic
+    const matchCategory = categoryFilter === "all" || i.Category === categoryFilter;
+
+    // 8. Freelance Logic
+    const matchFreelance = freelanceFilter === "all" || (freelanceFilter === "yes" ? i.Freelance : !i.Freelance);
+
+    // 9. Document Type Logic
+    const matchDocType = docTypeFilter === "all" || i.Document_Type === docTypeFilter;
+
+    // 10. Relationship Logic
+    const matchRelationship = relationshipFilter === "all" || i.Relationship === relationshipFilter;
+
+    // 11. Date Range Logic (Health Expiry)
+    let matchExpiryRange = true;
+    if (i.Health_Cert_Expiry) {
+      if (expiryFrom && i.Health_Cert_Expiry < expiryFrom) matchExpiryRange = false;
+      if (expiryTo && i.Health_Cert_Expiry > expiryTo) matchExpiryRange = false;
+    } else if (expiryFrom || expiryTo) {
+      matchExpiryRange = false;
+    }
+
+    // 10. Date Range Logic (CreatedAt)
+    let matchCreatedRange = true;
+    const createdAtDate = i.createdAt ? i.createdAt.split('T')[0] : "";
+    if (createdAtDate) {
+      if (createdFrom && createdAtDate < createdFrom) matchCreatedRange = false;
+      if (createdTo && createdAtDate > createdTo) matchCreatedRange = false;
+    } else if (createdFrom || createdTo) {
+      matchCreatedRange = false;
+    }
+
+    return matchStatus && matchSponsor && matchGender && matchNationality && matchMonth && matchCategory && matchFreelance && matchDocType && matchRelationship && matchExpiryRange && matchCreatedRange;
     });
-  }, [individuals, searchQuery, statusFilter, sponsorFilter, genderFilter, nationalityFilter, expiryMonthFilter]);
+  }, [individuals, searchQuery, statusFilter, sponsorFilter, genderFilter, nationalityFilter, expiryMonthFilter, categoryFilter, freelanceFilter, docTypeFilter, relationshipFilter, expiryFrom, expiryTo, createdFrom, createdTo]);
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -316,6 +358,60 @@ export default function Workers() {
     }
   };
 
+  const exportToExcel = () => {
+    const dataToExport = filtered.map(w => ({
+      "الاسم الكامل": w.Full_Name,
+      "رقم الوثيقة": w.Passport_Number,
+      "الجنسية": w.Nationality,
+      "الفئة": categories.find(c => c.id === w.Category)?.label || w.Category,
+      "جهة الاستضافة": w.Freelance ? "يعمل لحسابه" : (w.Sponsor?.Sponsor_Name || "—"),
+      "الحالة": w.Current_Status,
+      "رقم العائلة": w.Family_ID || "—",
+      "انتهاء الصحية": formatDate(w.Health_Cert_Expiry),
+      "تاريخ التسجيل": formatDate(w.createdAt)
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "العمال");
+    XLSX.writeFile(wb, `Workers_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
+    toast({ title: "نجاح", description: "تم تصدير ملف Excel بنجاح." });
+  };
+
+  const exportToPDF = () => {
+    const doc = new jsPDF('l', 'mm', 'a4');
+
+    // Branding
+    doc.setFontSize(22);
+    doc.setTextColor(41, 128, 185);
+    doc.text("AfaqAlghad", 148, 20, { align: 'center' });
+    doc.setFontSize(14);
+    doc.setTextColor(100);
+    doc.text("نظام إدارة العمالة الوافدة", 148, 28, { align: 'center' });
+    doc.line(20, 32, 277, 32);
+
+    const tableData = filtered.map(w => [
+      w.Full_Name,
+      w.Passport_Number,
+      w.Nationality,
+      w.Current_Status,
+      w.Freelance ? "يعمل لحسابه" : (w.Sponsor?.Sponsor_Name || "—"),
+      formatDate(w.Health_Cert_Expiry)
+    ]);
+
+    (doc as any).autoTable({
+      head: [["الاسم الكامل", "رقم الوثيقة", "الجنسية", "الحالة", "جهة الاستضافة", "انتهاء الصحية"]],
+      body: tableData,
+      startY: 40,
+      styles: { halign: 'right' },
+      headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+      theme: 'grid'
+    });
+
+    doc.save(`Workers_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+    toast({ title: "نجاح", description: "تم إنشاء تقرير PDF بنجاح." });
+  };
+
   const handleClose = () => {
     setAddOpen(false);
     setEditMode(false);
@@ -335,11 +431,11 @@ export default function Workers() {
         <div className="flex items-center gap-2">
           {hasPermission('workers', 'view') && (
             <>
-              <Button variant="outline" className="gap-2 border-primary/20 hover:bg-primary/5 text-primary">
+              <Button onClick={exportToExcel} variant="outline" className="gap-2 border-primary/20 hover:bg-primary/5 text-primary">
                 <FileDown className="h-4 w-4" />
                 تصدير Excel
               </Button>
-              <Button variant="outline" className="gap-2 border-primary/20 hover:bg-primary/5 text-primary">
+              <Button onClick={exportToPDF} variant="outline" className="gap-2 border-primary/20 hover:bg-primary/5 text-primary">
                 <Download className="h-4 w-4" />
                 تقرير PDF
               </Button>
@@ -354,7 +450,8 @@ export default function Workers() {
         </div>
       </div>
 
-      <div className="bg-card rounded-lg border border-border p-4 flex flex-wrap gap-4 items-center shadow-sm">
+      <div className="bg-card rounded-lg border border-border p-4 space-y-4 shadow-sm">
+        <div className="flex flex-wrap gap-4 items-center">
         <div className="flex items-center gap-2 text-muted-foreground">
           <Filter className="w-4 h-4" />
           <span className="text-sm font-medium">تصفية النتائج:</span>
@@ -456,7 +553,115 @@ export default function Workers() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 border-r pr-4 mr-2">
+        {/* Second Filter Row */}
+        <div className="flex flex-wrap gap-4 items-center pt-2 border-t border-border/50">
+          <div className="w-40">
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="h-10 rounded-xl bg-muted/50">
+                <SelectValue placeholder="الفئة" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">كل الفئات</SelectItem>
+                {categories.map(c => (
+                  <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="w-40">
+            <Select value={freelanceFilter} onValueChange={setFreelanceFilter}>
+              <SelectTrigger className="h-10 rounded-xl bg-muted/50">
+                <SelectValue placeholder="حالة العمل" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">الكل (Freelance)</SelectItem>
+                <SelectItem value="yes">يعمل لحسابه</SelectItem>
+                <SelectItem value="no">تحت كفالة</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="w-40">
+            <Select value={docTypeFilter} onValueChange={setDocTypeFilter}>
+              <SelectTrigger className="h-10 rounded-xl bg-muted/50">
+                <SelectValue placeholder="نوع الوثيقة" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">كل الوثائق</SelectItem>
+                {docTypes.map(t => (
+                  <SelectItem key={t} value={t}>{t}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="w-40">
+            <Select value={relationshipFilter} onValueChange={setRelationshipFilter}>
+              <SelectTrigger className="h-10 rounded-xl bg-muted/50">
+                <SelectValue placeholder="القرابة" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">كل العلاقات</SelectItem>
+                {relationships.map(r => (
+                  <SelectItem key={r} value={r}>{r}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center gap-2 bg-muted/30 p-1.5 rounded-xl border border-border/50">
+            <span className="text-[10px] font-bold text-muted-foreground px-2">انتهاء الصحية:</span>
+            <input
+              type="date"
+              value={expiryFrom}
+              onChange={(e) => setExpiryFrom(e.target.value)}
+              className="bg-transparent text-xs outline-none"
+            />
+            <ArrowRight className="h-3 w-3 text-muted-foreground" />
+            <input
+              type="date"
+              value={expiryTo}
+              onChange={(e) => setExpiryTo(e.target.value)}
+              className="bg-transparent text-xs outline-none"
+            />
+          </div>
+
+          <div className="flex items-center gap-2 bg-muted/30 p-1.5 rounded-xl border border-border/50">
+            <span className="text-[10px] font-bold text-muted-foreground px-2">تاريخ التسجيل:</span>
+            <input
+              type="date"
+              value={createdFrom}
+              onChange={(e) => setCreatedFrom(e.target.value)}
+              className="bg-transparent text-xs outline-none"
+            />
+            <ArrowRight className="h-3 w-3 text-muted-foreground" />
+            <input
+              type="date"
+              value={createdTo}
+              onChange={(e) => setCreatedTo(e.target.value)}
+              className="bg-transparent text-xs outline-none"
+            />
+          </div>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setExpiryFrom(""); setExpiryTo("");
+              setCreatedFrom(""); setCreatedTo("");
+              setGenderFilter("all"); setNationalityFilter("all");
+              setSponsorFilter("all"); setStatusFilter("الكل");
+              setCategoryFilter("all"); setFreelanceFilter("all");
+              setExpiryMonthFilter("all"); setDocTypeFilter("all");
+              setRelationshipFilter("all");
+            }}
+            className="text-[10px] h-8 text-muted-foreground hover:text-foreground"
+          >
+            إعادة تعيين الكل
+          </Button>
+
+          <div className="flex items-center gap-2 border-r pr-4 mr-2">
           <Switch
             checked={showArchived}
             onCheckedChange={(v) => {

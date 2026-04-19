@@ -8,6 +8,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Building2, Edit, FileCheck, User, Trash2, FileDown, Download } from "lucide-react";
 import Fuse from "fuse.js";
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload, type UploadedDoc } from "@/components/DocumentUpload";
 import api from "../api/axiosConfig";
@@ -183,6 +186,58 @@ export default function Sponsors() {
     }
   };
 
+  const exportToExcel = () => {
+    const dataToExport = filtered.map(s => ({
+      "اسم الجهة": s.Sponsor_Name,
+      "المنطقة": s.Region || "—",
+      "رقم القيد/السجل": s.Commercial_Reg_No || "—",
+      "عدد الأفراد": s.workersCount || 0,
+      "الحالة": s.is_archived ? "مؤرشف" : "نشط",
+      "الهاتف": s.Phone,
+      "تاريخ التسجيل": formatDate(s.createdAt)
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "الجهات");
+    XLSX.writeFile(wb, `Sponsors_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
+    toast({ title: "نجاح", description: "تم تصدير ملف Excel بنجاح." });
+  };
+
+  const exportToPDF = () => {
+    const doc = new jsPDF('l', 'mm', 'a4');
+
+    // Branding
+    doc.setFontSize(22);
+    doc.setTextColor(41, 128, 185);
+    doc.text("AfaqAlghad", 148, 20, { align: 'center' });
+    doc.setFontSize(14);
+    doc.setTextColor(100);
+    doc.text("نظام إدارة العمالة الوافدة - سجل الجهات المستضيفة", 148, 28, { align: 'center' });
+    doc.line(20, 32, 277, 32);
+
+    const tableData = filtered.map(s => [
+      s.Sponsor_Name,
+      s.Region || "—",
+      s.Commercial_Reg_No || "—",
+      s.workersCount || 0,
+      s.is_archived ? "مؤرشف" : "نشط",
+      s.Phone
+    ]);
+
+    (doc as any).autoTable({
+      head: [["اسم الجهة", "المنطقة", "رقم القيد", "العمال", "الحالة", "الهاتف"]],
+      body: tableData,
+      startY: 40,
+      styles: { halign: 'right' },
+      headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+      theme: 'grid'
+    });
+
+    doc.save(`Sponsors_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+    toast({ title: "نجاح", description: "تم إنشاء تقرير PDF بنجاح." });
+  };
+
   const handleClose = () => {
     setAddOpen(false);
     setEditMode(false);
@@ -227,11 +282,11 @@ export default function Sponsors() {
         <div className="flex items-center gap-2">
           {hasPermission('sponsors', 'view') && (
             <>
-              <Button variant="outline" className="gap-2 border-primary/20 hover:bg-primary/5 text-primary">
+              <Button onClick={exportToExcel} variant="outline" className="gap-2 border-primary/20 hover:bg-primary/5 text-primary">
                 <FileDown className="h-4 w-4" />
                 تصدير Excel
               </Button>
-              <Button variant="outline" className="gap-2 border-primary/20 hover:bg-primary/5 text-primary">
+              <Button onClick={exportToPDF} variant="outline" className="gap-2 border-primary/20 hover:bg-primary/5 text-primary">
                 <Download className="h-4 w-4" />
                 تقرير PDF
               </Button>
@@ -308,11 +363,26 @@ export default function Sponsors() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={8} className="p-3 text-center">جاري التحميل...</td></tr>
-              ) : filtered.length === 0 ? (
-                <tr><td colSpan={8} className="p-3 text-center">لا توجد بيانات</td></tr>
+                <tr><td colSpan={9} className="p-3 text-center">
+                  <div className="flex flex-col items-center justify-center py-10 animate-pulse">
+                    <Building2 className="h-12 w-12 text-muted-foreground/30 mb-3" />
+                    <p className="text-muted-foreground">جاري التحميل...</p>
+                  </div>
+                </td></tr>
+              ) : !filtered || filtered.length === 0 ? (
+                <tr><td colSpan={9} className="p-8 text-center">
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <div className="bg-muted rounded-full p-6 mb-4">
+                      <Building2 className="h-12 w-12 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-lg font-bold">لا توجد بيانات متاحة</h3>
+                    <p className="text-muted-foreground text-sm max-w-xs mx-auto mt-2">
+                      لم يتم العثور على أي جهات مستضيفة تطابق معايير البحث الحالية. جرب تغيير الفلاتر أو إضافة جهة جديدة.
+                    </p>
+                  </div>
+                </td></tr>
               ) : (
-                filtered.map((s) => (
+                filtered?.map((s) => (
                   <tr key={s?.id} className={cn("border-b border-border last:border-0 hover:bg-muted/30 transition-colors", s?.is_archived && "opacity-60 grayscale-[0.5] bg-muted/20")}>
                     <td className="p-3 font-medium">{s?.Sponsor_Name || "—"}</td>
                     <td className="p-3 text-xs">{s?.Region || "—"}</td>
