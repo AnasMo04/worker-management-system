@@ -1,4 +1,4 @@
-import { formatDate, formatDateTime } from "../utils/formatDate";
+import { formatDate, formatDateTime, formatNumber } from "../utils/formatDate";
 import { useState, useEffect } from "react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Search, FileText, Download, ExternalLink, Calendar, User } from "lucide-react";

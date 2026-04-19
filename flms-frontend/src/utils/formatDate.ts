@@ -34,6 +34,21 @@ export const formatDate = (dateStr: string | Date | null | undefined): string =>
 };
 
 /**
+ * Formats a date string or Date object into HH:mm:ss
+ */
+export const formatTime = (dateStr: string | Date | null | undefined): string => {
+  if (!dateStr) return "—";
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return "—";
+
+  const h = String(date.getHours()).padStart(2, '0');
+  const m = String(date.getMinutes()).padStart(2, '0');
+  const s = String(date.getSeconds()).padStart(2, '0');
+
+  return `${h}:${m}:${s}`;
+};
+
+/**
  * Formats a number with English digits and thousand separators.
  */
 export const formatNumber = (num: number | string | null | undefined): string => {
