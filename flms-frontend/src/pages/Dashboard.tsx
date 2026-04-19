@@ -1,3 +1,4 @@
+import { formatDate, formatDateTime, formatNumber } from "../utils/formatDate";
 import { useState, useEffect } from "react";
 import { KPICard } from "@/components/KPICard";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -7,7 +8,6 @@ import {
 } from "recharts";
 import api from "../api/axiosConfig";
 import { useToast } from "@/hooks/use-toast";
-import { formatDateTime } from "@/utils/formatDate";
 
 const statusColors: Record<string, string> = {
   "active": "hsl(152, 60%, 40%)",
@@ -88,7 +88,7 @@ export default function Dashboard() {
         />
         <KPICard
           title="مدفوعات معلقة"
-          value={(data?.counts?.pendingPayments || 0).toLocaleString("ar-LY")}
+          value={formatNumber(data?.counts?.pendingPayments || 0)}
           icon={<Wallet />}
           gradient="kpi-gradient-4"
           change="دينار ليبي"
@@ -158,7 +158,7 @@ export default function Dashboard() {
                   </Pie>
                   <Tooltip
                     contentStyle={{ direction: 'rtl', textAlign: 'right' }}
-                    formatter={(value: number) => [value.toLocaleString("ar-LY"), "العدد"]}
+                    formatter={(value: number) => [formatNumber(value), "العدد"]}
                   />
                   <Legend verticalAlign="bottom" height={36}/>
                 </PieChart>

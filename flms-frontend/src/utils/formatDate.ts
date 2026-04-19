@@ -32,3 +32,13 @@ export const formatDate = (dateStr: string | Date | null | undefined): string =>
 
   return `${Y}-${M}-${D}`;
 };
+
+/**
+ * Formats a number with English digits and thousand separators.
+ */
+export const formatNumber = (num: number | string | null | undefined): string => {
+  if (num === null || num === undefined) return "0";
+  const n = typeof num === 'string' ? parseFloat(num) : num;
+  if (isNaN(n)) return "0";
+  return n.toLocaleString('en-US');
+};

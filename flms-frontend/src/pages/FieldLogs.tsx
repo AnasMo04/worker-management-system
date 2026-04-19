@@ -1,3 +1,4 @@
+import { formatDate, formatDateTime } from "../utils/formatDate";
 import { StatusBadge } from "@/components/StatusBadge";
 
 const logs = [
@@ -35,7 +36,7 @@ export default function FieldLogs() {
                   <td className="p-3 font-medium">{l.worker}</td>
                   <td className="p-3">{l.officer}</td>
                   <td className="p-3 font-mono text-xs">{l.device}</td>
-                  <td className="p-3 text-xs">{l.time}</td>
+                  <td className="p-3 text-xs">{formatDateTime(l.time)}</td>
                   <td className="p-3"><StatusBadge variant={l.result} /></td>
                   <td className="p-3 font-mono text-xs text-muted-foreground">{l.gps}</td>
                 </tr>
@@ -57,7 +58,7 @@ export default function FieldLogs() {
               </div>
               <div className="pb-4">
                 <p className="text-sm font-medium">{l.worker}</p>
-                <p className="text-xs text-muted-foreground">{l.officer} — {l.device} — {l.time}</p>
+                <p className="text-xs text-muted-foreground">{l.officer} — {l.device} — {formatDateTime(l.time)}</p>
                 <StatusBadge variant={l.result} className="mt-1" />
               </div>
             </div>

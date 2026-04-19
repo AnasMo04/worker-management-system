@@ -1,3 +1,4 @@
+import { formatDate, formatDateTime } from "../utils/formatDate";
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import api from "../api/axiosConfig";
@@ -9,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, Filter, Calendar, User, Activity, Eye, ArrowRight, ShieldAlert, Monitor, Globe, ChevronLeft, Diff } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { formatDateTime } from "@/utils/formatDate";
 
 interface AuditLog {
   id: number;
@@ -204,7 +204,7 @@ export default function AuditTrail() {
             </div>
             <div className="text-left">
               <p className="text-xs text-slate-400">توقيت العملية</p>
-              <p className="text-sm font-bold font-mono">{selectedLog && formatDateTime(selectedLog.createdAt)}</p>
+              <p className="text-sm font-bold font-mono">{formatDateTime(selectedLog?.createdAt)}</p>
             </div>
           </div>
 
