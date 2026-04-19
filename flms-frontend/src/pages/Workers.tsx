@@ -1,5 +1,5 @@
 import { formatDate, formatDateTime } from "../utils/formatDate";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,10 +7,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Search, Filter, Edit, Plus, UserPlus, Check, ChevronsUpDown, FileCheck, Users, Trash2, Wifi } from "lucide-react";
+import { Search, Filter, Edit, Plus, UserPlus, Check, ChevronsUpDown, FileCheck, Users, Trash2, Wifi, FileDown, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload, type UploadedDoc } from "@/components/DocumentUpload";
 import { io } from "socket.io-client";
+import Fuse from "fuse.js";
 import api from "../api/axiosConfig";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -89,6 +90,9 @@ export default function Workers() {
   const { searchQuery, setSearchQuery } = useSearch();
   const [statusFilter, setStatusFilter] = useState("الكل");
   const [sponsorFilter, setSponsorFilter] = useState("all");
+  const [genderFilter, setGenderFilter] = useState("all");
+  const [nationalityFilter, setNationalityFilter] = useState("all");
+  const [expiryMonthFilter, setExpiryMonthFilter] = useState("all");
   const [addOpen, setAddOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -166,28 +170,53 @@ export default function Workers() {
     }
   };
 
-  const filtered = individuals.filter((i) => {
-    const q = searchQuery.toLowerCase();
-    const matchSearch = i.Full_Name?.toLowerCase().includes(q) || i.Passport_Number?.toLowerCase().includes(q) || i.Family_ID?.toLowerCase().includes(q);
+  const filtered = useMemo(() => {
+    let result = individuals;
 
-    // Status Logic
-    let matchStatus = true;
-    if (statusFilter === "نشط") {
-      matchStatus = i.Current_Status === "نشط" && !i.is_archived;
-    } else if (statusFilter === "مؤرشف") {
-      matchStatus = i.is_archived === true;
-    } else if (statusFilter === "منتهي") {
-      const today = new Date().toISOString().split('T')[0];
-      matchStatus = i.Health_Cert_Expiry ? i.Health_Cert_Expiry < today : false;
-    } else if (statusFilter !== "الكل") {
-      matchStatus = i.Current_Status === statusFilter;
+    // 1. Fuzzy Search Logic
+    if (searchQuery.trim()) {
+      const fuse = new Fuse(result, {
+        keys: ["Full_Name", "Passport_Number", "Family_ID"],
+        threshold: 0.3,
+      });
+      result = fuse.search(searchQuery).map(r => r.item);
     }
 
-    // Sponsor Logic
-    const matchSponsor = sponsorFilter === "all" || i.Sponsor_ID?.toString() === sponsorFilter;
+    return result.filter((i) => {
+      // 2. Status Logic
+      let matchStatus = true;
+      if (statusFilter === "نشط") {
+        matchStatus = i.Current_Status === "نشط" && !i.is_archived;
+      } else if (statusFilter === "مؤرشف") {
+        matchStatus = i.is_archived === true;
+      } else if (statusFilter === "منتهي") {
+        const today = new Date().toISOString().split('T')[0];
+        matchStatus = i.Health_Cert_Expiry ? i.Health_Cert_Expiry < today : false;
+      } else if (statusFilter !== "الكل") {
+        matchStatus = i.Current_Status === statusFilter;
+      }
 
-    return matchSearch && matchStatus && matchSponsor;
-  });
+      // 3. Sponsor Logic
+      const matchSponsor = sponsorFilter === "all" || i.Sponsor_ID?.toString() === sponsorFilter;
+
+      // 4. Gender Logic
+      const matchGender = genderFilter === "all" || i.Gender === genderFilter;
+
+      // 5. Nationality Logic
+      const matchNationality = nationalityFilter === "all" || i.Nationality === nationalityFilter;
+
+      // 6. Expiry Month Logic
+      let matchMonth = true;
+      if (expiryMonthFilter !== "all" && i.Health_Cert_Expiry) {
+        const expiryDate = new Date(i.Health_Cert_Expiry);
+        matchMonth = (expiryDate.getMonth() + 1).toString() === expiryMonthFilter;
+      } else if (expiryMonthFilter !== "all") {
+        matchMonth = false;
+      }
+
+      return matchStatus && matchSponsor && matchGender && matchNationality && matchMonth;
+    });
+  }, [individuals, searchQuery, statusFilter, sponsorFilter, genderFilter, nationalityFilter, expiryMonthFilter]);
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -303,12 +332,26 @@ export default function Workers() {
           <h2 className="text-2xl font-bold">إدارة الأجانب</h2>
           <p className="text-muted-foreground text-sm">إدارة بيانات العمال، الطلاب، والعائلات</p>
         </div>
-        {hasPermission('workers', 'create') && (
-          <Button onClick={() => setAddOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            إضافة فرد
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {hasPermission('workers', 'view') && (
+            <>
+              <Button variant="outline" className="gap-2 border-primary/20 hover:bg-primary/5 text-primary">
+                <FileDown className="h-4 w-4" />
+                تصدير Excel
+              </Button>
+              <Button variant="outline" className="gap-2 border-primary/20 hover:bg-primary/5 text-primary">
+                <Download className="h-4 w-4" />
+                تقرير PDF
+              </Button>
+            </>
+          )}
+          {hasPermission('workers', 'create') && (
+            <Button onClick={() => setAddOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              إضافة فرد
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="bg-card rounded-lg border border-border p-4 flex flex-wrap gap-4 items-center shadow-sm">
@@ -348,7 +391,7 @@ export default function Workers() {
             </Select>
           </div>
 
-          <div className="w-64">
+          <div className="w-48">
             <Select value={sponsorFilter} onValueChange={setSponsorFilter}>
               <SelectTrigger className="h-10 rounded-xl bg-muted/50">
                 <SelectValue placeholder="جهة الاستضافة" />
@@ -358,6 +401,56 @@ export default function Workers() {
                 {sponsors.map(s => (
                   <SelectItem key={s.id} value={s.id.toString()}>{s.Sponsor_Name}</SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="w-32">
+            <Select value={genderFilter} onValueChange={setGenderFilter}>
+              <SelectTrigger className="h-10 rounded-xl bg-muted/50">
+                <SelectValue placeholder="الجنس" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">الكل (جنس)</SelectItem>
+                <SelectItem value="ذكر">ذكر</SelectItem>
+                <SelectItem value="أنثى">أنثى</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="w-40">
+            <Select value={nationalityFilter} onValueChange={setNationalityFilter}>
+              <SelectTrigger className="h-10 rounded-xl bg-muted/50">
+                <SelectValue placeholder="الجنسية" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">كل الجنسيات</SelectItem>
+                {nationalityOptions.map(n => (
+                  <SelectItem key={n} value={n}>{n}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="w-44">
+            <Select value={expiryMonthFilter} onValueChange={setExpiryMonthFilter}>
+              <SelectTrigger className="h-10 rounded-xl bg-muted/50">
+                <SelectValue placeholder="شهر انتهاء الصحية" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">كل الشهور</SelectItem>
+                <SelectItem value="1">يناير (1)</SelectItem>
+                <SelectItem value="2">فبراير (2)</SelectItem>
+                <SelectItem value="3">مارس (3)</SelectItem>
+                <SelectItem value="4">أبريل (4)</SelectItem>
+                <SelectItem value="5">مايو (5)</SelectItem>
+                <SelectItem value="6">يونيو (6)</SelectItem>
+                <SelectItem value="7">يوليو (7)</SelectItem>
+                <SelectItem value="8">أغسطس (8)</SelectItem>
+                <SelectItem value="9">سبتمبر (9)</SelectItem>
+                <SelectItem value="10">أكتوبر (10)</SelectItem>
+                <SelectItem value="11">نوفمبر (11)</SelectItem>
+                <SelectItem value="12">ديسمبر (12)</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -1,12 +1,13 @@
 import { formatDate, formatDateTime } from "../utils/formatDate";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Building2, Edit, FileCheck, User, Trash2 } from "lucide-react";
+import { Plus, Building2, Edit, FileCheck, User, Trash2, FileDown, Download } from "lucide-react";
+import Fuse from "fuse.js";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload, type UploadedDoc } from "@/components/DocumentUpload";
 import api from "../api/axiosConfig";
@@ -191,21 +192,30 @@ export default function Sponsors() {
     setErrors({});
   };
 
-  const filtered = entities.filter((s) => {
-    const query = searchQuery.toLowerCase();
-    const matchSearch = s.Sponsor_Name?.toLowerCase().includes(query) || s.Commercial_Reg_No?.toLowerCase().includes(query);
+  const filtered = useMemo(() => {
+    let result = entities;
 
-    const matchRegion = regionFilter === "all" || s.Region === regionFilter;
+    if (searchQuery.trim()) {
+      const fuse = new Fuse(result, {
+        keys: ["Sponsor_Name", "Commercial_Reg_No"],
+        threshold: 0.3,
+      });
+      result = fuse.search(searchQuery).map(r => r.item);
+    }
 
-    let matchRange = true;
-    const count = s.workersCount || 0;
-    if (workerRangeFilter === "0-10") matchRange = count <= 10;
-    else if (workerRangeFilter === "11-50") matchRange = count > 10 && count <= 50;
-    else if (workerRangeFilter === "51-100") matchRange = count > 50 && count <= 100;
-    else if (workerRangeFilter === "100+") matchRange = count > 100;
+    return result.filter((s) => {
+      const matchRegion = regionFilter === "all" || s?.Region === regionFilter;
 
-    return matchSearch && matchRegion && matchRange;
-  });
+      let matchRange = true;
+      const count = s?.workersCount || 0;
+      if (workerRangeFilter === "0-10") matchRange = count <= 10;
+      else if (workerRangeFilter === "11-50") matchRange = count > 10 && count <= 50;
+      else if (workerRangeFilter === "51-100") matchRange = count > 50 && count <= 100;
+      else if (workerRangeFilter === "100+") matchRange = count > 100;
+
+      return matchRegion && matchRange;
+    });
+  }, [entities, searchQuery, regionFilter, workerRangeFilter]);
 
   return (
     <div className="space-y-6">
@@ -214,7 +224,19 @@ export default function Sponsors() {
           <h2 className="text-2xl font-bold">الجهات المستضيفة</h2>
           <p className="text-muted-foreground text-sm">إدارة الشركات، الجامعات، وجهات الاستضافة الأخرى</p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          {hasPermission('sponsors', 'view') && (
+            <>
+              <Button variant="outline" className="gap-2 border-primary/20 hover:bg-primary/5 text-primary">
+                <FileDown className="h-4 w-4" />
+                تصدير Excel
+              </Button>
+              <Button variant="outline" className="gap-2 border-primary/20 hover:bg-primary/5 text-primary">
+                <Download className="h-4 w-4" />
+                تقرير PDF
+              </Button>
+            </>
+          )}
           <div className="flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-lg border border-border">
             <Switch checked={showArchived} onCheckedChange={setShowArchived} id="archived-toggle-spon" />
             <Label htmlFor="archived-toggle-spon" className="text-xs cursor-pointer font-medium">عرض الأرشيف</Label>
@@ -291,23 +313,23 @@ export default function Sponsors() {
                 <tr><td colSpan={8} className="p-3 text-center">لا توجد بيانات</td></tr>
               ) : (
                 filtered.map((s) => (
-                  <tr key={s.id} className={cn("border-b border-border last:border-0 hover:bg-muted/30 transition-colors", s.is_archived && "opacity-60 grayscale-[0.5] bg-muted/20")}>
-                    <td className="p-3 font-medium">{s.Sponsor_Name}</td>
-                    <td className="p-3 text-xs">{s.Region || "—"}</td>
-                    <td className="p-3 font-mono text-xs">{s.Commercial_Reg_No || "—"}</td>
-                    <td className="p-3 text-[10px] font-mono">{formatDateTime((s as any).createdAt)}</td>
-                    <td className="p-3">{s.workersCount || 0}</td>
+                  <tr key={s?.id} className={cn("border-b border-border last:border-0 hover:bg-muted/30 transition-colors", s?.is_archived && "opacity-60 grayscale-[0.5] bg-muted/20")}>
+                    <td className="p-3 font-medium">{s?.Sponsor_Name || "—"}</td>
+                    <td className="p-3 text-xs">{s?.Region || "—"}</td>
+                    <td className="p-3 font-mono text-xs">{s?.Commercial_Reg_No || "—"}</td>
+                    <td className="p-3 text-[10px] font-mono">{formatDateTime(s?.createdAt)}</td>
+                    <td className="p-3">{formatNumber(s?.workersCount)}</td>
                     <td className="p-3">
                       <span className={cn(
                         "inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold",
-                        s.is_archived ? "bg-slate-500/10 text-slate-600 border-slate-200" : "bg-success/15 text-success border-success/20"
+                        s?.is_archived ? "bg-slate-500/10 text-slate-600 border-slate-200" : "bg-success/15 text-success border-success/20"
                       )}>
-                        {s.is_archived ? "مؤرشف" : "نشط"}
+                        {s?.is_archived ? "مؤرشف" : "نشط"}
                       </span>
                     </td>
-                    <td className="p-3 font-mono text-xs">{s.Phone}</td>
+                    <td className="p-3 font-mono text-xs">{s?.Phone || "—"}</td>
                     <td className="p-3 text-center">
-                      {(s.Commercial_Reg_Copy || s.Tax_Cert_Copy || s.License_Copy || s.Owner_Photo) && (
+                      {(s?.Commercial_Reg_Copy || s?.Tax_Cert_Copy || s?.License_Copy || s?.Owner_Photo) && (
                         <div title="مستندات مرفقة" className="inline-block cursor-help">
                           <FileCheck className="w-4 h-4 text-green-600" />
                         </div>
@@ -320,7 +342,7 @@ export default function Sponsors() {
                             <Edit className="w-3.5 h-3.5" />
                           </button>
                         )}
-                        {hasPermission('sponsors', 'delete') && !s.is_archived && (
+                        {hasPermission('sponsors', 'delete') && !s?.is_archived && s?.id && (
                           <button onClick={() => handleDelete(s.id)} className="w-8 h-8 rounded-md bg-muted flex items-center justify-center text-destructive hover:bg-destructive/10 transition-colors">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
