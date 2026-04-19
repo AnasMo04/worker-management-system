@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Building2, Edit, FileCheck, User, Trash2, FileDown, Download } from "lucide-react";
+import { Plus, Building2, Edit, FileCheck, User, Trash2, FileDown, Download, Filter } from "lucide-react";
 import Fuse from "fuse.js";
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
