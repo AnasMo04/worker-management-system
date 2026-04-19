@@ -29,6 +29,10 @@ module.exports = (sequelize, DataTypes) => {
     Owner_Email: DataTypes.STRING,
     Owner_Photo: DataTypes.TEXT,
     Identity_Copy: DataTypes.TEXT,
+    Region: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
     is_archived: {
       type: DataTypes.BOOLEAN,
       defaultValue: false

@@ -471,7 +471,7 @@ export default function SmartCards() {
                   <div className="pb-2">
                     <p className="text-sm font-medium">{h.action}</p>
                     <div className="flex gap-2 text-xs text-muted-foreground mt-0.5">
-                      <span>{formatDateTime(h.date)}</span>
+                        <span>{formatDateTime(h.date)}</span>
                       <span>•</span>
                       <span>{h.by}</span>
                     </div>

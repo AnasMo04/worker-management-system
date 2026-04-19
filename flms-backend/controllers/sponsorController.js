@@ -116,7 +116,8 @@ exports.create = async (req, res) => {
       Owner_Phone,
       Owner_Email,
       Owner_Photo,
-      Identity_Copy
+      Identity_Copy,
+      Region
     } = req.body;
 
     const newSponsor = await Sponsor.create({
@@ -134,7 +135,8 @@ exports.create = async (req, res) => {
       Owner_Phone: data.Owner_Phone,
       Owner_Email: data.Owner_Email,
       Owner_Photo: data.Owner_Photo,
-      Identity_Copy: data.Identity_Copy
+      Identity_Copy: data.Identity_Copy,
+      Region: data.Region
     }, { transaction: t });
 
     await syncSponsorDocuments(newSponsor, t);
@@ -178,7 +180,8 @@ exports.update = async (req, res) => {
       Owner_Phone,
       Owner_Email,
       Owner_Photo,
-      Identity_Copy
+      Identity_Copy,
+      Region
     } = req.body;
 
     const sponsor = await Sponsor.findByPk(id);
@@ -201,7 +204,8 @@ exports.update = async (req, res) => {
       Owner_Phone: data.Owner_Phone,
       Owner_Email: data.Owner_Email,
       Owner_Photo: data.Owner_Photo,
-      Identity_Copy: data.Identity_Copy
+      Identity_Copy: data.Identity_Copy,
+      Region: data.Region
     }, { transaction: t });
 
     await syncSponsorDocuments(sponsor, t);

@@ -1,4 +1,4 @@
-import { formatDate, formatDateTime } from "../utils/formatDate";
+import { formatDateTime } from "../utils/formatDate";
 import { StatusBadge } from "@/components/StatusBadge";
 
 const logs = [
