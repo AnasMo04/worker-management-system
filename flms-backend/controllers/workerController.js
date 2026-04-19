@@ -153,19 +153,7 @@ exports.update = async (req, res) => {
   const t = await sequelize.transaction();
   try {
     const { id } = req.params;
-    const data = { ...req.body };
-
-    // Robust parsing for FormData types (ensure booleans and integers)
-    if (data.Freelance === 'true') data.Freelance = true;
-    if (data.Freelance === 'false') data.Freelance = false;
-
-    // Handle Sponsor_ID: Parse as integer or set to null if missing/invalid
-    if (data.Sponsor_ID === 'null' || data.Sponsor_ID === '' || data.Sponsor_ID === undefined) {
-      data.Sponsor_ID = null;
-    } else {
-      const parsedSponsorId = parseInt(data.Sponsor_ID, 10);
-      data.Sponsor_ID = isNaN(parsedSponsorId) ? null : parsedSponsorId;
-    }
+    const data = req.body;
 
     // Handle files if uploaded via multer
     if (req.files) {
@@ -175,20 +163,43 @@ exports.update = async (req, res) => {
       if (req.files.personalPhoto) data.Personal_Photo_Copy = req.files.personalPhoto[0].path.replace(/\\/g, '/');
     }
 
+    const {
+      Sponsor_ID,
+      Passport_Number,
+      National_ID,
+      Full_Name,
+      Nationality,
+      Birth_Date,
+      Residence_Address,
+      Current_Status,
+      NFC_UID,
+      Primary_Card_Serial,
+      Passport_Copy,
+      Health_Cert_Copy,
+      Residency_Copy,
+      Personal_Photo_Copy,
+      Category,
+      Document_Type,
+      Health_Cert_Expiry,
+      Freelance,
+      Family_ID,
+      Relationship,
+      Gender
+    } = req.body;
+
     const worker = await Worker.findByPk(id);
     if (!worker) {
       return res.status(404).json({ message: 'Worker not found' });
     }
 
-    // Check for duplicate Document Number (Passport_Number) excluding current record
-    if (data.Passport_Number && data.Passport_Number.trim() !== worker.Passport_Number) {
-      const existing = await Worker.findOne({ where: { Passport_Number: data.Passport_Number.trim() } });
+    // Check for duplicate Document Number (excluding current)
+    if (Passport_Number && Passport_Number.trim() !== worker.Passport_Number) {
+      const existing = await Worker.findOne({ where: { Passport_Number: Passport_Number.trim() } });
       if (existing) {
         return res.status(400).json({ message: 'رقم الوثيقة مسجل مسبقاً في النظام' });
       }
     }
 
-    // Explicitly update fields from the sanitized data object to ensure all data (including Residence_Address) is persisted
     await worker.update({
       Sponsor_ID: data.Freelance ? null : data.Sponsor_ID,
       Passport_Number: data.Passport_Number,

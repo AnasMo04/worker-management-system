@@ -1,3 +1,4 @@
+import { formatDate, formatDateTime } from "../utils/formatDate";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -219,7 +220,7 @@ export default function Sponsors() {
             <thead>
               <tr className="border-b border-border bg-muted/50 text-muted-foreground">
                 <th className="text-right p-3 font-medium">اسم الجهة</th>
-                <th className="text-right p-3 font-medium">رقم القيد/السجل</th>
+                <th className="text-right p-3 font-medium">رقم القيد/السجل</th><th className="text-right p-3 font-medium">تاريخ التسجيل</th>
                 <th className="text-right p-3 font-medium">عدد الأفراد</th>
                 <th className="text-right p-3 font-medium">الحالة</th>
                 <th className="text-right p-3 font-medium">الهاتف</th>
@@ -229,14 +230,14 @@ export default function Sponsors() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={7} className="p-3 text-center">جاري التحميل...</td></tr>
+                <tr><td colSpan={8} className="p-3 text-center">جاري التحميل...</td></tr>
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={7} className="p-3 text-center">لا توجد بيانات</td></tr>
+                <tr><td colSpan={8} className="p-3 text-center">لا توجد بيانات</td></tr>
               ) : (
                 filtered.map((s) => (
                   <tr key={s.id} className={cn("border-b border-border last:border-0 hover:bg-muted/30 transition-colors", s.is_archived && "opacity-60 grayscale-[0.5] bg-muted/20")}>
                     <td className="p-3 font-medium">{s.Sponsor_Name}</td>
-                    <td className="p-3 font-mono text-xs">{s.Commercial_Reg_No || "—"}</td>
+                    <td className="p-3 font-mono text-xs">{s.Commercial_Reg_No || "—"}</td><td className="p-3 text-[10px] font-mono">{formatDateTime(s.createdAt)}</td>
                     <td className="p-3">{s.workersCount || 0}</td>
                     <td className="p-3">
                       <span className={cn(

@@ -1,3 +1,4 @@
+import { formatDate, formatDateTime } from "../utils/formatDate";
 import { useState, useEffect, useRef } from "react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -324,7 +325,7 @@ export default function Workers() {
                 <th className="text-right p-3 font-medium">رقم الوثيقة</th>
                 <th className="text-right p-3 font-medium">الجنسية</th>
                 <th className="text-right p-3 font-medium">جهة الاستضافة / العمل</th>
-                <th className="text-right p-3 font-medium">NFC UID</th>
+                <th className="text-right p-3 font-medium">انتهاء الصحية</th><th className="text-right p-3 font-medium">تاريخ التسجيل</th><th className="text-right p-3 font-medium">NFC UID</th>
                 <th className="text-right p-3 font-medium">رقم العائلة</th>
                 <th className="text-right p-3 font-medium">الحالة</th>
                 <th className="text-right p-3 font-medium text-center">المستندات</th>
@@ -333,9 +334,9 @@ export default function Workers() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={9} className="p-3 text-center">جاري التحميل...</td></tr>
+                <tr><td colSpan={11} className="p-3 text-center">جاري التحميل...</td></tr>
               ) : filtered.length === 0 ? (
-                <tr><td colSpan={9} className="p-3 text-center">لا توجد بيانات</td></tr>
+                <tr><td colSpan={11} className="p-3 text-center">لا توجد بيانات</td></tr>
               ) : (
                 filtered.map((w) => (
                   <tr key={w.id} className={cn("border-b border-border last:border-0 hover:bg-muted/30 transition-colors", w.is_archived && "opacity-60 grayscale-[0.5] bg-muted/20")}>
@@ -352,7 +353,7 @@ export default function Workers() {
                       <br/>
                       <span className="text-[10px] text-muted-foreground">{w.Residence_Address}</span>
                     </td>
-                    <td className="p-3 font-mono text-[10px] text-muted-foreground">{w.NFC_UID || "—"}</td>
+                    <td className="p-3 font-mono text-[10px] text-muted-foreground">{formatDate(w.Health_Cert_Expiry)}</td><td className="p-3 text-[10px] font-mono">{formatDateTime(w.createdAt)}</td><td className="p-3 font-mono text-[10px] text-muted-foreground">{w.NFC_UID || "—"}</td>
                     <td className="p-3 font-mono text-xs text-blue-500 font-bold">{w.Family_ID || "—"}</td>
                     <td className="p-3">
                       <StatusBadge

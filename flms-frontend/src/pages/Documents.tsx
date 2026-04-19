@@ -1,10 +1,10 @@
+import { formatDate, formatDateTime } from "../utils/formatDate";
 import { useState, useEffect } from "react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Search, FileText, Download, ExternalLink, Calendar, User } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import api from "../api/axiosConfig";
 import { useToast } from "@/hooks/use-toast";
-import { formatDateTime, formatDate } from "@/utils/formatDate";
 
 interface Document {
   id: number;
