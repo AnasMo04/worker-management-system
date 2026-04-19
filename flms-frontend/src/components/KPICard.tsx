@@ -1,5 +1,5 @@
-import { formatNumber } from "../utils/formatDate";
 import { ReactNode } from "react";
+import { formatNumber } from "../utils/formatDate";
 
 interface KPICardProps {
   title: string;
@@ -15,7 +15,7 @@ export function KPICard({ title, value, icon, gradient, change }: KPICardProps) 
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm opacity-85 mb-1">{title}</p>
-          <p className="text-3xl font-bold">{formatNumber(value)}</p>
+          <p className="text-3xl font-bold">{typeof value === 'number' ? formatNumber(value) : value}</p>
           {change && <p className="text-xs mt-1 opacity-75">{change}</p>}
         </div>
         <div className="opacity-80 text-3xl">{icon}</div>

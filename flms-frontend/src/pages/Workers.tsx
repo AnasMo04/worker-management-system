@@ -88,6 +88,7 @@ export default function Workers() {
   const [showArchived, setShowArchived] = useState(false);
   const { searchQuery, setSearchQuery } = useSearch();
   const [statusFilter, setStatusFilter] = useState("الكل");
+  const [sponsorFilter, setSponsorFilter] = useState("all");
   const [addOpen, setAddOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -168,8 +169,24 @@ export default function Workers() {
   const filtered = individuals.filter((i) => {
     const q = searchQuery.toLowerCase();
     const matchSearch = i.Full_Name?.toLowerCase().includes(q) || i.Passport_Number?.toLowerCase().includes(q) || i.Family_ID?.toLowerCase().includes(q);
-    const matchStatus = statusFilter === "الكل" || i.Current_Status === statusFilter;
-    return matchSearch && matchStatus;
+
+    // Status Logic
+    let matchStatus = true;
+    if (statusFilter === "نشط") {
+      matchStatus = i.Current_Status === "نشط" && !i.is_archived;
+    } else if (statusFilter === "مؤرشف") {
+      matchStatus = i.is_archived === true;
+    } else if (statusFilter === "منتهي") {
+      const today = new Date().toISOString().split('T')[0];
+      matchStatus = i.Health_Cert_Expiry ? i.Health_Cert_Expiry < today : false;
+    } else if (statusFilter !== "الكل") {
+      matchStatus = i.Current_Status === statusFilter;
+    }
+
+    // Sponsor Logic
+    const matchSponsor = sponsorFilter === "all" || i.Sponsor_ID?.toString() === sponsorFilter;
+
+    return matchSearch && matchStatus && matchSponsor;
   });
 
   const validate = () => {
@@ -294,25 +311,74 @@ export default function Workers() {
         )}
       </div>
 
-      <div className="bg-card rounded-lg border border-border p-4 flex flex-wrap gap-3 items-center">
-        <Filter className="w-4 h-4 text-muted-foreground" />
-        <div className="flex items-center gap-2 mr-2">
-          <Switch checked={showArchived} onCheckedChange={setShowArchived} id="archived-toggle" />
-          <Label htmlFor="archived-toggle" className="text-xs cursor-pointer">عرض الأرشيف</Label>
+      <div className="bg-card rounded-lg border border-border p-4 flex flex-wrap gap-4 items-center shadow-sm">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Filter className="w-4 h-4" />
+          <span className="text-sm font-medium">تصفية النتائج:</span>
         </div>
-        <div className="relative">
+
+        <div className="relative flex-1 min-w-[240px]">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="بحث بالاسم، رقم الوثيقة، أو رقم العائلة..."
-            className="h-9 bg-muted rounded-lg pr-9 pl-3 text-sm outline-none focus:ring-2 focus:ring-ring w-80 placeholder:text-muted-foreground"
+            placeholder="بحث بالاسم أو رقم الوثيقة..."
+            className="w-full h-10 bg-muted/50 border border-border rounded-xl pr-10 pl-4 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all"
           />
         </div>
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="h-9 bg-muted rounded-lg px-3 text-sm outline-none focus:ring-2 focus:ring-ring">
-          {statuses.map((s) => <option key={s}>{s}</option>)}
-        </select>
-        <span className="text-xs text-muted-foreground mr-auto">{filtered.length} نتيجة</span>
+
+        <div className="flex items-center gap-3">
+          <div className="w-48">
+            <Select value={statusFilter} onValueChange={(v) => {
+              setStatusFilter(v);
+              if (v === "مؤرشف") setShowArchived(true);
+            }}>
+              <SelectTrigger className="h-10 rounded-xl bg-muted/50">
+                <SelectValue placeholder="الحالة" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="الكل">كل الحالات</SelectItem>
+                <SelectItem value="نشط">نشط</SelectItem>
+                <SelectItem value="منتهي">منتهي الصلاحية</SelectItem>
+                <SelectItem value="مؤرشف">المؤرشفين</SelectItem>
+                {statusOptions.filter(o => o.value !== "نشط").map(o => (
+                  <SelectItem key={o.value} value={o.value}>{o.value}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="w-64">
+            <Select value={sponsorFilter} onValueChange={setSponsorFilter}>
+              <SelectTrigger className="h-10 rounded-xl bg-muted/50">
+                <SelectValue placeholder="جهة الاستضافة" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">كل الجهات</SelectItem>
+                {sponsors.map(s => (
+                  <SelectItem key={s.id} value={s.id.toString()}>{s.Sponsor_Name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 border-r pr-4 mr-2">
+          <Switch
+            checked={showArchived}
+            onCheckedChange={(v) => {
+              setShowArchived(v);
+              if (v && statusFilter !== "مؤرشف") setStatusFilter("الكل");
+              if (!v && statusFilter === "مؤرشف") setStatusFilter("الكل");
+            }}
+            id="archived-toggle"
+          />
+          <Label htmlFor="archived-toggle" className="text-xs cursor-pointer font-medium">إظهار المؤرشفين</Label>
+        </div>
+
+        <div className="mr-auto px-4 py-1.5 bg-primary/5 rounded-full border border-primary/10">
+          <span className="text-xs font-bold text-primary">{filtered.length} سجل</span>
+        </div>
       </div>
 
       <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
@@ -325,7 +391,9 @@ export default function Workers() {
                 <th className="text-right p-3 font-medium">رقم الوثيقة</th>
                 <th className="text-right p-3 font-medium">الجنسية</th>
                 <th className="text-right p-3 font-medium">جهة الاستضافة / العمل</th>
-                <th className="text-right p-3 font-medium">انتهاء الصحية</th><th className="text-right p-3 font-medium">تاريخ التسجيل</th><th className="text-right p-3 font-medium">NFC UID</th>
+                <th className="text-right p-3 font-medium">انتهاء الصحية</th>
+                <th className="text-right p-3 font-medium">تاريخ التسجيل</th>
+                <th className="text-right p-3 font-medium">NFC UID</th>
                 <th className="text-right p-3 font-medium">رقم العائلة</th>
                 <th className="text-right p-3 font-medium">الحالة</th>
                 <th className="text-right p-3 font-medium text-center">المستندات</th>
@@ -353,7 +421,9 @@ export default function Workers() {
                       <br/>
                       <span className="text-[10px] text-muted-foreground">{w.Residence_Address}</span>
                     </td>
-                    <td className="p-3 font-mono text-[10px] text-muted-foreground">{formatDate(w.Health_Cert_Expiry)}</td><td className="p-3 text-[10px] font-mono">{formatDateTime(w.createdAt)}</td><td className="p-3 font-mono text-[10px] text-muted-foreground">{w.NFC_UID || "—"}</td>
+                    <td className="p-3 font-mono text-[10px] text-muted-foreground">{formatDate(w.Health_Cert_Expiry)}</td>
+                    <td className="p-3 text-[10px] font-mono">{formatDateTime((w as any).createdAt)}</td>
+                    <td className="p-3 font-mono text-[10px] text-muted-foreground">{w.NFC_UID || "—"}</td>
                     <td className="p-3 font-mono text-xs text-blue-500 font-bold">{w.Family_ID || "—"}</td>
                     <td className="p-3">
                       <StatusBadge

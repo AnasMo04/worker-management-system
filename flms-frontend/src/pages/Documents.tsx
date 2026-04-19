@@ -118,7 +118,7 @@ export default function Documents() {
                         {formatDateTime(d.createdAt)}
                       </div>
                     </td>
-                    <td className="p-3 text-xs">{formatDate(d.Expiry_Date)}</td>
+                    <td className="p-3 text-xs">{d.Expiry_Date || "—"}</td>
                     <td className="p-3">
                       <div className="flex gap-2">
                         <a

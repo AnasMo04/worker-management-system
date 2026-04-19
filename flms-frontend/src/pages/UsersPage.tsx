@@ -1,4 +1,3 @@
-import { formatDate, formatDateTime } from "../utils/formatDate";
 import { useState, useEffect } from "react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -236,7 +235,7 @@ export default function UsersPage() {
             <thead>
               <tr className="border-b border-border bg-muted/50 text-muted-foreground">
                 <th className="text-right p-3 font-medium">الاسم الكامل</th>
-                <th className="text-right p-3 font-medium">اسم المستخدم</th><th className="text-right p-3 font-medium">تاريخ الإنشاء</th>
+                <th className="text-right p-3 font-medium">اسم المستخدم</th>
                 <th className="text-right p-3 font-medium">الدور</th>
                 <th className="text-right p-3 font-medium">الحالة</th>
                 <th className="text-right p-3 font-medium text-center">الإجراءات</th>
@@ -244,11 +243,11 @@ export default function UsersPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={6} className="p-8 text-center">جاري التحميل...</td></tr>
+                <tr><td colSpan={5} className="p-8 text-center">جاري التحميل...</td></tr>
               ) : filtered.map((u) => (
                 <tr key={u.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
                   <td className="p-3 font-medium">{u.Name}</td>
-                  <td className="p-3 font-mono text-xs">{u.Username}</td><td className="p-3 text-[10px] font-mono">{formatDateTime(u.createdAt)}</td>
+                  <td className="p-3 font-mono text-xs">{u.Username}</td>
                   <td className="p-3">
                     <StatusBadge variant={u.Role as any} label={u.Role === 'admin' ? 'مدير نظام' : u.Role === 'officer' ? 'ضابط' : u.Role === 'auditor' ? 'مدقق' : 'موظف'} />
                   </td>

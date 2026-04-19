@@ -44,14 +44,18 @@ interface EntityDocs {
   identityCopy: UploadedDoc | null;
 }
 
+const regions = ["طرابلس", "بنغازي", "مصراتة", "الزاوية", "سبها", "الخمس", "زليتن", "صبراتة", "غريان", "ترهونة"];
+
 const emptyDocs: EntityDocs = { commercialRegister: null, taxCert: null, licenseCopy: null, authLetter: null, ownerPhoto: null, identityCopy: null };
-const emptyForm = { name: "", license: "", phone: "", email: "", address: "", ownerName: "", ownerNationalID: "", ownerPhone: "", ownerEmail: "" };
+const emptyForm = { name: "", license: "", phone: "", email: "", address: "", ownerName: "", ownerNationalID: "", ownerPhone: "", ownerEmail: "", region: "" };
 
 export default function Sponsors() {
   const { hasPermission } = useAuth();
   const [entities, setEntities] = useState<HostingEntity[]>([]);
   const [loading, setLoading] = useState(true);
   const [showArchived, setShowArchived] = useState(false);
+  const [regionFilter, setRegionFilter] = useState("all");
+  const [workerRangeFilter, setWorkerRangeFilter] = useState("all");
   const [addOpen, setAddOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -104,6 +108,7 @@ export default function Sponsors() {
       formData.append("Owner_National_ID", form.ownerNationalID.trim());
       formData.append("Owner_Phone", form.ownerPhone.trim());
       formData.append("Owner_Email", form.ownerEmail.trim());
+      formData.append("Region", form.region);
 
       // Append files if they are new
       if (docs.commercialRegister?.file) formData.append("commercialReg", docs.commercialRegister.file);
@@ -147,6 +152,7 @@ export default function Sponsors() {
       ownerNationalID: entity.Owner_National_ID || "",
       ownerPhone: entity.Owner_Phone || "",
       ownerEmail: entity.Owner_Email || "",
+      region: entity.Region || "",
     });
     const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
     const getFullUrl = (p: string) => p.startsWith('http') ? p : `${backendUrl}/${p}`;
@@ -187,10 +193,18 @@ export default function Sponsors() {
 
   const filtered = entities.filter((s) => {
     const query = searchQuery.toLowerCase();
-    return (
-      s.Sponsor_Name?.toLowerCase().includes(query) ||
-      s.Commercial_Reg_No?.toLowerCase().includes(query)
-    );
+    const matchSearch = s.Sponsor_Name?.toLowerCase().includes(query) || s.Commercial_Reg_No?.toLowerCase().includes(query);
+
+    const matchRegion = regionFilter === "all" || s.Region === regionFilter;
+
+    let matchRange = true;
+    const count = s.workersCount || 0;
+    if (workerRangeFilter === "0-10") matchRange = count <= 10;
+    else if (workerRangeFilter === "11-50") matchRange = count > 10 && count <= 50;
+    else if (workerRangeFilter === "51-100") matchRange = count > 50 && count <= 100;
+    else if (workerRangeFilter === "100+") matchRange = count > 100;
+
+    return matchSearch && matchRegion && matchRange;
   });
 
   return (
@@ -214,13 +228,55 @@ export default function Sponsors() {
         </div>
       </div>
 
+      <div className="bg-card rounded-lg border border-border p-4 flex flex-wrap gap-4 items-center shadow-sm">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Filter className="w-4 h-4" />
+          <span className="text-sm font-medium">تصفية النتائج:</span>
+        </div>
+
+        <div className="w-48">
+          <Select value={regionFilter} onValueChange={setRegionFilter}>
+            <SelectTrigger className="h-10 rounded-xl bg-muted/50">
+              <SelectValue placeholder="المنطقة" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">كل المناطق</SelectItem>
+              {regions.map(r => (
+                <SelectItem key={r} value={r}>{r}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="w-56">
+          <Select value={workerRangeFilter} onValueChange={setWorkerRangeFilter}>
+            <SelectTrigger className="h-10 rounded-xl bg-muted/50">
+              <SelectValue placeholder="عدد العمال" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">أي عدد من العمال</SelectItem>
+              <SelectItem value="0-10">10 عمال أو أقل</SelectItem>
+              <SelectItem value="11-50">من 11 إلى 50 عامل</SelectItem>
+              <SelectItem value="51-100">من 51 إلى 100 عامل</SelectItem>
+              <SelectItem value="100+">أكثر من 100 عامل</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="mr-auto px-4 py-1.5 bg-primary/5 rounded-full border border-primary/10">
+          <span className="text-xs font-bold text-primary">{filtered.length} جهة</span>
+        </div>
+      </div>
+
       <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-muted/50 text-muted-foreground">
                 <th className="text-right p-3 font-medium">اسم الجهة</th>
-                <th className="text-right p-3 font-medium">رقم القيد/السجل</th><th className="text-right p-3 font-medium">تاريخ التسجيل</th>
+                <th className="text-right p-3 font-medium">المنطقة</th>
+                <th className="text-right p-3 font-medium">رقم القيد/السجل</th>
+                <th className="text-right p-3 font-medium">تاريخ التسجيل</th>
                 <th className="text-right p-3 font-medium">عدد الأفراد</th>
                 <th className="text-right p-3 font-medium">الحالة</th>
                 <th className="text-right p-3 font-medium">الهاتف</th>
@@ -237,7 +293,9 @@ export default function Sponsors() {
                 filtered.map((s) => (
                   <tr key={s.id} className={cn("border-b border-border last:border-0 hover:bg-muted/30 transition-colors", s.is_archived && "opacity-60 grayscale-[0.5] bg-muted/20")}>
                     <td className="p-3 font-medium">{s.Sponsor_Name}</td>
-                    <td className="p-3 font-mono text-xs">{s.Commercial_Reg_No || "—"}</td><td className="p-3 text-[10px] font-mono">{formatDateTime(s.createdAt)}</td>
+                    <td className="p-3 text-xs">{s.Region || "—"}</td>
+                    <td className="p-3 font-mono text-xs">{s.Commercial_Reg_No || "—"}</td>
+                    <td className="p-3 text-[10px] font-mono">{formatDateTime((s as any).createdAt)}</td>
                     <td className="p-3">{s.workersCount || 0}</td>
                     <td className="p-3">
                       <span className={cn(
@@ -310,9 +368,23 @@ export default function Sponsors() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
+                  <Label>المنطقة</Label>
+                  <Select value={form.region} onValueChange={(v) => setForm({ ...form, region: v })}>
+                    <SelectTrigger><SelectValue placeholder="اختر المنطقة" /></SelectTrigger>
+                    <SelectContent>
+                      {regions.map(r => (
+                        <SelectItem key={r} value={r}>{r}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
                   <Label>رقم القيد / السجل</Label>
                   <Input value={form.license} onChange={(e) => setForm({ ...form, license: e.target.value })} placeholder="REG-2025-XXX" className="font-mono" />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label>رقم الهاتف <span className="text-destructive">*</span></Label>
                   <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="091-XXXXXXX" />
