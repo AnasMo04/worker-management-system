@@ -11,6 +11,7 @@ import Fuse from "fuse.js";
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { AMIRI_REGULAR, AMIRI_BOLD } from "../utils/pdfFonts";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload, type UploadedDoc } from "@/components/DocumentUpload";
 import api from "../api/axiosConfig";
@@ -207,29 +208,35 @@ export default function Sponsors() {
   const exportToPDF = () => {
     const doc = new jsPDF('l', 'mm', 'a4');
 
-    // Branding
+    // Add Amiri font for Arabic support
+    doc.addFileToVFS("Amiri-Regular.ttf", AMIRI_REGULAR);
+    doc.addFileToVFS("Amiri-Bold.ttf", AMIRI_BOLD);
+    doc.addFont("Amiri-Regular.ttf", "Amiri", "normal");
+    doc.addFont("Amiri-Bold.ttf", "Amiri", "bold");
+    doc.setFont("Amiri");
+
     doc.setFontSize(18);
     doc.setTextColor(40);
-    doc.text("نظام إدارة العمالة الأجانب", 148, 20, { align: 'center' });
+    doc.text("نظام إدارة العمالة الأجانب", 277, 20, { align: 'right' });
     doc.setFontSize(12);
-    doc.text("سجل الجهات المستضيفة (Sponsors Report)", 148, 28, { align: 'center' });
+    doc.text("سجل الجهات المستضيفة (Sponsors Report)", 277, 28, { align: 'right' });
     doc.line(20, 32, 277, 32);
 
     const tableData = filtered?.map(s => [
-      s?.Sponsor_Name || "—",
-      s?.Region || "—",
-      s?.Commercial_Reg_No || "—",
-      s?.workersCount || 0,
+      s?.Phone || "—",
       s?.is_archived ? "مؤرشف" : "نشط",
-      s?.Phone || "—"
+      s?.workersCount || 0,
+      s?.Commercial_Reg_No || "—",
+      s?.Region || "—",
+      s?.Sponsor_Name || "—"
     ]) || [];
 
     (doc as any).autoTable({
-      head: [["اسم الجهة", "المنطقة", "رقم القيد", "العمال", "الحالة", "الهاتف"]],
+      head: [["الهاتف", "الحالة", "العمال", "رقم القيد", "المنطقة", "اسم الجهة"]],
       body: tableData,
       startY: 40,
-      styles: { halign: 'right' },
-      headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+      styles: { font: "Amiri", halign: 'right' },
+      headStyles: { font: "Amiri", fillColor: [41, 128, 185], textColor: 255 },
       theme: 'grid'
     });
 
