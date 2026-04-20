@@ -15,6 +15,7 @@ import Fuse from "fuse.js";
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { AMIRI_REGULAR, AMIRI_BOLD } from "../utils/pdfFonts";
 import api from "../api/axiosConfig";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -259,26 +260,36 @@ export default function Workers() {
 
   const exportToPDF = () => {
     const doc = new jsPDF('l', 'mm', 'a4');
+
+    // Add Amiri font for Arabic support
+    doc.addFileToVFS("Amiri-Regular.ttf", AMIRI_REGULAR);
+    doc.addFileToVFS("Amiri-Bold.ttf", AMIRI_BOLD);
+    doc.addFont("Amiri-Regular.ttf", "Amiri", "normal");
+    doc.addFont("Amiri-Bold.ttf", "Amiri", "bold");
+    doc.setFont("Amiri");
+
     doc.setFontSize(18);
     doc.setTextColor(40);
-    doc.text("نظام إدارة العمالة الأجانب", 148, 20, { align: 'center' });
+    doc.text("نظام إدارة العمالة الأجانب", 277, 20, { align: 'right' });
     doc.setFontSize(12);
-    doc.text("سجل بيانات العمالة الأجانب (Workers Report)", 148, 28, { align: 'center' });
+    doc.text("سجل بيانات العمالة الأجانب (Workers Report)", 277, 28, { align: 'right' });
     doc.line(20, 32, 277, 32);
+
     const tableData = filtered?.map(w => [
-      w?.Full_Name || "—",
-      w?.Passport_Number || "—",
-      w?.Nationality || "—",
-      w?.Current_Status || "—",
+      formatDate(w?.Health_Cert_Expiry),
       w?.Freelance ? "يعمل لحسابه" : (w?.Sponsor?.Sponsor_Name || "—"),
-      formatDate(w?.Health_Cert_Expiry)
+      w?.Current_Status || "—",
+      w?.Nationality || "—",
+      w?.Passport_Number || "—",
+      w?.Full_Name || "—"
     ]) || [];
+
     (doc as any).autoTable({
-      head: [["الاسم الكامل", "رقم الوثيقة", "الجنسية", "الحالة", "جهة الاستضافة", "انتهاء الصحية"]],
+      head: [["انتهاء الصحية", "جهة الاستضافة", "الحالة", "الجنسية", "رقم الوثيقة", "الاسم الكامل"]],
       body: tableData,
       startY: 40,
-      styles: { halign: 'right' },
-      headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+      styles: { font: "Amiri", halign: 'right' },
+      headStyles: { font: "Amiri", fillColor: [41, 128, 185], textColor: 255 },
       theme: 'grid'
     });
     doc.save(`Workers_Report_${new Date().toISOString().split('T')[0]}.pdf`);
@@ -395,6 +406,10 @@ export default function Workers() {
               </Button>
             </>
           )}
+          <div className="flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-lg border border-border">
+            <Switch checked={showArchived} onCheckedChange={setShowArchived} id="archived-toggle" />
+            <Label htmlFor="archived-toggle" className="text-xs cursor-pointer font-medium">عرض الأرشيف</Label>
+          </div>
           {hasPermission('workers', 'create') && (
             <Button onClick={() => setAddOpen(true)} className="gap-2">
               <Plus className="h-4 w-4" /> إضافة فرد
@@ -521,10 +536,6 @@ export default function Workers() {
           </div>
           <div className="flex items-center gap-3 mr-auto">
             <Button variant="ghost" size="sm" onClick={resetFilters} className="text-xs h-9 text-muted-foreground hover:text-destructive hover:bg-destructive/5"><RotateCcw className="w-3 h-3 ml-2"/> مسح التصفية</Button>
-            <div className="flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-lg border border-border/50">
-              <Switch checked={showArchived} onCheckedChange={setShowArchived} id="archived-toggle" />
-              <Label htmlFor="archived-toggle" className="text-[11px] cursor-pointer font-bold">المؤرشفين</Label>
-            </div>
             <div className="px-4 py-2 bg-primary/10 rounded-xl border border-primary/20">
               <span className="text-xs font-black text-primary">{filtered.length} سجل مطابق</span>
             </div>
