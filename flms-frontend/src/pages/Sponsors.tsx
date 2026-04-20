@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Building2, Edit, FileCheck, User, Trash2, FileDown, Download, Filter } from "lucide-react";
+import { Plus, Building2, Edit, FileCheck, User, Trash2, FileDown, Download, Filter, Search, RotateCcw } from "lucide-react";
 import Fuse from "fuse.js";
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -69,7 +69,7 @@ export default function Sponsors() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
-  const { searchQuery } = useSearch();
+  const { searchQuery, setSearchQuery } = useSearch();
 
   useEffect(() => {
     fetchEntities();
@@ -208,12 +208,11 @@ export default function Sponsors() {
     const doc = new jsPDF('l', 'mm', 'a4');
 
     // Branding
-    doc.setFontSize(22);
-    doc.setTextColor(41, 128, 185);
-    doc.text("FLMS", 148, 20, { align: 'center' });
-    doc.setFontSize(14);
-    doc.setTextColor(100);
-    doc.text("نظام إدارة العمالة الوافدة - سجل الجهات المستضيفة (FLMS)", 148, 28, { align: 'center' });
+    doc.setFontSize(18);
+    doc.setTextColor(40);
+    doc.text("نظام إدارة العمالة الأجانب", 148, 20, { align: 'center' });
+    doc.setFontSize(12);
+    doc.text("سجل الجهات المستضيفة (Sponsors Report)", 148, 28, { align: 'center' });
     doc.line(20, 32, 277, 32);
 
     const tableData = filtered?.map(s => [
@@ -305,43 +304,46 @@ export default function Sponsors() {
         </div>
       </div>
 
-      <div className="bg-card rounded-lg border border-border p-4 flex flex-wrap gap-4 items-center shadow-sm">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Filter className="w-4 h-4" />
-          <span className="text-sm font-medium">تصفية النتائج:</span>
+      <div className="bg-card rounded-lg border border-border p-5 space-y-5 shadow-sm">
+        {/* Row 1: Search and Region */}
+        <div className="flex flex-wrap gap-4 items-center">
+          <div className="flex items-center gap-2 text-muted-foreground min-w-[120px]">
+            <Filter className="w-4 h-4" />
+            <span className="text-sm font-bold">تصفية ذكية:</span>
+          </div>
+          <div className="relative flex-1 min-w-[300px]">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="البحث عن اسم الشركة أو رقم السجل..." className="w-full h-11 bg-muted/40 border border-border rounded-xl pr-10 pl-4 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all shadow-inner" />
+          </div>
+          <div className="flex items-center gap-3">
+            <Select value={regionFilter} onValueChange={setRegionFilter}>
+              <SelectTrigger className="h-11 w-44 rounded-xl bg-muted/40 border-border"><SelectValue placeholder="المنطقة" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">كل المناطق</SelectItem>
+                {regions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={workerRangeFilter} onValueChange={setWorkerRangeFilter}>
+              <SelectTrigger className="h-11 w-56 rounded-xl bg-muted/40 border-border"><SelectValue placeholder="عدد العمال" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">أي عدد من العمال</SelectItem>
+                <SelectItem value="0-10">10 عمال أو أقل</SelectItem>
+                <SelectItem value="11-50">من 11 إلى 50 عامل</SelectItem>
+                <SelectItem value="51-100">من 51 إلى 100 عامل</SelectItem>
+                <SelectItem value="100+">أكثر من 100 عامل</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
-        <div className="w-48">
-          <Select value={regionFilter} onValueChange={setRegionFilter}>
-            <SelectTrigger className="h-10 rounded-xl bg-muted/50">
-              <SelectValue placeholder="المنطقة" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">كل المناطق</SelectItem>
-              {regions.map(r => (
-                <SelectItem key={r} value={r}>{r}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="w-56">
-          <Select value={workerRangeFilter} onValueChange={setWorkerRangeFilter}>
-            <SelectTrigger className="h-10 rounded-xl bg-muted/50">
-              <SelectValue placeholder="عدد العمال" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">أي عدد من العمال</SelectItem>
-              <SelectItem value="0-10">10 عمال أو أقل</SelectItem>
-              <SelectItem value="11-50">من 11 إلى 50 عامل</SelectItem>
-              <SelectItem value="51-100">من 51 إلى 100 عامل</SelectItem>
-              <SelectItem value="100+">أكثر من 100 عامل</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="mr-auto px-4 py-1.5 bg-primary/5 rounded-full border border-primary/10">
-          <span className="text-xs font-bold text-primary">{filtered.length} جهة</span>
+        {/* Row 2: Status & Stats */}
+        <div className="flex flex-wrap gap-4 items-center pt-2 border-t border-border/30">
+          <div className="flex items-center gap-3 mr-auto">
+            <Button variant="ghost" size="sm" onClick={() => { setRegionFilter("all"); setWorkerRangeFilter("all"); setSearchQuery(""); }} className="text-xs h-9 text-muted-foreground hover:text-destructive hover:bg-destructive/5"><RotateCcw className="w-3 h-3 ml-2"/> مسح التصفية</Button>
+            <div className="px-4 py-2 bg-primary/10 rounded-xl border border-primary/20">
+              <span className="text-xs font-black text-primary">{filtered.length} جهة مطابقة</span>
+            </div>
+          </div>
         </div>
       </div>
 
