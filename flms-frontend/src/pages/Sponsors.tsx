@@ -1,4 +1,4 @@
-import { formatDate, formatDateTime } from "../utils/formatDate";
+import { formatDate, formatDateTime, formatNumber } from "../utils/formatDate";
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -145,31 +145,31 @@ export default function Sponsors() {
 
   const handleEditClick = (entity: HostingEntity) => {
     setEditMode(true);
-    setSelectedId(entity.id);
+    setSelectedId(entity?.id);
     setForm({
-      name: entity.Sponsor_Name,
-      license: entity.Commercial_Reg_No || "",
-      phone: entity.Phone,
-      email: entity.Email || "",
-      address: entity.Address || "",
-      ownerName: entity.Owner_Name || "",
-      ownerNationalID: entity.Owner_National_ID || "",
-      ownerPhone: entity.Owner_Phone || "",
-      ownerEmail: entity.Owner_Email || "",
-      region: entity.Region || "",
+      name: entity?.Sponsor_Name || "",
+      license: entity?.Commercial_Reg_No || "",
+      phone: entity?.Phone || "",
+      email: entity?.Email || "",
+      address: entity?.Address || "",
+      ownerName: entity?.Owner_Name || "",
+      ownerNationalID: entity?.Owner_National_ID || "",
+      ownerPhone: entity?.Owner_Phone || "",
+      ownerEmail: entity?.Owner_Email || "",
+      region: entity?.Region || "",
     });
     const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-    const getFullUrl = (p: string) => p.startsWith('http') ? p : `${backendUrl}/${p}`;
+    const getFullUrl = (p: string) => p?.startsWith('http') ? p : `${backendUrl}/${p}`;
 
     setDocs({
-      commercialRegister: entity.Commercial_Reg_Copy ? { name: "مستند مرفق", url: getFullUrl(entity.Commercial_Reg_Copy), type: "application/pdf", label: "صورة القيد/السجل" } : null,
-      taxCert: entity.Tax_Cert_Copy ? { name: "مستند مرفق", url: getFullUrl(entity.Tax_Cert_Copy), type: "application/pdf", label: "الشهادة الضريبية" } : null,
-      licenseCopy: entity.License_Copy ? { name: "مستند مرفق", url: getFullUrl(entity.License_Copy), type: "application/pdf", label: "نسخة الترخيص" } : null,
-      authLetter: entity.Auth_Letter_Copy ? { name: "مستند مرفق", url: getFullUrl(entity.Auth_Letter_Copy), type: "application/pdf", label: "خطاب التفويض" } : null,
-      ownerPhoto: entity.Owner_Photo ? { name: "صورة مرفقة", url: getFullUrl(entity.Owner_Photo), type: "image/jpeg", label: "صورة المالك" } : null,
-      identityCopy: entity.Identity_Copy ? { name: "مستند مرفق", url: getFullUrl(entity.Identity_Copy), type: "application/pdf", label: "إثبات الهوية" } : null,
+      commercialRegister: entity?.Commercial_Reg_Copy ? { name: "مستند مرفق", url: getFullUrl(entity.Commercial_Reg_Copy), type: "application/pdf", label: "صورة القيد/السجل" } : null,
+      taxCert: entity?.Tax_Cert_Copy ? { name: "مستند مرفق", url: getFullUrl(entity.Tax_Cert_Copy), type: "application/pdf", label: "الشهادة الضريبية" } : null,
+      licenseCopy: entity?.License_Copy ? { name: "مستند مرفق", url: getFullUrl(entity.License_Copy), type: "application/pdf", label: "نسخة الترخيص" } : null,
+      authLetter: entity?.Auth_Letter_Copy ? { name: "مستند مرفق", url: getFullUrl(entity.Auth_Letter_Copy), type: "application/pdf", label: "خطاب التفويض" } : null,
+      ownerPhoto: entity?.Owner_Photo ? { name: "صورة مرفقة", url: getFullUrl(entity.Owner_Photo), type: "image/jpeg", label: "صورة المالك" } : null,
+      identityCopy: entity?.Identity_Copy ? { name: "مستند مرفق", url: getFullUrl(entity.Identity_Copy), type: "application/pdf", label: "إثبات الهوية" } : null,
     });
-    setEntityType(entity.Owner_Name ? "business" : "university");
+    setEntityType(entity?.Owner_Name ? "business" : "university");
     setAddOpen(true);
   };
 
@@ -187,15 +187,15 @@ export default function Sponsors() {
   };
 
   const exportToExcel = () => {
-    const dataToExport = filtered.map(s => ({
-      "اسم الجهة": s.Sponsor_Name,
-      "المنطقة": s.Region || "—",
-      "رقم القيد/السجل": s.Commercial_Reg_No || "—",
-      "عدد الأفراد": s.workersCount || 0,
-      "الحالة": s.is_archived ? "مؤرشف" : "نشط",
-      "الهاتف": s.Phone,
-      "تاريخ التسجيل": formatDate(s.createdAt)
-    }));
+    const dataToExport = filtered?.map(s => ({
+      "اسم الجهة": s?.Sponsor_Name || "—",
+      "المنطقة": s?.Region || "—",
+      "رقم القيد/السجل": s?.Commercial_Reg_No || "—",
+      "عدد الأفراد": s?.workersCount || 0,
+      "الحالة": s?.is_archived ? "مؤرشف" : "نشط",
+      "الهاتف": s?.Phone || "—",
+      "تاريخ التسجيل": formatDate(s?.createdAt)
+    })) || [];
 
     const ws = XLSX.utils.json_to_sheet(dataToExport);
     const wb = XLSX.utils.book_new();
@@ -210,20 +210,20 @@ export default function Sponsors() {
     // Branding
     doc.setFontSize(22);
     doc.setTextColor(41, 128, 185);
-    doc.text("AfaqAlghad", 148, 20, { align: 'center' });
+    doc.text("FLMS", 148, 20, { align: 'center' });
     doc.setFontSize(14);
     doc.setTextColor(100);
-    doc.text("نظام إدارة العمالة الوافدة - سجل الجهات المستضيفة", 148, 28, { align: 'center' });
+    doc.text("نظام إدارة العمالة الوافدة - سجل الجهات المستضيفة (FLMS)", 148, 28, { align: 'center' });
     doc.line(20, 32, 277, 32);
 
-    const tableData = filtered.map(s => [
-      s.Sponsor_Name,
-      s.Region || "—",
-      s.Commercial_Reg_No || "—",
-      s.workersCount || 0,
-      s.is_archived ? "مؤرشف" : "نشط",
-      s.Phone
-    ]);
+    const tableData = filtered?.map(s => [
+      s?.Sponsor_Name || "—",
+      s?.Region || "—",
+      s?.Commercial_Reg_No || "—",
+      s?.workersCount || 0,
+      s?.is_archived ? "مؤرشف" : "نشط",
+      s?.Phone || "—"
+    ]) || [];
 
     (doc as any).autoTable({
       head: [["اسم الجهة", "المنطقة", "رقم القيد", "العمال", "الحالة", "الهاتف"]],
@@ -280,7 +280,7 @@ export default function Sponsors() {
           <p className="text-muted-foreground text-sm">إدارة الشركات، الجامعات، وجهات الاستضافة الأخرى</p>
         </div>
         <div className="flex items-center gap-2">
-          {hasPermission('sponsors', 'view') && (
+          {hasPermission?.('sponsors', 'view') && (
             <>
               <Button onClick={exportToExcel} variant="outline" className="gap-2 border-primary/20 hover:bg-primary/5 text-primary">
                 <FileDown className="h-4 w-4" />
@@ -296,7 +296,7 @@ export default function Sponsors() {
             <Switch checked={showArchived} onCheckedChange={setShowArchived} id="archived-toggle-spon" />
             <Label htmlFor="archived-toggle-spon" className="text-xs cursor-pointer font-medium">عرض الأرشيف</Label>
           </div>
-          {hasPermission('sponsors', 'create') && (
+          {hasPermission?.('sponsors', 'create') && (
             <Button onClick={() => setAddOpen(true)} className="gap-2">
               <Plus className="h-4 w-4" />
               إضافة جهة
@@ -369,7 +369,7 @@ export default function Sponsors() {
                     <p className="text-muted-foreground">جاري التحميل...</p>
                   </div>
                 </td></tr>
-              ) : !filtered || filtered.length === 0 ? (
+              ) : !filtered || filtered?.length === 0 ? (
                 <tr><td colSpan={9} className="p-8 text-center">
                   <div className="flex flex-col items-center justify-center py-12">
                     <div className="bg-muted rounded-full p-6 mb-4">
@@ -407,12 +407,12 @@ export default function Sponsors() {
                     </td>
                     <td className="p-3">
                       <div className="flex items-center gap-1">
-                        {hasPermission('sponsors', 'edit') && (
+                        {hasPermission?.('sponsors', 'edit') && (
                           <button onClick={() => handleEditClick(s)} className="w-8 h-8 rounded-md bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors">
                             <Edit className="w-3.5 h-3.5" />
                           </button>
                         )}
-                        {hasPermission('sponsors', 'delete') && !s?.is_archived && s?.id && (
+                        {hasPermission?.('sponsors', 'delete') && !s?.is_archived && s?.id && (
                           <button onClick={() => handleDelete(s.id)} className="w-8 h-8 rounded-md bg-muted flex items-center justify-center text-destructive hover:bg-destructive/10 transition-colors">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>

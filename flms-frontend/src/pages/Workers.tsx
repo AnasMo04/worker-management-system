@@ -190,36 +190,36 @@ export default function Workers() {
     return result.filter((i) => {
       // 2. Status Logic
       let matchStatus = true;
-      if (statusFilter === "نشط") matchStatus = i.Current_Status === "نشط" && !i.is_archived;
-      else if (statusFilter === "مؤرشف") matchStatus = i.is_archived === true;
+      if (statusFilter === "نشط") matchStatus = i?.Current_Status === "نشط" && !i?.is_archived;
+      else if (statusFilter === "مؤرشف") matchStatus = i?.is_archived === true;
       else if (statusFilter === "منتهي") {
         const today = new Date().toISOString().split('T')[0];
-        matchStatus = i.Health_Cert_Expiry ? i.Health_Cert_Expiry < today : false;
-      } else if (statusFilter !== "الكل") matchStatus = i.Current_Status === statusFilter;
+        matchStatus = i?.Health_Cert_Expiry ? i?.Health_Cert_Expiry < today : false;
+      } else if (statusFilter !== "الكل") matchStatus = i?.Current_Status === statusFilter;
 
       // 3. Sponsor Logic
-      const matchSponsor = sponsorFilter === "all" || i.Sponsor_ID?.toString() === sponsorFilter;
+      const matchSponsor = sponsorFilter === "all" || i?.Sponsor_ID?.toString() === sponsorFilter;
 
       // 4. Gender Logic
-      const matchGender = genderFilter === "all" || i.Gender === genderFilter;
+      const matchGender = genderFilter === "all" || i?.Gender === genderFilter;
 
       // 5. Nationality Logic
-      const matchNationality = nationalityFilter === "all" || i.Nationality === nationalityFilter;
+      const matchNationality = nationalityFilter === "all" || i?.Nationality === nationalityFilter;
 
       // 6. Category Logic
-      const matchCategory = categoryFilter === "all" || i.Category === categoryFilter;
+      const matchCategory = categoryFilter === "all" || i?.Category === categoryFilter;
 
       // 7. Freelance Logic
-      const matchFreelance = freelanceFilter === "all" || (freelanceFilter === "yes" ? i.Freelance : !i.Freelance);
+      const matchFreelance = freelanceFilter === "all" || (freelanceFilter === "yes" ? i?.Freelance : !i?.Freelance);
 
       // 8. Health Expiry Range
       let matchExpiry = true;
-      if (expiryFrom && (!i.Health_Cert_Expiry || i.Health_Cert_Expiry < expiryFrom)) matchExpiry = false;
-      if (expiryTo && (!i.Health_Cert_Expiry || i.Health_Cert_Expiry > expiryTo)) matchExpiry = false;
+      if (expiryFrom && (!i?.Health_Cert_Expiry || i?.Health_Cert_Expiry < expiryFrom)) matchExpiry = false;
+      if (expiryTo && (!i?.Health_Cert_Expiry || i?.Health_Cert_Expiry > expiryTo)) matchExpiry = false;
 
       // 9. CreatedAt Range
       let matchCreated = true;
-      const createdDate = i.createdAt ? i.createdAt.split('T')[0] : "";
+      const createdDate = i?.createdAt ? i.createdAt.split('T')[0] : "";
       if (createdFrom && (!createdDate || createdDate < createdFrom)) matchCreated = false;
       if (createdTo && (!createdDate || createdDate > createdTo)) matchCreated = false;
 
@@ -237,17 +237,17 @@ export default function Workers() {
   };
 
   const exportToExcel = () => {
-    const dataToExport = filtered.map(w => ({
-      "الاسم الكامل": w.Full_Name,
-      "رقم الوثيقة": w.Passport_Number,
-      "الجنسية": w.Nationality,
-      "الفئة": categories.find(c => c.id === w.Category)?.label || w.Category,
-      "جهة الاستضافة": w.Freelance ? "يعمل لحسابه" : (w.Sponsor?.Sponsor_Name || "—"),
-      "الحالة": w.Current_Status,
-      "رقم العائلة": w.Family_ID || "—",
-      "انتهاء الصحية": formatDate(w.Health_Cert_Expiry),
-      "تاريخ التسجيل": formatDate(w.createdAt)
-    }));
+    const dataToExport = filtered?.map(w => ({
+      "الاسم الكامل": w?.Full_Name || "—",
+      "رقم الوثيقة": w?.Passport_Number || "—",
+      "الجنسية": w?.Nationality || "—",
+      "الفئة": categories.find(c => c.id === w?.Category)?.label || w?.Category || "—",
+      "جهة الاستضافة": w?.Freelance ? "يعمل لحسابه" : (w?.Sponsor?.Sponsor_Name || "—"),
+      "الحالة": w?.Current_Status || "—",
+      "رقم العائلة": w?.Family_ID || "—",
+      "انتهاء الصحية": formatDate(w?.Health_Cert_Expiry),
+      "تاريخ التسجيل": formatDate(w?.createdAt)
+    })) || [];
     const ws = XLSX.utils.json_to_sheet(dataToExport);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "العمال");
@@ -259,19 +259,19 @@ export default function Workers() {
     const doc = new jsPDF('l', 'mm', 'a4');
     doc.setFontSize(22);
     doc.setTextColor(41, 128, 185);
-    doc.text("AfaqAlghad", 148, 20, { align: 'center' });
+    doc.text("FLMS", 148, 20, { align: 'center' });
     doc.setFontSize(14);
     doc.setTextColor(100);
-    doc.text("نظام إدارة العمالة الوافدة", 148, 28, { align: 'center' });
+    doc.text("نظام إدارة العمالة الوافدة (FLMS)", 148, 28, { align: 'center' });
     doc.line(20, 32, 277, 32);
-    const tableData = filtered.map(w => [
-      w.Full_Name,
-      w.Passport_Number,
-      w.Nationality,
-      w.Current_Status,
-      w.Freelance ? "يعمل لحسابه" : (w.Sponsor?.Sponsor_Name || "—"),
-      formatDate(w.Health_Cert_Expiry)
-    ]);
+    const tableData = filtered?.map(w => [
+      w?.Full_Name || "—",
+      w?.Passport_Number || "—",
+      w?.Nationality || "—",
+      w?.Current_Status || "—",
+      w?.Freelance ? "يعمل لحسابه" : (w?.Sponsor?.Sponsor_Name || "—"),
+      formatDate(w?.Health_Cert_Expiry)
+    ]) || [];
     (doc as any).autoTable({
       head: [["الاسم الكامل", "رقم الوثيقة", "الجنسية", "الحالة", "جهة الاستضافة", "انتهاء الصحية"]],
       body: tableData,
@@ -330,32 +330,32 @@ export default function Workers() {
 
   const handleEditClick = (ind: Individual) => {
     setEditMode(true);
-    setSelectedId(ind.id);
+    setSelectedId(ind?.id);
     setForm({
-      Full_Name: ind.Full_Name,
-      Passport_Number: ind.Passport_Number,
-      Nationality: ind.Nationality,
-      Residence_Address: ind.Residence_Address || "",
-      Sponsor_ID: ind.Sponsor_ID?.toString() || "",
+      Full_Name: ind?.Full_Name || "",
+      Passport_Number: ind?.Passport_Number || "",
+      Nationality: ind?.Nationality || "",
+      Residence_Address: ind?.Residence_Address || "",
+      Sponsor_ID: ind?.Sponsor_ID?.toString() || "",
       National_ID: "",
       Birth_Date: "",
-      Category: ind.Category || "worker",
-      Document_Type: ind.Document_Type || "جواز سفر",
-      Health_Cert_Expiry: ind.Health_Cert_Expiry || "",
-      Freelance: ind.Freelance || false,
-      Family_ID: ind.Family_ID || "",
-      Relationship: ind.Relationship || "",
-      Gender: ind.Gender || "ذكر",
-      Current_Status: ind.Current_Status || "نشط",
-      NFC_UID: ind.NFC_UID || "",
+      Category: ind?.Category || "worker",
+      Document_Type: ind?.Document_Type || "جواز سفر",
+      Health_Cert_Expiry: ind?.Health_Cert_Expiry || "",
+      Freelance: ind?.Freelance || false,
+      Family_ID: ind?.Family_ID || "",
+      Relationship: ind?.Relationship || "",
+      Gender: ind?.Gender || "ذكر",
+      Current_Status: ind?.Current_Status || "نشط",
+      NFC_UID: ind?.NFC_UID || "",
     });
     const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-    const getFullUrl = (p: string) => p.startsWith('http') ? p : `${backendUrl}/${p}`;
+    const getFullUrl = (p: string) => p?.startsWith('http') ? p : `${backendUrl}/${p}`;
     setDocs({
-      passportPhoto: ind.Passport_Copy ? { name: "مستند مرفق", url: getFullUrl(ind.Passport_Copy), type: "application/pdf", label: "صورة الوثيقة" } : null,
-      healthCert: ind.Health_Cert_Copy ? { name: "مستند مرفق", url: getFullUrl(ind.Health_Cert_Copy), type: "application/pdf", label: "الشهادة الصحية" } : null,
-      residencyPhoto: ind.Residency_Copy ? { name: "مستند مرفق", url: getFullUrl(ind.Residency_Copy), type: "application/pdf", label: "صورة الإقامة" } : null,
-      personalPhoto: ind.Personal_Photo_Copy ? { name: "صورة مرفقة", url: getFullUrl(ind.Personal_Photo_Copy), type: "image/jpeg", label: "صورة شخصية" } : null,
+      passportPhoto: ind?.Passport_Copy ? { name: "مستند مرفق", url: getFullUrl(ind.Passport_Copy), type: "application/pdf", label: "صورة الوثيقة" } : null,
+      healthCert: ind?.Health_Cert_Copy ? { name: "مستند مرفق", url: getFullUrl(ind.Health_Cert_Copy), type: "application/pdf", label: "الشهادة الصحية" } : null,
+      residencyPhoto: ind?.Residency_Copy ? { name: "مستند مرفق", url: getFullUrl(ind.Residency_Copy), type: "application/pdf", label: "صورة الإقامة" } : null,
+      personalPhoto: ind?.Personal_Photo_Copy ? { name: "صورة مرفقة", url: getFullUrl(ind.Personal_Photo_Copy), type: "image/jpeg", label: "صورة شخصية" } : null,
     });
     setAddOpen(true);
   };
@@ -507,26 +507,26 @@ export default function Workers() {
             <tbody>
               {loading ? (
                 <tr><td colSpan={12} className="p-10 text-center animate-pulse">جاري التحميل...</td></tr>
-              ) : filtered.length === 0 ? (
+              ) : filtered?.length === 0 ? (
                 <tr><td colSpan={12} className="p-10 text-center text-muted-foreground">لا توجد بيانات مطابقة لمعايير البحث</td></tr>
               ) : (
-                filtered.map((w) => (
-                  <tr key={w.id} className={cn("border-b border-border last:border-0 hover:bg-muted/30 transition-colors", w.is_archived && "opacity-60 grayscale-[0.5] bg-muted/20")}>
-                    <td className="p-3 font-medium">{w.Full_Name}</td>
-                    <td className="p-3"><span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold">{categories.find(c => c.id === w.Category)?.label || w.Category}</span></td>
-                    <td className="p-3 font-mono text-xs">{w.Passport_Number}</td>
-                    <td className="p-3">{w.Nationality}</td>
-                    <td className="p-3 text-xs">{w.Freelance ? "يعمل لحسابه" : (w.Sponsor?.Sponsor_Name || "—")}</td>
-                    <td className="p-3 font-mono text-xs">{formatDate(w.Health_Cert_Expiry)}</td>
-                    <td className="p-3 text-xs font-mono">{formatDateTime(w.createdAt)}</td>
-                    <td className="p-3 font-mono text-[10px]">{w.NFC_UID || "—"}</td>
-                    <td className="p-3 font-mono text-xs text-blue-500 font-bold">{w.Family_ID || "—"}</td>
-                    <td className="p-3"><StatusBadge variant={statusOptions.find(o => o.value === w.Current_Status)?.variant as any || "default"} label={w.Current_Status} /></td>
-                    <td className="p-3 text-center">{(w.Passport_Copy || w.Health_Cert_Copy || w.Residency_Copy || w.Personal_Photo_Copy) && <FileCheck className="w-4 h-4 text-green-600 inline" />}</td>
+                filtered?.map((w) => (
+                  <tr key={w?.id} className={cn("border-b border-border last:border-0 hover:bg-muted/30 transition-colors", w?.is_archived && "opacity-60 grayscale-[0.5] bg-muted/20")}>
+                    <td className="p-3 font-medium">{w?.Full_Name}</td>
+                    <td className="p-3"><span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold">{categories.find(c => c.id === w?.Category)?.label || w?.Category}</span></td>
+                    <td className="p-3 font-mono text-xs">{w?.Passport_Number}</td>
+                    <td className="p-3">{w?.Nationality}</td>
+                    <td className="p-3 text-xs">{w?.Freelance ? "يعمل لحسابه" : (w?.Sponsor?.Sponsor_Name || "—")}</td>
+                    <td className="p-3 font-mono text-xs">{formatDate(w?.Health_Cert_Expiry)}</td>
+                    <td className="p-3 text-xs font-mono">{formatDateTime(w?.createdAt)}</td>
+                    <td className="p-3 font-mono text-[10px]">{w?.NFC_UID || "—"}</td>
+                    <td className="p-3 font-mono text-xs text-blue-500 font-bold">{w?.Family_ID || "—"}</td>
+                    <td className="p-3"><StatusBadge variant={statusOptions.find(o => o.value === w?.Current_Status)?.variant as any || "default"} label={w?.Current_Status || ""} /></td>
+                    <td className="p-3 text-center">{(w?.Passport_Copy || w?.Health_Cert_Copy || w?.Residency_Copy || w?.Personal_Photo_Copy) && <FileCheck className="w-4 h-4 text-green-600 inline" />}</td>
                     <td className="p-3">
                       <div className="flex items-center gap-1">
                         <button onClick={() => handleEditClick(w)} className="w-8 h-8 rounded-md bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground"><Edit className="w-3.5 h-3.5" /></button>
-                        {!w.is_archived && <button onClick={() => handleDelete(w.id)} className="w-8 h-8 rounded-md bg-muted flex items-center justify-center text-destructive hover:bg-destructive/10"><Trash2 className="w-3.5 h-3.5" /></button>}
+                        {!w?.is_archived && w?.id && <button onClick={() => handleDelete(w.id)} className="w-8 h-8 rounded-md bg-muted flex items-center justify-center text-destructive hover:bg-destructive/10"><Trash2 className="w-3.5 h-3.5" /></button>}
                       </div>
                     </td>
                   </tr>
