@@ -1,3 +1,4 @@
+import { formatDate, formatTime } from "../../utils/formatDate";
 import { useState } from "react";
 import { ArrowRight, MapPin, Clock, WifiOff, Send, User } from "lucide-react";
 import { ScannedWorker } from "@/pages/SecurityApp";
@@ -22,7 +23,7 @@ export function SecurityInspectionForm({ worker, onBack, onSubmit }: Props) {
   };
 
   const now = new Date();
-  const timeStr = now.toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" });
+  const timeStr = formatTime(now);
 
   const results = [
     { value: "valid", label: "صالح", color: "hsl(152,60%,40%)" },
@@ -73,7 +74,7 @@ export function SecurityInspectionForm({ worker, onBack, onSubmit }: Props) {
               <span className="text-[10px] text-[hsl(210,20%,45%)]">وقت المسح</span>
             </div>
             <p className="text-xs text-[hsl(210,20%,85%)] font-medium">{timeStr}</p>
-            <p className="text-[10px] text-[hsl(210,20%,60%)]">{now.toLocaleDateString("ar-SA")}</p>
+            <p className="text-[10px] text-[hsl(210,20%,60%)]">{formatDate(now)}</p>
           </div>
         </div>
 

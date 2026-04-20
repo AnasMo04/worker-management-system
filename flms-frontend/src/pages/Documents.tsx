@@ -1,3 +1,4 @@
+import { formatDate, formatDateTime, formatNumber } from "../utils/formatDate";
 import { useState, useEffect } from "react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Search, FileText, Download, ExternalLink, Calendar, User } from "lucide-react";
@@ -114,7 +115,7 @@ export default function Documents() {
                     <td className="p-3 text-xs">
                       <div className="flex items-center gap-1.5 text-muted-foreground">
                         <Calendar className="w-3 h-3" />
-                        {new Date(d.createdAt).toLocaleDateString('ar-EG')}
+                        {formatDateTime(d.createdAt)}
                       </div>
                     </td>
                     <td className="p-3 text-xs">{d.Expiry_Date || "—"}</td>

@@ -1,3 +1,4 @@
+import { formatDate, formatDateTime, formatNumber } from "../utils/formatDate";
 import { StatusBadge } from "@/components/StatusBadge";
 
 const transactions = [
@@ -22,11 +23,11 @@ export default function Financials() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-card rounded-lg border border-border p-5 shadow-sm">
           <p className="text-sm text-muted-foreground">إجمالي المحصّل</p>
-          <p className="text-2xl font-bold text-success mt-1">{totalCollected.toLocaleString("ar-LY")} د.ل</p>
+          <p className="text-2xl font-bold text-success mt-1">{formatNumber(totalCollected)} د.ل</p>
         </div>
         <div className="bg-card rounded-lg border border-border p-5 shadow-sm">
           <p className="text-sm text-muted-foreground">قيد الانتظار</p>
-          <p className="text-2xl font-bold text-warning mt-1">{totalPending.toLocaleString("ar-LY")} د.ل</p>
+          <p className="text-2xl font-bold text-warning mt-1">{formatNumber(totalPending)} د.ل</p>
         </div>
       </div>
 
@@ -49,9 +50,9 @@ export default function Financials() {
                   <td className="p-3 font-mono text-xs">{t.ref}</td>
                   <td className="p-3 font-medium">{t.worker}</td>
                   <td className="p-3">{t.type}</td>
-                  <td className="p-3 font-semibold">{t.amount.toLocaleString("ar-LY")}</td>
+                  <td className="p-3 font-semibold">{formatNumber(t.amount)}</td>
                   <td className="p-3"><StatusBadge variant={t.status} /></td>
-                  <td className="p-3 text-xs">{t.date}</td>
+                  <td className="p-3 text-xs">{formatDate(t.date)}</td>
                 </tr>
               ))}
             </tbody>

@@ -1,3 +1,4 @@
+import { formatDate, formatDateTime, formatNumber } from "../utils/formatDate";
 import { useState, useEffect } from "react";
 import { KPICard } from "@/components/KPICard";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -66,28 +67,28 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
           title="إجمالي العمال"
-          value={data?.counts?.totalWorkers || 0}
+          value={formatNumber(data?.counts?.totalWorkers)}
           icon={<Users />}
           gradient="kpi-gradient-1"
           change="محدث الآن"
         />
         <KPICard
           title="البطاقات النشطة"
-          value={data?.counts?.activeCards || 0}
+          value={formatNumber(data?.counts?.activeCards)}
           icon={<CreditCard />}
           gradient="kpi-gradient-2"
           change={`${data?.counts?.totalWorkers ? Math.round((data?.counts?.activeCards / data?.counts?.totalWorkers) * 100) : 0}% من الإجمالي`}
         />
         <KPICard
           title="القضايا المفتوحة"
-          value={data?.counts?.openLegalCases || 0}
+          value={formatNumber(data?.counts?.openLegalCases)}
           icon={<Scale />}
           gradient="kpi-gradient-3"
           change="قضايا قيد المتابعة"
         />
         <KPICard
           title="مدفوعات معلقة"
-          value={(data?.counts?.pendingPayments || 0).toLocaleString("ar-LY")}
+          value={formatNumber(data?.counts?.pendingPayments)}
           icon={<Wallet />}
           gradient="kpi-gradient-4"
           change="دينار ليبي"
@@ -122,7 +123,7 @@ export default function Dashboard() {
                       <td className="p-3">{item.User?.Name || "—"}</td>
                       <td className="p-3 font-mono text-xs">{item.Device_ID || "—"}</td>
                       <td className="p-3 text-muted-foreground text-xs">
-                        {item.Scan_Time ? new Date(item.Scan_Time).toLocaleString("ar-LY") : "—"}
+                        {formatDateTime(item.Scan_Time)}
                       </td>
                       <td className="p-3"><StatusBadge variant={item.Result as any} /></td>
                     </tr>
@@ -157,7 +158,7 @@ export default function Dashboard() {
                   </Pie>
                   <Tooltip
                     contentStyle={{ direction: 'rtl', textAlign: 'right' }}
-                    formatter={(value: number) => [value.toLocaleString("ar-LY"), "العدد"]}
+                    formatter={(value: number) => [formatNumber(value), "العدد"]}
                   />
                   <Legend verticalAlign="bottom" height={36}/>
                 </PieChart>
@@ -187,7 +188,7 @@ export default function Dashboard() {
                   <div className="flex justify-between items-start">
                     <span className="font-medium text-sm">{item.User?.Name || "نظام"}</span>
                     <span className="text-xs text-muted-foreground">
-                      {item.createdAt ? new Date(item.createdAt).toLocaleTimeString("ar-LY") : ""}
+                      {formatDateTime(item.createdAt)}
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground mt-0.5">{item.Action_Type}</p>

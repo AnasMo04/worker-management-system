@@ -64,7 +64,13 @@ exports.getById = async (req, res) => {
 exports.create = async (req, res) => {
   const t = await sequelize.transaction();
   try {
-    const data = req.body;
+    const data = { ...req.body };
+
+    // Robust parsing for multipart/form-data
+    const isFreelance = data.Freelance === 'true' || data.Freelance === true;
+    const parsedSponsorId = (isFreelance || !data.Sponsor_ID || data.Sponsor_ID === 'null' || data.Sponsor_ID === '')
+      ? null
+      : parseInt(data.Sponsor_ID);
 
     // Handle files if uploaded via multer
     if (req.files) {
@@ -74,48 +80,24 @@ exports.create = async (req, res) => {
       if (req.files.personalPhoto) data.Personal_Photo_Copy = req.files.personalPhoto[0].path.replace(/\\/g, '/');
     }
 
-    const {
-      Sponsor_ID,
-      Passport_Number,
-      National_ID,
-      Full_Name,
-      Nationality,
-      Birth_Date,
-      Residence_Address,
-      Current_Status,
-      NFC_UID,
-      Primary_Card_Serial,
-      Passport_Copy,
-      Health_Cert_Copy,
-      Residency_Copy,
-      Personal_Photo_Copy,
-      Category,
-      Document_Type,
-      Health_Cert_Expiry,
-      Freelance,
-      Family_ID,
-      Relationship,
-      Gender
-    } = req.body;
-
     // Check for duplicate Document Number
-    if (Passport_Number) {
-      const existing = await Worker.findOne({ where: { Passport_Number: Passport_Number.trim() } });
+    if (data.Passport_Number) {
+      const existing = await Worker.findOne({ where: { Passport_Number: data.Passport_Number.trim() } });
       if (existing) {
         return res.status(400).json({ message: 'رقم الوثيقة مسجل مسبقاً في النظام' });
       }
     }
 
     // Validate Sponsor_ID exists (if not freelance)
-    if (Sponsor_ID && !Freelance) {
-      const sponsor = await Sponsor.findByPk(Sponsor_ID);
+    if (parsedSponsorId) {
+      const sponsor = await Sponsor.findByPk(parsedSponsorId);
       if (!sponsor) {
         return res.status(400).json({ message: 'Invalid Sponsor_ID' });
       }
     }
 
     const newWorker = await Worker.create({
-      Sponsor_ID: data.Freelance ? null : data.Sponsor_ID,
+      Sponsor_ID: parsedSponsorId,
       Passport_Number: data.Passport_Number,
       National_ID: data.National_ID,
       Full_Name: data.Full_Name,
@@ -153,7 +135,13 @@ exports.update = async (req, res) => {
   const t = await sequelize.transaction();
   try {
     const { id } = req.params;
-    const data = req.body;
+    const data = { ...req.body };
+
+    // Robust parsing for multipart/form-data
+    const isFreelance = data.Freelance === 'true' || data.Freelance === true;
+    const parsedSponsorId = (isFreelance || !data.Sponsor_ID || data.Sponsor_ID === 'null' || data.Sponsor_ID === '')
+      ? null
+      : parseInt(data.Sponsor_ID);
 
     // Handle files if uploaded via multer
     if (req.files) {
@@ -163,45 +151,21 @@ exports.update = async (req, res) => {
       if (req.files.personalPhoto) data.Personal_Photo_Copy = req.files.personalPhoto[0].path.replace(/\\/g, '/');
     }
 
-    const {
-      Sponsor_ID,
-      Passport_Number,
-      National_ID,
-      Full_Name,
-      Nationality,
-      Birth_Date,
-      Residence_Address,
-      Current_Status,
-      NFC_UID,
-      Primary_Card_Serial,
-      Passport_Copy,
-      Health_Cert_Copy,
-      Residency_Copy,
-      Personal_Photo_Copy,
-      Category,
-      Document_Type,
-      Health_Cert_Expiry,
-      Freelance,
-      Family_ID,
-      Relationship,
-      Gender
-    } = req.body;
-
     const worker = await Worker.findByPk(id);
     if (!worker) {
       return res.status(404).json({ message: 'Worker not found' });
     }
 
     // Check for duplicate Document Number (excluding current)
-    if (Passport_Number && Passport_Number.trim() !== worker.Passport_Number) {
-      const existing = await Worker.findOne({ where: { Passport_Number: Passport_Number.trim() } });
+    if (data.Passport_Number && data.Passport_Number.trim() !== worker.Passport_Number) {
+      const existing = await Worker.findOne({ where: { Passport_Number: data.Passport_Number.trim() } });
       if (existing) {
         return res.status(400).json({ message: 'رقم الوثيقة مسجل مسبقاً في النظام' });
       }
     }
 
     await worker.update({
-      Sponsor_ID: data.Freelance ? null : data.Sponsor_ID,
+      Sponsor_ID: parsedSponsorId,
       Passport_Number: data.Passport_Number,
       National_ID: data.National_ID,
       Full_Name: data.Full_Name,

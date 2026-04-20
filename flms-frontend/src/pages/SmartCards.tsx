@@ -1,3 +1,4 @@
+import { formatDate, formatDateTime } from "../utils/formatDate";
 import { useState, useEffect, useRef } from "react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -282,8 +283,8 @@ export default function SmartCards() {
                   <tr key={c.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
                     <td className="p-3 font-mono text-xs">{c.Card_Serial_No}</td>
                     <td className="p-3 font-medium">{c.Worker?.Full_Name || <span className="text-muted-foreground italic">غير مرتبطة</span>}</td>
-                    <td className="p-3">{c.Issue_Date}</td>
-                    <td className="p-3">{c.Expiry_Date}</td>
+                    <td className="p-3">{formatDate(c.Issue_Date)}</td>
+                    <td className="p-3">{formatDate(c.Expiry_Date)}</td>
                     <td className="p-3">
                       <StatusBadge
                         variant={!c.Is_Active ? "pending" : "active"}
@@ -470,7 +471,7 @@ export default function SmartCards() {
                   <div className="pb-2">
                     <p className="text-sm font-medium">{h.action}</p>
                     <div className="flex gap-2 text-xs text-muted-foreground mt-0.5">
-                      <span>{h.date}</span>
+                        <span>{formatDateTime(h.date)}</span>
                       <span>•</span>
                       <span>{h.by}</span>
                     </div>
