@@ -112,6 +112,8 @@ export default function Workers() {
   const [docs, setDocs] = useState<IndividualDocs>(emptyDocs);
   const [isSaving, setIsSaving] = useState(false);
   const [sponsorOpen, setSponsorOpen] = useState(false);
+  const [filterSponsorOpen, setFilterSponsorOpen] = useState(false);
+  const [filterNationalityOpen, setFilterNationalityOpen] = useState(false);
   const { toast } = useToast();
   const socketRef = useRef<any>(null);
 
@@ -257,12 +259,11 @@ export default function Workers() {
 
   const exportToPDF = () => {
     const doc = new jsPDF('l', 'mm', 'a4');
-    doc.setFontSize(22);
-    doc.setTextColor(41, 128, 185);
-    doc.text("FLMS", 148, 20, { align: 'center' });
-    doc.setFontSize(14);
-    doc.setTextColor(100);
-    doc.text("نظام إدارة العمالة الوافدة (FLMS)", 148, 28, { align: 'center' });
+    doc.setFontSize(18);
+    doc.setTextColor(40);
+    doc.text("نظام إدارة العمالة الأجانب", 148, 20, { align: 'center' });
+    doc.setFontSize(12);
+    doc.text("سجل بيانات العمالة الأجانب (Workers Report)", 148, 28, { align: 'center' });
     doc.line(20, 32, 277, 32);
     const tableData = filtered?.map(w => [
       w?.Full_Name || "—",
@@ -415,7 +416,7 @@ export default function Workers() {
           </div>
           <div className="flex items-center gap-3">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="h-11 w-44 rounded-xl bg-muted/40 border-border"><SelectValue placeholder="الحالة" /></SelectTrigger>
+              <SelectTrigger className="h-11 w-40 rounded-xl bg-muted/40 border-border"><SelectValue placeholder="الحالة" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="الكل">كل الحالات</SelectItem>
                 <SelectItem value="نشط">نشط</SelectItem>
@@ -424,13 +425,35 @@ export default function Workers() {
                 {statusOptions.filter(o => o.value !== "نشط").map(o => <SelectItem key={o.value} value={o.value}>{o.value}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Select value={sponsorFilter} onValueChange={setSponsorFilter}>
-              <SelectTrigger className="h-11 w-56 rounded-xl bg-muted/40 border-border"><SelectValue placeholder="جهة الاستضافة" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">كل الجهات</SelectItem>
-                {sponsors.map(s => <SelectItem key={s.id} value={s.id.toString()}>{s.Sponsor_Name}</SelectItem>)}
-              </SelectContent>
-            </Select>
+
+            <Popover open={filterSponsorOpen} onOpenChange={setFilterSponsorOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="h-11 w-56 rounded-xl bg-muted/40 border-border justify-between font-normal">
+                  {sponsorFilter === "all" ? "كل الجهات" : sponsors.find((s) => s.id.toString() === sponsorFilter)?.Sponsor_Name}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56 p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="بحث عن جهة..." />
+                  <CommandList>
+                    <CommandEmpty>لا توجد نتائج</CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem value="all" onSelect={() => { setSponsorFilter("all"); setFilterSponsorOpen(false); }}>
+                        <Check className={cn("mr-2 h-4 w-4", sponsorFilter === "all" ? "opacity-100" : "opacity-0")} />
+                        كل الجهات
+                      </CommandItem>
+                      {sponsors.map((s) => (
+                        <CommandItem key={s.id} value={s.Sponsor_Name} onSelect={() => { setSponsorFilter(s.id.toString()); setFilterSponsorOpen(false); }}>
+                          <Check className={cn("mr-2 h-4 w-4", sponsorFilter === s.id.toString() ? "opacity-100" : "opacity-0")} />
+                          {s.Sponsor_Name}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
 
@@ -440,10 +463,34 @@ export default function Workers() {
             <SelectTrigger className="h-10 rounded-xl bg-muted/20 border-border/50"><SelectValue placeholder="الجنس" /></SelectTrigger>
             <SelectContent><SelectItem value="all">كل الأجناس</SelectItem><SelectItem value="ذكر">ذكر</SelectItem><SelectItem value="أنثى">أنثى</SelectItem></SelectContent>
           </Select>
-          <Select value={nationalityFilter} onValueChange={setNationalityFilter}>
-            <SelectTrigger className="h-10 rounded-xl bg-muted/20 border-border/50"><SelectValue placeholder="الجنسية" /></SelectTrigger>
-            <SelectContent><SelectItem value="all">كل الجنسيات</SelectItem>{nationalityOptions.map(n => <SelectItem key={n} value={n}>{n}</SelectItem>)}</SelectContent>
-          </Select>
+          <Popover open={filterNationalityOpen} onOpenChange={setFilterNationalityOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className="h-10 w-full rounded-xl bg-muted/20 border-border/50 justify-between font-normal">
+                {nationalityFilter === "all" ? "كل الجنسيات" : nationalityFilter}
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-full p-0" align="start">
+              <Command>
+                <CommandInput placeholder="بحث عن جنسية..." />
+                <CommandList>
+                  <CommandEmpty>لا توجد نتائج</CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem value="all" onSelect={() => { setNationalityFilter("all"); setFilterNationalityOpen(false); }}>
+                      <Check className={cn("mr-2 h-4 w-4", nationalityFilter === "all" ? "opacity-100" : "opacity-0")} />
+                      كل الجنسيات
+                    </CommandItem>
+                    {nationalityOptions.map((n) => (
+                      <CommandItem key={n} value={n} onSelect={() => { setNationalityFilter(n); setFilterNationalityOpen(false); }}>
+                        <Check className={cn("mr-2 h-4 w-4", nationalityFilter === n ? "opacity-100" : "opacity-0")} />
+                        {n}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
             <SelectTrigger className="h-10 rounded-xl bg-muted/20 border-border/50"><SelectValue placeholder="الفئة" /></SelectTrigger>
             <SelectContent><SelectItem value="all">كل الفئات</SelectItem>{categories.map(c => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}</SelectContent>

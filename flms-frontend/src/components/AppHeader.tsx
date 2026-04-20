@@ -32,17 +32,7 @@ export function AppHeader() {
 
   return (
     <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6 shrink-0">
-      {/* Search */}
-      <div className="relative w-80">
-        <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="بحث..."
-          className="w-full h-10 bg-muted rounded-lg pr-10 pl-4 text-sm outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground"
-        />
-      </div>
+      <div className="flex-1" />
 
       {/* Actions */}
       <div className="flex items-center gap-3">
