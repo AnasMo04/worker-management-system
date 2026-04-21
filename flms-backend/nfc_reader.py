@@ -12,11 +12,20 @@ def get_nfc_uid():
     try:
         r = readers()
         if not r:
-            print("No readers found")
+            # print("No readers found")
             return None
 
-        reader = r[0]
-        connection = reader.createConnection()
+        # Filter for ACS readers specifically to avoid trying to use ZK9500 as a card reader
+        acs_reader = None
+        for reader in r:
+            if "ACS" in str(reader) or "ACR122" in str(reader):
+                acs_reader = reader
+                break
+
+        if not acs_reader:
+            return None
+
+        connection = acs_reader.createConnection()
         connection.connect()
 
         # Get UID APDU command
@@ -27,10 +36,12 @@ def get_nfc_uid():
             return toHexString(data).replace(" ", ":")
         return None
     except Exception as e:
-        # Silently fail if no card is present
+        # Silently fail if no card is present or busy
         return None
 
 if __name__ == "__main__":
+    print("[NFC] Service Starting")
+    sys.stdout.flush()
     last_uid = None
     while True:
         uid = get_nfc_uid()
