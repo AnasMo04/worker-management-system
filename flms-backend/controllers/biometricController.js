@@ -3,7 +3,7 @@ const path = require('path');
 
 exports.enroll = async (req, res) => {
     // Note: In Windows prod, use PYTHON_PATH from .env or C:\Python314\python.exe
-    const pythonPath = process.env.PYTHON_PATH || 'C:\\Python310-32\\python.exe';
+    const pythonPath = process.env.PYTHON_PATH || 'C:\\Users\\MY-PC\\AppData\\Local\\Programs\\Python\\Python313-32\\python.exe';
     const scriptPath = path.join(__dirname, '..', 'zk_service.py');
 
     console.log(`Starting Biometric Enrollment (ctypes bridge) with: ${pythonPath} ${scriptPath}`);

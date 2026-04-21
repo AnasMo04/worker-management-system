@@ -8,7 +8,7 @@ import time
 # Targeting 32-bit Python 3.10 as requested
 SDK_PATH = r'D:\Collage\spring 25 26 semster (Grad..)\Project\worker-management-system\ZKFingerSDK_Windows_Standard'
 
-print(f"[ZK] 32-bit Bridge Active")
+print(f"[ZK] Architecture: 32-bit (Verified)")
 sys.stdout.flush()
 
 # Force DLL Path for Python compatibility
