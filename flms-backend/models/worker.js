@@ -38,6 +38,7 @@ module.exports = (sequelize, DataTypes) => {
     Family_ID: DataTypes.STRING,
     Relationship: DataTypes.STRING, // Spouse, Child, Parent
     Gender: DataTypes.STRING, // Male / Female
+    fingerprint_template: DataTypes.TEXT,
     is_archived: {
       type: DataTypes.BOOLEAN,
       defaultValue: false
