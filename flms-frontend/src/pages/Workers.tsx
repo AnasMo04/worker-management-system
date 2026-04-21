@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Search, Filter, Edit, Plus, UserPlus, Check, ChevronsUpDown, FileCheck, Users, Trash2, Wifi, FileDown, Download, ArrowRight, RotateCcw } from "lucide-react";
+import { Search, Filter, Edit, Plus, UserPlus, Check, ChevronsUpDown, FileCheck, Users, Trash2, Wifi, FileDown, Download, ArrowRight, RotateCcw, Fingerprint } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload, type UploadedDoc } from "@/components/DocumentUpload";
 import { io } from "socket.io-client";
@@ -74,7 +74,7 @@ const emptyForm = {
   Full_Name: "", Passport_Number: "", Nationality: "", Residence_Address: "", Sponsor_ID: "",
   National_ID: "", Birth_Date: "", Category: "worker", Document_Type: "جواز سفر",
   Health_Cert_Expiry: "", Freelance: false, Family_ID: "", Relationship: "",
-  Gender: "ذكر", Current_Status: "نشط", NFC_UID: ""
+  Gender: "ذكر", Current_Status: "نشط", NFC_UID: "", fingerprint_template: ""
 };
 
 interface IndividualDocs {
@@ -112,6 +112,7 @@ export default function Workers() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [docs, setDocs] = useState<IndividualDocs>(emptyDocs);
   const [isSaving, setIsSaving] = useState(false);
+  const [isEnrolling, setIsEnrolling] = useState(false);
   const [sponsorOpen, setSponsorOpen] = useState(false);
   const [filterSponsorOpen, setFilterSponsorOpen] = useState(false);
   const [filterNationalityOpen, setFilterNationalityOpen] = useState(false);
@@ -360,6 +361,7 @@ export default function Workers() {
       Gender: ind?.Gender || "ذكر",
       Current_Status: ind?.Current_Status || "نشط",
       NFC_UID: ind?.NFC_UID || "",
+      fingerprint_template: ind?.fingerprint_template || "",
     });
     const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
     const getFullUrl = (p: string) => p?.startsWith('http') ? p : `${backendUrl}/${p}`;
@@ -380,6 +382,21 @@ export default function Workers() {
       fetchData();
     } catch (error) {
       toast({ variant: "destructive", title: "خطأ", description: "فشل في حذف البيانات." });
+    }
+  };
+
+  const handleEnrollFingerprint = async () => {
+    try {
+      setIsEnrolling(true);
+      const res = await api.post("/api/biometric/enroll");
+      if (res.data.success) {
+        setForm(prev => ({ ...prev, fingerprint_template: res.data.template }));
+        toast({ title: "تم التقاط البصمة", description: "تم تسجيل بصمة الإصبع بنجاح." });
+      }
+    } catch (error: any) {
+      toast({ variant: "destructive", title: "خطأ", description: error.response?.data?.message || "فشل في التقاط البصمة." });
+    } finally {
+      setIsEnrolling(false);
     }
   };
 
@@ -646,6 +663,29 @@ export default function Workers() {
                 <div className="space-y-1.5"><Label>صلة القرابة</Label><Select value={form.Relationship} onValueChange={(v) => setForm({ ...form, Relationship: v })}><SelectTrigger><SelectValue placeholder="اختر الصلة" /></SelectTrigger><SelectContent>{relationships.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select></div>
               </div>
             </div>
+
+            <div className="border-t pt-4 space-y-3">
+              <p className="text-sm font-semibold">البيانات الحيوية (Biometrics)</p>
+              <div className="flex items-center gap-4 p-4 rounded-xl bg-muted/30 border border-dashed border-border/60">
+                <Button
+                  type="button"
+                  variant={form.fingerprint_template ? "outline" : "default"}
+                  onClick={handleEnrollFingerprint}
+                  disabled={isEnrolling}
+                  className="gap-2"
+                >
+                  <Fingerprint className={cn("w-4 h-4", form.fingerprint_template && "text-green-500")} />
+                  {isEnrolling ? "جاري الالتقاط..." : "تسجيل بصمة الإصبع"}
+                </Button>
+                {form.fingerprint_template && (
+                  <div className="flex items-center gap-2 text-xs text-green-600 font-bold animate-in fade-in slide-in-from-right-2">
+                    <Check className="w-4 h-4" />
+                    تم تسجيل البصمة بنجاح
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="border-t pt-4">
               <p className="text-sm font-semibold mb-3">المستندات المطلوبة</p>
               <div className="grid grid-cols-2 gap-3">
