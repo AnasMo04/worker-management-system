@@ -4,9 +4,9 @@ const path = require('path');
 exports.enroll = async (req, res) => {
     // Note: In Windows prod, use PYTHON_PATH from .env or C:\Python314\python.exe
     const pythonPath = process.env.PYTHON_PATH || 'python3';
-    const scriptPath = path.join(__dirname, '..', 'zk_enroll.py');
+    const scriptPath = path.join(__dirname, '..', 'zk_service.py');
 
-    console.log(`Starting Biometric Enrollment with: ${pythonPath} ${scriptPath}`);
+    console.log(`Starting Biometric Enrollment (ctypes bridge) with: ${pythonPath} ${scriptPath}`);
 
     const pyProcess = spawn(pythonPath, [scriptPath]);
     let template = '';
