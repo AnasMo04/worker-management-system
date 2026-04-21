@@ -3,7 +3,7 @@ const path = require('path');
 
 exports.enroll = async (req, res) => {
     // Note: In Windows prod, use PYTHON_PATH from .env or C:\Python314\python.exe
-    const pythonPath = process.env.PYTHON_PATH || 'python3';
+    const pythonPath = process.env.PYTHON_PATH || 'C:\\Python314\\python.exe';
     const scriptPath = path.join(__dirname, '..', 'zk_service.py');
 
     console.log(`Starting Biometric Enrollment (ctypes bridge) with: ${pythonPath} ${scriptPath}`);
@@ -23,12 +23,24 @@ exports.enroll = async (req, res) => {
         errorMsg += data.toString();
     });
 
+    pyProcess.on('error', (err) => {
+        console.error(`Failed to start Biometric process (ENOENT): ${err.message}`);
+        if (!res.headersSent) {
+            res.status(500).json({
+                success: false,
+                message: 'لم يتم العثور على محرك البصمة (Python Not Found). يرجى التأكد من مسار النظام.'
+            });
+        }
+    });
+
     pyProcess.on('close', (code) => {
         if (code === 0 && template) {
             res.json({ success: true, template });
         } else {
-            console.error(`Biometric Error: ${errorMsg}`);
-            res.status(500).json({ success: false, message: errorMsg || 'فشل في التقاط البصمة' });
+            console.error(`Biometric process exited with code ${code}. Error: ${errorMsg}`);
+            if (!res.headersSent) {
+                res.status(500).json({ success: false, message: errorMsg || 'فشل في التقاط البصمة' });
+            }
         }
     });
 };
