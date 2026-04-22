@@ -7,7 +7,6 @@ import json
 import threading
 
 # --- CONFIGURATION ---
-SDK_PATH = r'D:\Collage\spring 25 26 semster (Grad..)\Project\worker-management-system\ZKFingerSDK_Windows_Standard'
 DLL_NAME = "libzkfp.dll"
 
 # Global state
@@ -20,53 +19,27 @@ def log(prefix, message):
     print(f"[{prefix}] {message}")
     sys.stdout.flush()
 
-def find_dll_recursive(directory, target_dll):
-    """Recursively searches for the DLL in the directory and its subfolders."""
-    for root, dirs, files in os.walk(directory):
-        if target_dll in files:
-            return os.path.join(root, target_dll)
-    return None
-
 def initialize_sdk():
     global zkfp
     log("STATUS", "32-bit Bridge Active")
 
-    # 1. Debug: List directory content
-    if os.path.exists(SDK_PATH):
-        try:
-            content = os.listdir(SDK_PATH)
-            log("DEBUG", f"Contents of {SDK_PATH}: {content}")
-        except Exception as e:
-            log("ERROR", f"Failed to list SDK directory: {e}")
-    else:
-        log("ERROR", f"SDK Path NOT FOUND: {SDK_PATH}")
+    # 1. Debug: Print PATH environment variable
+    log("DEBUG", f"System PATH: {os.environ.get('PATH', '')}")
 
-    # 2. Find and Add DLL Directory
-    dll_full_path = None
-    while not terminate_flag:
-        dll_full_path = find_dll_recursive(SDK_PATH, DLL_NAME)
-        if dll_full_path:
-            log("INFO", f"Found DLL at: {dll_full_path}")
-            dll_dir = os.path.dirname(dll_full_path)
-            try:
-                os.add_dll_directory(dll_dir)
-                log("INFO", f"Added DLL directory to search path: {dll_dir}")
-            except Exception as e:
-                log("DEBUG", f"os.add_dll_directory failed (expected on some Python versions): {e}")
-            break
-        else:
-            log("WAITING", f"DLL '{DLL_NAME}' not found in {SDK_PATH} (checked subfolders). Retrying...")
-            time.sleep(3)
-
-    # 3. Load DLL
+    # 2. Load DLL using Windows search paths (System32, SysWOW64, etc.)
+    # The user confirmed the Demo works, so the DLL should be in a standard path.
     while not terminate_flag:
         try:
-            zkfp = ctypes.WinDLL(dll_full_path)
-            log("INFO", "DLL loaded successfully.")
+            log("INFO", f"Attempting to load {DLL_NAME} from system paths...")
+            zkfp = ctypes.WinDLL(DLL_NAME)
+            log("INFO", "DLL loaded successfully from system path.")
             break
+        except FileNotFoundError:
+            log("WAITING", f"CRITICAL: {DLL_NAME} not found. Please ensure ZKTeco drivers are installed and the DLL is in System32/SysWOW64.")
+            time.sleep(5)
         except Exception as e:
-            log("WAITING", f"Failed to load DLL from {dll_full_path}: {e}. Retrying...")
-            time.sleep(3)
+            log("WAITING", f"Failed to load DLL: {e}. Retrying...")
+            time.sleep(5)
 
     # 3. Initialize Library
     while not terminate_flag:
@@ -108,25 +81,18 @@ def capture_loop():
     global h_device, terminate_flag, current_finger_index
 
     # Prepare buffers
-    # Typical sizes for ZK9500
     tid_size = 2048
     template_buffer = ctypes.create_string_buffer(tid_size)
-
-    # In a real implementation, we'd get image width/height from parameters
-    # For now, we assume standard ZK9500 (approx 256x360 or similar)
     img_buffer = ctypes.create_string_buffer(640 * 480)
 
     log("STATUS", "Ready for fingerprint capture")
 
     while not terminate_flag:
         try:
-            # zkfp_AcquireFingerprint returns 0 on success
-            # Parameters: handle, imgBuffer, templateBuffer, templateSize (pointer)
             t_size_ptr = ctypes.pointer(ctypes.c_int(tid_size))
             ret = zkfp.zkfp_AcquireFingerprint(h_device, img_buffer, template_buffer, t_size_ptr)
 
             if ret == 0:
-                # Successfully captured
                 actual_size = t_size_ptr.contents.value
                 template_data = template_buffer.raw[:actual_size]
                 template_b64 = base64.b64encode(template_data).decode('utf-8')
@@ -139,16 +105,10 @@ def capture_loop():
                 sys.stdout.flush()
                 log("INFO", f"Captured finger {current_finger_index}")
 
-                # Small debounce
                 time.sleep(1)
-            elif ret == -1:
-                # Internal error
-                pass
             elif ret == -8:
-                # Extraction failed
                 log("FEEDBACK", "Poor image quality. Please try again.")
             else:
-                # No finger or other code
                 pass
 
         except Exception as e:
@@ -159,7 +119,6 @@ def capture_loop():
 
 def listen_for_commands():
     global terminate_flag, current_finger_index
-    # Listen for finger index changes from stdin
     for line in sys.stdin:
         try:
             data = json.loads(line.strip())
@@ -171,12 +130,10 @@ def listen_for_commands():
                 current_finger_index = data.get("index", 0)
                 log("INFO", f"Switched to Finger Index: {current_finger_index}")
         except Exception as e:
-            # log("ERROR", f"Failed to parse command: {e}")
             pass
 
 if __name__ == "__main__":
     try:
-        # Start command listener in thread
         cmd_thread = threading.Thread(target=listen_for_commands, daemon=True)
         cmd_thread.start()
 
