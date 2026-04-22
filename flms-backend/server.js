@@ -40,20 +40,11 @@ app.get('/', (req, res) => {
     res.send('Welcome! FLMS System Server is running successfully with Sequelize and NFC Support.');
 });
 
-// Initialize Biometric (ZK) Service with Integrated NFC (ZK8500R)
-const { Server } = require('socket.io');
-const io = new Server(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
-  }
-});
+// Initialize NFC Service with Socket.io
+const io = initNFC(server);
 
-// Initialize ZK Service (handles both Biometrics and NFC for ZK8500R)
+// Initialize Biometric (ZK) Service with the same Socket.io instance
 initZK(io);
-
-// Standalone NFC is disabled as requested to avoid conflicts with ZK bridge
-// const io_nfc = initNFC(server);
 
 const PORT = process.env.PORT || 3000;
 
