@@ -54,6 +54,18 @@ const startZKProcess = () => {
             if (trimmedLine.startsWith('[FEEDBACK]')) {
                 if (io) io.emit('zk:feedback', { message: trimmedLine.replace('[FEEDBACK]', '').trim() });
             }
+
+            // Handle Live Image Preview
+            if (trimmedLine.startsWith('[IMAGE_DATA]')) {
+                const imageData = trimmedLine.replace('[IMAGE_DATA]', '').trim();
+                if (io) io.emit('zk:image-preview', { image: imageData });
+            }
+
+            // Handle Quality Score
+            if (trimmedLine.startsWith('[QUALITY]')) {
+                const score = parseInt(trimmedLine.replace('[QUALITY]', '').trim());
+                if (io) io.emit('zk:quality-score', { score });
+            }
         });
     });
 

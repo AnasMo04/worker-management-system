@@ -114,6 +114,8 @@ export default function Workers() {
   const [isSaving, setIsSaving] = useState(false);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [biometricStatus, setBiometricStatus] = useState("جاري الاتصال...");
+  const [biometricImage, setBiometricImage] = useState<string | null>(null);
+  const [qualityScore, setQualityScore] = useState<number | null>(null);
   const [sponsorOpen, setSponsorOpen] = useState(false);
   const [filterSponsorOpen, setFilterSponsorOpen] = useState(false);
   const [filterNationalityOpen, setFilterNationalityOpen] = useState(false);
@@ -147,6 +149,14 @@ export default function Workers() {
 
     socketRef.current.on('zk:error', (data: { message: string }) => {
       toast({ variant: "destructive", title: "خطأ في البصمة", description: data.message });
+    });
+
+    socketRef.current.on('zk:image-preview', (data: { image: string }) => {
+      setBiometricImage(`data:image/bmp;base64,${data.image}`);
+    });
+
+    socketRef.current.on('zk:quality-score', (data: { score: number }) => {
+      setQualityScore(data.score);
     });
 
     socketRef.current.on('zk:enrollment-data', (data: { index: number, template: string }) => {
@@ -325,6 +335,13 @@ export default function Workers() {
 
   const handleSubmit = async () => {
     if (!validate()) return;
+
+    // Biometric Quality Validation
+    if (form.fingerprint_template && qualityScore !== null && qualityScore < 50) {
+      toast({ variant: "destructive", title: "جودة بصمة ضعيفة", description: `جودة البصمة (${qualityScore}%) غير كافية. يرجى إعادة المحاولة (يجب أن تكون > 50%).` });
+      return;
+    }
+
     try {
       setIsSaving(true);
       const formData = new FormData();
@@ -721,6 +738,35 @@ export default function Workers() {
                       <Fingerprint className={cn("w-3.5 h-3.5", form.fingerprint_template && "text-green-500")} />
                       {isEnrolling ? "جاري الالتقاط..." : "بدء الالتقاط"}
                     </Button>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="w-24 h-32 bg-muted rounded-lg border flex items-center justify-center overflow-hidden">
+                    {biometricImage ? (
+                      <img src={biometricImage} alt="Fingerprint Preview" className="w-full h-full object-contain" />
+                    ) : (
+                      <Fingerprint className="w-8 h-8 text-muted-foreground/30" />
+                    )}
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center justify-between text-[10px] font-bold">
+                      <span>جودة الصورة:</span>
+                      <span className={cn(
+                        qualityScore !== null && qualityScore >= 50 ? "text-green-600" : "text-destructive"
+                      )}>
+                        {qualityScore !== null ? `${qualityScore}%` : "—"}
+                      </span>
+                    </div>
+                    <div className="w-full bg-muted h-1.5 rounded-full overflow-hidden border">
+                      <div
+                        className={cn("h-full transition-all duration-500", qualityScore !== null && qualityScore >= 50 ? "bg-green-500" : "bg-destructive")}
+                        style={{ width: `${qualityScore || 0}%` }}
+                      />
+                    </div>
+                    <p className="text-[9px] text-muted-foreground leading-tight">
+                      يرجى وضع الإصبع بوضوح على الحساس حتى تظهر المعاينة وتصل الجودة إلى 50% على الأقل.
+                    </p>
                   </div>
                 </div>
 
