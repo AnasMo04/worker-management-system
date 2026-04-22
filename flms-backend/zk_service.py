@@ -24,6 +24,13 @@ class ZKEvents:
     def OnImageReceived(self, AImageValid):
         if AImageValid:
             try:
+                # 1. Extract Features FIRST to allow quality calculation
+                try:
+                    zk_com.ExtractFeatures()
+                except Exception as e:
+                    log("DEBUG", f"ExtractFeatures failed: {e}")
+
+                # 2. Capture and Emit Image
                 temp_file = "temp_preview.bmp"
                 zk_com.SaveBitmap(temp_file)
                 if os.path.exists(temp_file):
@@ -32,7 +39,9 @@ class ZKEvents:
                         log("IMAGE_DATA", b64)
                     os.remove(temp_file)
 
+                # 3. Capture and Emit Quality immediately
                 try:
+                    # Use GetCapParam(101) to fetch actual quality score after feature extraction
                     quality = zk_com.GetCapParam(101)
                     log("QUALITY", str(quality))
                 except:
