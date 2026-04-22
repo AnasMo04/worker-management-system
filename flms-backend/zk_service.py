@@ -57,9 +57,7 @@ class ZKEvents:
     def OnImageReceived(self, AImageValid):
         if AImageValid:
             try:
-                # ZK ActiveX allows saving to a file or getting a handle
-                # For this bridge, we'll try to get the image from the component if possible
-                # However, in COM automation, sometimes we must use SaveBitmap
+                # 1. Capture and Emit Image
                 temp_file = "temp_preview.bmp"
                 zk_com.SaveBitmap(temp_file)
                 if os.path.exists(temp_file):
@@ -67,6 +65,13 @@ class ZKEvents:
                         b64 = base64.b64encode(f.read()).decode('utf-8')
                         log("IMAGE_DATA", b64)
                     os.remove(temp_file)
+
+                # 2. Capture and Emit Quality immediately
+                try:
+                    quality = zk_com.ImageQuality
+                    log("QUALITY", str(quality))
+                except:
+                    pass
             except Exception as e:
                 log("DEBUG", f"ActiveX Image Capture Error: {e}")
 

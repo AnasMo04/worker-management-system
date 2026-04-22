@@ -742,7 +742,7 @@ export default function Workers() {
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <div className="w-24 h-32 bg-muted rounded-lg border flex items-center justify-center overflow-hidden">
+                  <div className="w-24 h-32 bg-muted rounded-lg border flex items-center justify-center overflow-hidden p-1">
                     {biometricImage ? (
                       <img src={biometricImage} alt="Fingerprint Preview" className="w-full h-full object-contain" />
                     ) : (
