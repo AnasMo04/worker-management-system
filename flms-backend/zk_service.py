@@ -15,6 +15,7 @@ h_db = None
 terminate_flag = False
 current_finger_index = 0
 mode = "enroll" # "enroll" or "identify"
+stored_templates = [] # List of { "id": 1, "template": "..." }
 
 def log(prefix, message):
     print(f"[{prefix}] {message}")
@@ -85,9 +86,8 @@ class ZKEvents:
                 log("INFO", f"Captured finger {current_finger_index} (ActiveX, Len: {t_len})")
 
             elif mode == "identify":
-                # Identification logic
-                # For ActiveX, IdentificationFromStr returns ID or -1
-                # Ensure templates were loaded first
+                # Manual 1:1 Identification Loop
+                global stored_templates
 
                 # Rate limit identification attempts
                 now = time.time()
@@ -95,15 +95,29 @@ class ZKEvents:
                     return
                 last_identify_time = now
 
-                try:
-                    # Explicitly call on the main control object (zk_ctrl)
-                    matched_id = zk_ctrl.IdentificationFromStr(template_b64)
-                    if matched_id > 0:
-                        log("IDENTIFIED", str(matched_id))
-                    else:
-                        log("FEEDBACK", "No match found")
-                except Exception as e:
-                    log("ERROR", f"Identification failed: {e}")
+                if not stored_templates:
+                    log("FEEDBACK", "No templates loaded for search.")
+                    return
+
+                log("INFO", f"Starting manual 1:1 matching against {len(stored_templates)} records...")
+                match_found = False
+
+                for item in stored_templates:
+                    try:
+                        # VerFingerFromStr(Template1, Template2) returns score (e.g. 0-100)
+                        # Threshold 10 as requested
+                        score = zk_ctrl.VerFingerFromStr(template_b64, item["template"])
+                        log("DEBUG", f"ID {item['id']} Comparison Score: {score}")
+
+                        if score > 10:
+                            log("IDENTIFIED", str(item["id"]))
+                            match_found = True
+                            break
+                    except Exception as e:
+                        log("DEBUG", f"Match failed for ID {item['id']}: {e}")
+
+                if not match_found:
+                    log("FEEDBACK", "No match found")
 
 # Rate limit variable
 last_identify_time = 0
@@ -266,19 +280,9 @@ def listen_for_commands():
                 log("INFO", f"Bridge Mode Switched to: {mode}")
             elif cmd == "load_templates":
                 templates = data.get("templates", []) # [{ "id": 1, "template": "..." }]
-                if zk_ctrl:
-                    # Clear existing and load new
-                    zk_ctrl.AddRegTemplateStr(0, "") # Usually 0 is a reset in some versions or we loop
-                    log("INFO", f"Loading {len(templates)} templates for identification...")
-                    count = 0
-                    for item in templates:
-                        try:
-                            # AddRegTemplateStr(ID, Template)
-                            zk_ctrl.AddRegTemplateStr(item["id"], item["template"])
-                            count += 1
-                        except:
-                            pass
-                    log("INFO", f"Successfully loaded {count} templates.")
+                global stored_templates
+                stored_templates = templates
+                log("INFO", f"Backend stored {len(stored_templates)} templates for manual matching.")
         except Exception as e:
             # log("ERROR", f"Command error: {e}")
             pass
