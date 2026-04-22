@@ -52,13 +52,25 @@ class ZKEvents:
     def OnCapture(self, ActionResult, ATemplate):
         global mode
         if ActionResult:
-            template_b64 = base64.b64encode(bytes(ATemplate)).decode('utf-8')
+            template_bytes = bytes(ATemplate)
+            template_b64 = base64.b64encode(template_bytes).decode('utf-8')
 
             if mode == "enroll":
+                # Synthetic Quality Score based on template length
+                # User requested: > 400 bytes -> 85%
+                q_score = 0
+                t_len = len(template_bytes)
+                if t_len > 400:
+                    q_score = 85
+                elif t_len > 0:
+                    q_score = 70
+
+                log("QUALITY", str(q_score))
+
                 result = { "index": current_finger_index, "template": template_b64 }
                 print(f"ENROLLMENT: {json.dumps(result)}")
                 sys.stdout.flush()
-                log("INFO", f"Captured finger {current_finger_index} (ActiveX)")
+                log("INFO", f"Captured finger {current_finger_index} (ActiveX, Len: {t_len})")
 
             elif mode == "identify":
                 # Identification logic
