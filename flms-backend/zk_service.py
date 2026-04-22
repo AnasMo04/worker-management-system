@@ -96,6 +96,13 @@ class ZKEvents:
             sys.stdout.flush()
             log("INFO", f"Captured finger {current_finger_index} (ActiveX)")
 
+    def OnHIDCardRead(self, ACardSN):
+        # ACardSN is the Serial Number of the NFC/HID Card
+        log("CARD_SCANNED", str(ACardSN))
+
+    def OnCardPoweredOn(self, ATR):
+        log("INFO", f"NFC Card Powered On. ATR: {ATR}")
+
 def initialize_activex():
     global zk_com
     try:
