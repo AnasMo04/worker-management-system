@@ -20,34 +20,52 @@ def log(prefix, message):
     print(f"[{prefix}] {message}")
     sys.stdout.flush()
 
+def find_dll_recursive(directory, target_dll):
+    """Recursively searches for the DLL in the directory and its subfolders."""
+    for root, dirs, files in os.walk(directory):
+        if target_dll in files:
+            return os.path.join(root, target_dll)
+    return None
+
 def initialize_sdk():
     global zkfp
     log("STATUS", "32-bit Bridge Active")
 
-    # 1. Add DLL Directory
+    # 1. Debug: List directory content
     if os.path.exists(SDK_PATH):
         try:
-            os.add_dll_directory(SDK_PATH)
-            log("INFO", f"Added DLL directory: {SDK_PATH}")
+            content = os.listdir(SDK_PATH)
+            log("DEBUG", f"Contents of {SDK_PATH}: {content}")
         except Exception as e:
-            log("ERROR", f"Could not add DLL directory: {e}")
+            log("ERROR", f"Failed to list SDK directory: {e}")
     else:
         log("ERROR", f"SDK Path NOT FOUND: {SDK_PATH}")
 
-    # 2. Load DLL
-    dll_full_path = os.path.join(SDK_PATH, DLL_NAME)
+    # 2. Find and Add DLL Directory
+    dll_full_path = None
+    while not terminate_flag:
+        dll_full_path = find_dll_recursive(SDK_PATH, DLL_NAME)
+        if dll_full_path:
+            log("INFO", f"Found DLL at: {dll_full_path}")
+            dll_dir = os.path.dirname(dll_full_path)
+            try:
+                os.add_dll_directory(dll_dir)
+                log("INFO", f"Added DLL directory to search path: {dll_dir}")
+            except Exception as e:
+                log("DEBUG", f"os.add_dll_directory failed (expected on some Python versions): {e}")
+            break
+        else:
+            log("WAITING", f"DLL '{DLL_NAME}' not found in {SDK_PATH} (checked subfolders). Retrying...")
+            time.sleep(3)
+
+    # 3. Load DLL
     while not terminate_flag:
         try:
-            if not os.path.exists(dll_full_path):
-                log("WAITING", f"DLL not found at {dll_full_path}. Retrying...")
-                time.sleep(3)
-                continue
-
             zkfp = ctypes.WinDLL(dll_full_path)
             log("INFO", "DLL loaded successfully.")
             break
         except Exception as e:
-            log("WAITING", f"Failed to load DLL: {e}. Retrying...")
+            log("WAITING", f"Failed to load DLL from {dll_full_path}: {e}. Retrying...")
             time.sleep(3)
 
     # 3. Initialize Library
