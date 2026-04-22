@@ -105,15 +105,27 @@ class ZKEvents:
 # Rate limit variable
 last_identify_time = 0
 
+def clean_com_cache():
+    """Clears the gen_py folder to force a fresh COM mapping."""
+    import shutil
+    temp_dir = os.environ.get('TEMP')
+    if temp_dir:
+        gen_py_path = os.path.join(temp_dir, 'gen_py')
+        if os.path.exists(gen_py_path):
+            try:
+                log("INFO", f"Cleaning COM cache: {gen_py_path}")
+                shutil.rmtree(gen_py_path)
+            except Exception as e:
+                log("DEBUG", f"Could not clean COM cache: {e}")
+
 def initialize_activex():
     global zk_com
     try:
         import win32com.client
-        log("INFO", "Attempting ActiveX Dispatch: ZKFPEngXControl.ZKFPEngX")
-        # Strict Separation: Create Dispatch object first
-        zk_com_dispatch = win32com.client.Dispatch("ZKFPEngXControl.ZKFPEngX")
-        # Then attach Events and store the combined object to prevent GC
-        zk_com = win32com.client.WithEvents(zk_com_dispatch, ZKEvents)
+        log("INFO", "Attempting ActiveX DispatchWithEvents: ZKFPEngXControl.ZKFPEngX")
+
+        # Use DispatchWithEvents for the traditional, stable combined approach
+        zk_com = win32com.client.DispatchWithEvents("ZKFPEngXControl.ZKFPEngX", ZKEvents)
 
         ret = zk_com.InitEngine()
         if ret == 0:
@@ -267,6 +279,7 @@ def listen_for_commands():
 if __name__ == "__main__":
     try:
         log("STATUS", "32-bit Bridge Active")
+        clean_com_cache()
         cmd_thread = threading.Thread(target=listen_for_commands, daemon=True)
         cmd_thread.start()
 
