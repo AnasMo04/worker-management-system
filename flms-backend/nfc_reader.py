@@ -26,7 +26,13 @@ def get_nfc_uid():
             return None
 
         connection = acs_reader.createConnection()
-        connection.connect()
+        # Explicitly handle 'Card holder busy' or 'Reader busy' exceptions
+        try:
+            connection.connect()
+        except Exception as e:
+            if "Card holder busy" in str(e) or "Reader busy" in str(e):
+                return None
+            raise e
 
         # Get UID APDU command
         GET_UID = [0xFF, 0xCA, 0x00, 0x00, 0x00]

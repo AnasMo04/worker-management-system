@@ -67,14 +67,6 @@ const startZKProcess = () => {
                 if (io) io.emit('zk:quality-score', { score });
             }
 
-            // Handle Integrated NFC (ZK8500R)
-            if (trimmedLine.startsWith('[CARD_SCANNED]')) {
-                const uid = trimmedLine.replace('[CARD_SCANNED]', '').trim();
-                if (io) {
-                    io.emit('nfc:card-tapped', { uid });
-                    console.log(`[ZK Service] Emitted Integrated NFC UID: ${uid}`);
-                }
-            }
         });
     });
 
