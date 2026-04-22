@@ -74,7 +74,7 @@ const emptyForm = {
   Full_Name: "", Passport_Number: "", Nationality: "", Residence_Address: "", Sponsor_ID: "",
   National_ID: "", Birth_Date: "", Category: "worker", Document_Type: "جواز سفر",
   Health_Cert_Expiry: "", Freelance: false, Family_ID: "", Relationship: "",
-  Gender: "ذكر", Current_Status: "نشط", NFC_UID: "", fingerprint_template: ""
+  Gender: "ذكر", Current_Status: "نشط", NFC_UID: "", fingerprint_template: "", Finger_Index: "0"
 };
 
 interface IndividualDocs {
@@ -113,6 +113,7 @@ export default function Workers() {
   const [docs, setDocs] = useState<IndividualDocs>(emptyDocs);
   const [isSaving, setIsSaving] = useState(false);
   const [isEnrolling, setIsEnrolling] = useState(false);
+  const [biometricStatus, setBiometricStatus] = useState("جاري الاتصال...");
   const [sponsorOpen, setSponsorOpen] = useState(false);
   const [filterSponsorOpen, setFilterSponsorOpen] = useState(false);
   const [filterNationalityOpen, setFilterNationalityOpen] = useState(false);
@@ -134,6 +135,24 @@ export default function Workers() {
           description: `الرقم التسلسلي: ${data.uid}`,
         });
       }
+    });
+
+    socketRef.current.on('zk:status', (data: { message: string }) => {
+      setBiometricStatus(data.message);
+    });
+
+    socketRef.current.on('zk:feedback', (data: { message: string }) => {
+      toast({ title: "تنبيه البصمة", description: data.message });
+    });
+
+    socketRef.current.on('zk:error', (data: { message: string }) => {
+      toast({ variant: "destructive", title: "خطأ في البصمة", description: data.message });
+    });
+
+    socketRef.current.on('zk:enrollment-data', (data: { index: number, template: string }) => {
+      setForm(prev => ({ ...prev, fingerprint_template: data.template, Finger_Index: data.index.toString() }));
+      setIsEnrolling(false);
+      toast({ title: "تم التقاط البصمة", description: `تم تسجيل بصمة الإصبع (الفهرس: ${data.index}) بنجاح.` });
     });
 
     // Keyboard Emulator Listener
@@ -388,15 +407,13 @@ export default function Workers() {
   const handleEnrollFingerprint = async () => {
     try {
       setIsEnrolling(true);
-      const res = await api.post("/api/biometric/enroll");
+      const res = await api.post("/api/biometric/enroll", { fingerIndex: parseInt(form.Finger_Index) });
       if (res.data.success) {
-        setForm(prev => ({ ...prev, fingerprint_template: res.data.template }));
-        toast({ title: "تم التقاط البصمة", description: "تم تسجيل بصمة الإصبع بنجاح." });
+        toast({ title: "جهاز البصمة جاهز", description: res.data.message });
       }
     } catch (error: any) {
-      toast({ variant: "destructive", title: "خطأ", description: error.response?.data?.message || "فشل في التقاط البصمة." });
-    } finally {
       setIsEnrolling(false);
+      toast({ variant: "destructive", title: "خطأ", description: error.response?.data?.message || "فشل في تشغيل نظام البصمة." });
     }
   };
 
@@ -665,22 +682,52 @@ export default function Workers() {
             </div>
 
             <div className="border-t pt-4 space-y-3">
-              <p className="text-sm font-semibold">البيانات الحيوية (Biometrics)</p>
-              <div className="flex items-center gap-4 p-4 rounded-xl bg-muted/30 border border-dashed border-border/60">
-                <Button
-                  type="button"
-                  variant={form.fingerprint_template ? "outline" : "default"}
-                  onClick={handleEnrollFingerprint}
-                  disabled={isEnrolling}
-                  className="gap-2"
-                >
-                  <Fingerprint className={cn("w-4 h-4", form.fingerprint_template && "text-green-500")} />
-                  {isEnrolling ? "جاري الالتقاط..." : "تسجيل بصمة الإصبع"}
-                </Button>
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold">البيانات الحيوية (Biometrics)</p>
+                <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{biometricStatus}</span>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 p-4 rounded-xl bg-muted/30 border border-dashed border-border/60">
+                <div className="flex items-center gap-4">
+                  <div className="flex-1 space-y-1.5">
+                    <Label className="text-[10px]">إصبع الالتقاط</Label>
+                    <Select value={form.Finger_Index} onValueChange={(v) => setForm({ ...form, Finger_Index: v })}>
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="اختر الإصبع" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">الإبهام الأيمن (0)</SelectItem>
+                        <SelectItem value="1">السبابة الأيمن (1)</SelectItem>
+                        <SelectItem value="2">الوسطى الأيمن (2)</SelectItem>
+                        <SelectItem value="3">البنصر الأيمن (3)</SelectItem>
+                        <SelectItem value="4">الخنصر الأيمن (4)</SelectItem>
+                        <SelectItem value="5">الإبهام الأيسر (5)</SelectItem>
+                        <SelectItem value="6">السبابة الأيسر (6)</SelectItem>
+                        <SelectItem value="7">الوسطى الأيسر (7)</SelectItem>
+                        <SelectItem value="8">البنصر الأيسر (8)</SelectItem>
+                        <SelectItem value="9">الخنصر الأيسر (9)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex-1 flex flex-col justify-end pt-5">
+                    <Button
+                      type="button"
+                      variant={form.fingerprint_template ? "outline" : "default"}
+                      onClick={handleEnrollFingerprint}
+                      disabled={isEnrolling}
+                      className="gap-2 h-8 text-xs"
+                    >
+                      <Fingerprint className={cn("w-3.5 h-3.5", form.fingerprint_template && "text-green-500")} />
+                      {isEnrolling ? "جاري الالتقاط..." : "بدء الالتقاط"}
+                    </Button>
+                  </div>
+                </div>
+
                 {form.fingerprint_template && (
-                  <div className="flex items-center gap-2 text-xs text-green-600 font-bold animate-in fade-in slide-in-from-right-2">
-                    <Check className="w-4 h-4" />
-                    تم تسجيل البصمة بنجاح
+                  <div className="flex items-center gap-2 text-[10px] text-green-600 font-bold bg-green-50 p-2 rounded-lg border border-green-100">
+                    <Check className="w-3.5 h-3.5" />
+                    تم تسجيل بصمة الإصبع بنجاح (طول القالب: {Math.round(form.fingerprint_template.length * 0.75)} bytes)
                   </div>
                 )}
               </div>

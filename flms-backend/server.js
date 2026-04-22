@@ -4,6 +4,7 @@ const http = require('http');
 require('dotenv').config();
 const db = require('./models');
 const { initNFC } = require('./services/nfcService');
+const { initZK } = require('./services/zkService');
 
 const app = express();
 const server = http.createServer(app);
@@ -40,7 +41,10 @@ app.get('/', (req, res) => {
 });
 
 // Initialize NFC Service with Socket.io
-initNFC(server);
+const io = initNFC(server);
+
+// Initialize Biometric (ZK) Service with the same Socket.io instance
+initZK(io);
 
 const PORT = process.env.PORT || 3000;
 

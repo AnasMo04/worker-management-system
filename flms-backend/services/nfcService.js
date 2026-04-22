@@ -18,6 +18,7 @@ const initNFC = (server) => {
   });
 
   startNFCReader();
+  return io;
 };
 
 const startNFCReader = () => {
