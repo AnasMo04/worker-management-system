@@ -68,10 +68,16 @@ class ZKEvents:
 
                 # 2. Capture and Emit Quality immediately
                 try:
-                    quality = zk_com.ImageQuality
+                    # Use GetCapParam(101) to fetch actual quality score
+                    quality = zk_com.GetCapParam(101)
                     log("QUALITY", str(quality))
                 except:
-                    pass
+                    # Fallback to property
+                    try:
+                        quality = zk_com.ImageQuality
+                        log("QUALITY", str(quality))
+                    except:
+                        pass
             except Exception as e:
                 log("DEBUG", f"ActiveX Image Capture Error: {e}")
 
