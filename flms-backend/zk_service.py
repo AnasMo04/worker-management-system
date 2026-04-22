@@ -59,7 +59,7 @@ class ZKEvents:
             log("FEEDBACK", "Poor quality, please try again")
 
     def OnCapture(self, ActionResult, ATemplate):
-        global mode
+        global mode, last_identify_time
         if ActionResult:
             template_bytes = bytes(ATemplate)
             template_b64 = base64.b64encode(template_bytes).decode('utf-8')
@@ -85,7 +85,15 @@ class ZKEvents:
                 # Identification logic
                 # For ActiveX, IdentificationFromStr returns ID or -1
                 # Ensure templates were loaded first
+
+                # Rate limit identification attempts
+                now = time.time()
+                if now - last_identify_time < 2:
+                    return
+                last_identify_time = now
+
                 try:
+                    # Explicitly call on the main control object
                     matched_id = zk_com.IdentificationFromStr(template_b64)
                     if matched_id > 0:
                         log("IDENTIFIED", str(matched_id))
@@ -94,12 +102,18 @@ class ZKEvents:
                 except Exception as e:
                     log("ERROR", f"Identification failed: {e}")
 
+# Rate limit variable
+last_identify_time = 0
+
 def initialize_activex():
     global zk_com
     try:
         import win32com.client
         log("INFO", "Attempting ActiveX Dispatch: ZKFPEngXControl.ZKFPEngX")
-        zk_com = win32com.client.DispatchWithEvents("ZKFPEngXControl.ZKFPEngX", ZKEvents)
+        # Strict Separation: Create Dispatch object first
+        zk_com_dispatch = win32com.client.Dispatch("ZKFPEngXControl.ZKFPEngX")
+        # Then attach Events and store the combined object to prevent GC
+        zk_com = win32com.client.WithEvents(zk_com_dispatch, ZKEvents)
 
         ret = zk_com.InitEngine()
         if ret == 0:
