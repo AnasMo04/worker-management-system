@@ -67,6 +67,11 @@ const startZKProcess = () => {
                 if (io) io.emit('zk:quality-score', { score });
             }
 
+            // Handle Identification Match
+            if (trimmedLine.startsWith('[IDENTIFIED]')) {
+                const matchId = parseInt(trimmedLine.replace('[IDENTIFIED]', '').trim());
+                if (io) io.emit('zk:identified', { id: matchId });
+            }
         });
     });
 

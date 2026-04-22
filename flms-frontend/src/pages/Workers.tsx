@@ -113,6 +113,8 @@ export default function Workers() {
   const [docs, setDocs] = useState<IndividualDocs>(emptyDocs);
   const [isSaving, setIsSaving] = useState(false);
   const [isEnrolling, setIsEnrolling] = useState(false);
+  const [isIdentifying, setIsIdentifying] = useState(false);
+  const [highlightedId, setHighlightedId] = useState<number | null>(null);
   const [biometricStatus, setBiometricStatus] = useState("جاري الاتصال...");
   const [biometricImage, setBiometricImage] = useState<string | null>(null);
   const [qualityScore, setQualityScore] = useState<number | null>(null);
@@ -135,6 +137,13 @@ export default function Workers() {
         toast({
           title: "تم اكتشاف بطاقة",
           description: `الرقم التسلسلي: ${data.uid}`,
+        });
+      } else {
+        // Global Search via NFC
+        setSearchQuery(data.uid);
+        toast({
+          title: "البحث عن طريق البطاقة",
+          description: `تم تلقي الرقم: ${data.uid}`,
         });
       }
     });
@@ -163,6 +172,28 @@ export default function Workers() {
       setForm(prev => ({ ...prev, fingerprint_template: data.template, Finger_Index: data.index.toString() }));
       setIsEnrolling(false);
       toast({ title: "تم التقاط البصمة", description: `تم تسجيل بصمة الإصبع (الفهرس: ${data.index}) بنجاح.` });
+    });
+
+    socketRef.current.on('zk:identified', (data: { id: number }) => {
+      setIsIdentifying(false);
+      setHighlightedId(data.id);
+
+      // Find the worker to show their name in the toast
+      const worker = individuals.find(i => i.id === data.id);
+
+      toast({
+        title: "تم التعرف على الفرد",
+        description: `الاسم: ${worker?.Full_Name || "غير معروف"}`,
+      });
+
+      // Clear highlight after 5 seconds
+      setTimeout(() => setHighlightedId(null), 5000);
+
+      // Auto scroll to the row if needed or just focus
+      const element = document.getElementById(`worker-row-${data.id}`);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
     });
 
     // Keyboard Emulator Listener
@@ -421,6 +452,32 @@ export default function Workers() {
     }
   };
 
+  const handleIdentifyFingerprint = async () => {
+    try {
+      setIsIdentifying(true);
+
+      // 1. Get all workers with templates
+      const workersWithTemplates = individuals
+        .filter(i => i.fingerprint_template)
+        .map(i => ({ id: i.id, template: i.fingerprint_template }));
+
+      if (workersWithTemplates.length === 0) {
+        toast({ variant: "destructive", title: "تنبيه", description: "لا توجد بصمات مسجلة في النظام للبحث." });
+        setIsIdentifying(false);
+        return;
+      }
+
+      // 2. Trigger Identify on Backend
+      const res = await api.post("/api/biometric/identify", { templates: workersWithTemplates });
+      if (res.data.success) {
+        toast({ title: "نظام البحث جاهز", description: "يرجى وضع الإصبع على الحساس للمطابقة." });
+      }
+    } catch (error: any) {
+      setIsIdentifying(false);
+      toast({ variant: "destructive", title: "خطأ", description: error.response?.data?.message || "فشل في تشغيل نظام البحث." });
+    }
+  };
+
   const handleEnrollFingerprint = async () => {
     try {
       setIsEnrolling(true);
@@ -476,9 +533,20 @@ export default function Workers() {
             <Filter className="w-4 h-4" />
             <span className="text-sm font-bold">تصفية ذكية:</span>
           </div>
-          <div className="relative flex-1 min-w-[300px]">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="البحث الذكي (Musa)..." className="w-full h-11 bg-muted/40 border border-border rounded-xl pr-10 pl-4 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all shadow-inner" />
+          <div className="relative flex-1 min-w-[300px] flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="البحث الذكي (Musa)..." className="w-full h-11 bg-muted/40 border border-border rounded-xl pr-10 pl-4 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all shadow-inner" />
+            </div>
+            <Button
+              onClick={handleIdentifyFingerprint}
+              disabled={isIdentifying}
+              variant={isIdentifying ? "secondary" : "outline"}
+              className={cn("h-11 px-4 rounded-xl gap-2", isIdentifying && "animate-pulse")}
+            >
+              <Fingerprint className="w-4 h-4" />
+              {isIdentifying ? "جاري البحث..." : "بحث بالبصمة"}
+            </Button>
           </div>
           <div className="flex items-center gap-3">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -620,7 +688,15 @@ export default function Workers() {
                 <tr><td colSpan={12} className="p-10 text-center text-muted-foreground">لا توجد بيانات مطابقة لمعايير البحث</td></tr>
               ) : (
                 filtered?.map((w) => (
-                  <tr key={w?.id} className={cn("border-b border-border last:border-0 hover:bg-muted/30 transition-colors", w?.is_archived && "opacity-60 grayscale-[0.5] bg-muted/20")}>
+                  <tr
+                    key={w?.id}
+                    id={`worker-row-${w?.id}`}
+                    className={cn(
+                      "border-b border-border last:border-0 hover:bg-muted/30 transition-colors",
+                      w?.is_archived && "opacity-60 grayscale-[0.5] bg-muted/20",
+                      highlightedId === w?.id && "bg-primary/20 ring-2 ring-primary ring-inset"
+                    )}
+                  >
                     <td className="p-3 font-medium">{w?.Full_Name}</td>
                     <td className="p-3"><span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold">{categories.find(c => c.id === w?.Category)?.label || w?.Category}</span></td>
                     <td className="p-3 font-mono text-xs">{w?.Passport_Number}</td>
