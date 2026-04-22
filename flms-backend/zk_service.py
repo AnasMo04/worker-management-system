@@ -8,7 +8,8 @@ import threading
 
 # Global state
 zkfp = None
-zk_com = None
+zk_ctrl = None
+zk_event_sink = None
 h_device = None
 h_db = None
 terminate_flag = False
@@ -22,17 +23,19 @@ def log(prefix, message):
 class ZKEvents:
     """Event Sink for ZK ActiveX Component."""
     def OnImageReceived(self, AImageValid):
+        global zk_ctrl
         if AImageValid:
             try:
                 # 1. Extract Features FIRST to allow quality calculation
+                # Use zk_ctrl (Dispatch) for method calls
                 try:
-                    zk_com.ExtractFeatures()
+                    zk_ctrl.ExtractFeatures()
                 except Exception as e:
                     log("DEBUG", f"ExtractFeatures failed: {e}")
 
                 # 2. Capture and Emit Image
                 temp_file = "temp_preview.bmp"
-                zk_com.SaveBitmap(temp_file)
+                zk_ctrl.SaveBitmap(temp_file)
                 if os.path.exists(temp_file):
                     with open(temp_file, "rb") as f:
                         b64 = base64.b64encode(f.read()).decode('utf-8')
@@ -42,11 +45,11 @@ class ZKEvents:
                 # 3. Capture and Emit Quality immediately
                 try:
                     # Use GetCapParam(101) to fetch actual quality score after feature extraction
-                    quality = zk_com.GetCapParam(101)
+                    quality = zk_ctrl.GetCapParam(101)
                     log("QUALITY", str(quality))
                 except:
                     try:
-                        quality = zk_com.ImageQuality
+                        quality = zk_ctrl.ImageQuality
                         log("QUALITY", str(quality))
                     except:
                         pass
@@ -59,7 +62,7 @@ class ZKEvents:
             log("FEEDBACK", "Poor quality, please try again")
 
     def OnCapture(self, ActionResult, ATemplate):
-        global mode, last_identify_time
+        global mode, last_identify_time, zk_ctrl
         if ActionResult:
             template_bytes = bytes(ATemplate)
             template_b64 = base64.b64encode(template_bytes).decode('utf-8')
@@ -93,8 +96,8 @@ class ZKEvents:
                 last_identify_time = now
 
                 try:
-                    # Explicitly call on the main control object
-                    matched_id = zk_com.IdentificationFromStr(template_b64)
+                    # Explicitly call on the main control object (zk_ctrl)
+                    matched_id = zk_ctrl.IdentificationFromStr(template_b64)
                     if matched_id > 0:
                         log("IDENTIFIED", str(matched_id))
                     else:
@@ -119,15 +122,19 @@ def clean_com_cache():
                 log("DEBUG", f"Could not clean COM cache: {e}")
 
 def initialize_activex():
-    global zk_com
+    global zk_ctrl, zk_event_sink
     try:
         import win32com.client
-        log("INFO", "Attempting ActiveX DispatchWithEvents: ZKFPEngXControl.ZKFPEngX")
+        log("INFO", "Attempting ActiveX Dispatch + WithEvents separation: ZKFPEngXControl.ZKFPEngX")
 
-        # Use DispatchWithEvents for the traditional, stable combined approach
-        zk_com = win32com.client.DispatchWithEvents("ZKFPEngXControl.ZKFPEngX", ZKEvents)
+        # 1. Create the main Dispatch object (for methods)
+        zk_ctrl = win32com.client.Dispatch("ZKFPEngXControl.ZKFPEngX")
 
-        ret = zk_com.InitEngine()
+        # 2. Bind Events to a separate handler
+        zk_event_sink = win32com.client.WithEvents(zk_ctrl, ZKEvents)
+
+        # 3. Use Dispatch object for initialization
+        ret = zk_ctrl.InitEngine()
         if ret == 0:
             log("STATUS", "ActiveX Bridge Ready")
             return True
@@ -164,12 +171,12 @@ def initialize_dll_fallback():
     return False
 
 def open_device():
-    global h_device, h_db, zk_com, zkfp
-    if zk_com:
+    global h_device, h_db, zk_ctrl, zkfp
+    if zk_ctrl:
         while not terminate_flag:
             try:
-                if zk_com.SensorCount > 0:
-                    zk_com.BeginCapture()
+                if zk_ctrl.SensorCount > 0:
+                    zk_ctrl.BeginCapture()
                     log("INFO", "ActiveX: Capture started successfully.")
                     return True
                 else:
@@ -193,11 +200,11 @@ def open_device():
     return False
 
 def capture_loop():
-    global h_device, terminate_flag, current_finger_index, zk_com, zkfp, mode
+    global h_device, terminate_flag, current_finger_index, zk_ctrl, zkfp, mode
 
     log("STATUS", "Ready for fingerprint capture")
 
-    if zk_com:
+    if zk_ctrl:
         import pythoncom
         while not terminate_flag:
             try:
@@ -243,7 +250,7 @@ def capture_loop():
             time.sleep(0.05)
 
 def listen_for_commands():
-    global terminate_flag, current_finger_index, mode, zk_com
+    global terminate_flag, current_finger_index, mode, zk_ctrl
     for line in sys.stdin:
         try:
             data = json.loads(line.strip())
@@ -259,15 +266,15 @@ def listen_for_commands():
                 log("INFO", f"Bridge Mode Switched to: {mode}")
             elif cmd == "load_templates":
                 templates = data.get("templates", []) # [{ "id": 1, "template": "..." }]
-                if zk_com:
+                if zk_ctrl:
                     # Clear existing and load new
-                    zk_com.AddRegTemplateStr(0, "") # Usually 0 is a reset in some versions or we loop
+                    zk_ctrl.AddRegTemplateStr(0, "") # Usually 0 is a reset in some versions or we loop
                     log("INFO", f"Loading {len(templates)} templates for identification...")
                     count = 0
                     for item in templates:
                         try:
                             # AddRegTemplateStr(ID, Template)
-                            zk_com.AddRegTemplateStr(item["id"], item["template"])
+                            zk_ctrl.AddRegTemplateStr(item["id"], item["template"])
                             count += 1
                         except:
                             pass
