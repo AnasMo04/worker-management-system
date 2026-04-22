@@ -1,46 +1,27 @@
-const { spawn } = require('child_process');
-const path = require('path');
+const { sendCommand } = require('../services/zkService');
 
 exports.enroll = async (req, res) => {
-    // Note: In Windows prod, use PYTHON_PATH from .env or C:\Python314\python.exe
-    const pythonPath = process.env.PYTHON_PATH || 'C:\\Users\\MY-PC\\AppData\\Local\\Programs\\Python\\Python313-32\\python.exe';
-    const scriptPath = path.join(__dirname, '..', 'zk_service.py');
+    const { fingerIndex } = req.body;
 
-    console.log(`Starting Biometric Enrollment (ctypes bridge) with: ${pythonPath} ${scriptPath}`);
+    console.log(`[Biometric Controller] Requested enrollment for Finger Index: ${fingerIndex}`);
 
-    const pyProcess = spawn(pythonPath, [scriptPath]);
-    let template = '';
-    let errorMsg = '';
+    // We can send a command to the persistent Python process to set the current finger index
+    const success = sendCommand('set_finger', { index: fingerIndex || 0 });
 
-    pyProcess.stdout.on('data', (data) => {
-        const output = data.toString().trim();
-        if (output.startsWith('TEMPLATE:')) {
-            template = output.replace('TEMPLATE:', '').trim();
-        }
-    });
+    if (success) {
+        res.json({
+            success: true,
+            message: 'Biometric bridge is ready. Please place your finger on the sensor.'
+        });
+    } else {
+        res.status(503).json({
+            success: false,
+            message: 'Biometric service is not responding or starting up. Please try again in a few seconds.'
+        });
+    }
+};
 
-    pyProcess.stderr.on('data', (data) => {
-        errorMsg += data.toString();
-    });
-
-    pyProcess.on('error', (err) => {
-        console.error(`Failed to start Biometric process (ENOENT): ${err.message}`);
-        if (!res.headersSent) {
-            res.status(500).json({
-                success: false,
-                message: 'لم يتم العثور على محرك البصمة (Python Not Found). يرجى التأكد من مسار النظام.'
-            });
-        }
-    });
-
-    pyProcess.on('close', (code) => {
-        if (code === 0 && template) {
-            res.json({ success: true, template });
-        } else {
-            console.error(`Biometric process exited with code ${code}. Error: ${errorMsg}`);
-            if (!res.headersSent) {
-                res.status(500).json({ success: false, message: errorMsg || 'فشل في التقاط البصمة' });
-            }
-        }
-    });
+exports.getStatus = async (req, res) => {
+    // Basic status check
+    res.json({ success: true, service: 'ZK Biometric Bridge', architecture: '32-bit' });
 };

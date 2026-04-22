@@ -3,109 +3,176 @@ import sys
 import ctypes
 import base64
 import time
+import json
+import threading
 
-# ZK9500 ctypes Bridge for Windows (Graduation Project Path)
-# Targeting 32-bit Python 3.10 as requested
+# --- CONFIGURATION ---
 SDK_PATH = r'D:\Collage\spring 25 26 semster (Grad..)\Project\worker-management-system\ZKFingerSDK_Windows_Standard'
+DLL_NAME = "libzkfp.dll"
 
-print(f"[ZK] Architecture: 32-bit (Verified)")
-sys.stdout.flush()
+# Global state
+zkfp = None
+h_device = None
+h_db = None
+terminate_flag = False
 
-# Force DLL Path for Python compatibility
-if os.path.exists(SDK_PATH) and os.name == 'nt':
-    try:
-        # Note: os.add_dll_directory is for Python 3.8+
-        os.add_dll_directory(SDK_PATH)
-        print(f"[ZK] Added DLL directory: {SDK_PATH}")
-    except Exception as e:
-        print(f"[ZK] DEBUG: Could not add DLL directory: {e}")
-else:
-    print(f"[ZK] WARNING: SDK path not found: {SDK_PATH}")
-
-sys.stdout.flush()
-
-def get_zk_dll():
-    """Returns the path to the ZK fingerprint DLL."""
-    # Priority: Dedicated project folder libzkfp.dll
-    dll_name = "libzkfp.dll"
-    p = os.path.join(SDK_PATH, dll_name)
-
-    print(f"[ZK] Probing DLL: {p}")
+def log(prefix, message):
+    print(f"[{prefix}] {message}")
     sys.stdout.flush()
 
-    if os.path.exists(p):
-        return p
+def initialize_sdk():
+    global zkfp
+    log("STATUS", "32-bit Bridge Active")
 
-    # Fallback to current dir or path
-    print(f"[ZK] Fallback probing for {dll_name}")
-    sys.stdout.flush()
-    return dll_name
+    # 1. Add DLL Directory
+    if os.path.exists(SDK_PATH):
+        try:
+            os.add_dll_directory(SDK_PATH)
+            log("INFO", f"Added DLL directory: {SDK_PATH}")
+        except Exception as e:
+            log("ERROR", f"Could not add DLL directory: {e}")
+    else:
+        log("ERROR", f"SDK Path NOT FOUND: {SDK_PATH}")
 
-def initialize_hardware():
-    """
-    Performs 'Warm-up' and LED Blink test.
-    """
-    dll_path = get_zk_dll()
+    # 2. Load DLL
+    dll_full_path = os.path.join(SDK_PATH, DLL_NAME)
+    while not terminate_flag:
+        try:
+            if not os.path.exists(dll_full_path):
+                log("WAITING", f"DLL not found at {dll_full_path}. Retrying...")
+                time.sleep(3)
+                continue
 
-    try:
-        if os.name == 'nt':
-            print(f"[ZK] Attempting to load WinDLL: {dll_path}")
-            sys.stdout.flush()
+            zkfp = ctypes.WinDLL(dll_full_path)
+            log("INFO", "DLL loaded successfully.")
+            break
+        except Exception as e:
+            log("WAITING", f"Failed to load DLL: {e}. Retrying...")
+            time.sleep(3)
 
-            # Load the 32-bit DLL with 32-bit Python
-            zkfp = ctypes.WinDLL(dll_path)
+    # 3. Initialize Library
+    while not terminate_flag:
+        try:
+            ret = zkfp.zkfp_Init()
+            if ret == 0:
+                log("INFO", "Library initialized successfully.")
+                break
+            else:
+                log("WAITING", f"Library initialization failed (Code: {ret}). Retrying...")
+        except Exception as e:
+            log("ERROR", f"Exception during Init: {e}")
+        time.sleep(3)
 
-            # Successful load means architecture matches
-            print("[ZK] DLL loaded successfully.")
+def open_device():
+    global h_device, h_db
+    while not terminate_flag:
+        try:
+            count = zkfp.zkfp_GetDeviceCount()
+            if count > 0:
+                h_device = zkfp.zkfp_OpenDevice(0)
+                if h_device:
+                    log("INFO", "Device opened successfully.")
+                    # Initialize DB handle
+                    h_db = zkfp.zkfp_DBInit()
+                    break
+                else:
+                    log("WAITING", "Failed to open device. Retrying...")
+            else:
+                log("WAITING", "Device not found, retrying...")
+        except Exception as e:
+            log("ERROR", f"Exception opening device: {e}")
+        time.sleep(3)
 
-            # Initialization placeholder for presentation
-            # handle = zkfp.zkfp_Init()
-            # if handle != 0:
-            #    print("[ZK] Sensor handle acquired.")
+# Shared variable for current finger index
+current_finger_index = 0
 
-            print("[ZK] Hardware Ready")
-            print("SUCCESS: Sensor initialized and LED Blink test passed.")
-        else:
-            print("[ZK] Hardware Ready (MOCK/LINUX)")
-            print("SUCCESS: Sensor initialized (MOCK)")
+def capture_loop():
+    global h_device, terminate_flag, current_finger_index
 
-        sys.stdout.flush()
-        return True
-    except OSError as e:
-        print(f"CRITICAL ERROR: Failed to load DLL ({dll_path}).")
-        if "is not a valid Win32 application" in str(e):
-            print("ARCH MISMATCH: Ensure you are using 32-bit Python interpreter.")
-        else:
-            print(f"OS ERROR: {e}")
-        sys.stdout.flush()
-        return False
-    except Exception as e:
-        print(f"ERROR: Hardware initialization failed: {e}")
-        sys.stdout.flush()
-        return False
+    # Prepare buffers
+    # Typical sizes for ZK9500
+    tid_size = 2048
+    template_buffer = ctypes.create_string_buffer(tid_size)
 
-def enroll():
-    """
-    Main loop for biometric enrollment.
-    """
-    if not initialize_hardware():
-        # Keep alive for log capture even on failure
-        while True:
-            time.sleep(10)
-        return
+    # In a real implementation, we'd get image width/height from parameters
+    # For now, we assume standard ZK9500 (approx 256x360 or similar)
+    img_buffer = ctypes.create_string_buffer(640 * 480)
 
-    # Simulate immediate capture result for system verification in mock mode
-    if os.name != 'nt':
-        time.sleep(1)
-        mock_data = f"MOCK_ZK_32BIT_TEMPLATE_{int(time.time())}".encode()
-        print(f"TEMPLATE: {base64.b64encode(mock_data).decode()}")
-        sys.stdout.flush()
+    log("STATUS", "Ready for fingerprint capture")
 
-    try:
-        while True:
+    while not terminate_flag:
+        try:
+            # zkfp_AcquireFingerprint returns 0 on success
+            # Parameters: handle, imgBuffer, templateBuffer, templateSize (pointer)
+            t_size_ptr = ctypes.pointer(ctypes.c_int(tid_size))
+            ret = zkfp.zkfp_AcquireFingerprint(h_device, img_buffer, template_buffer, t_size_ptr)
+
+            if ret == 0:
+                # Successfully captured
+                actual_size = t_size_ptr.contents.value
+                template_data = template_buffer.raw[:actual_size]
+                template_b64 = base64.b64encode(template_data).decode('utf-8')
+
+                result = {
+                    "index": current_finger_index,
+                    "template": template_b64
+                }
+                print(f"ENROLLMENT: {json.dumps(result)}")
+                sys.stdout.flush()
+                log("INFO", f"Captured finger {current_finger_index}")
+
+                # Small debounce
+                time.sleep(1)
+            elif ret == -1:
+                # Internal error
+                pass
+            elif ret == -8:
+                # Extraction failed
+                log("FEEDBACK", "Poor image quality. Please try again.")
+            else:
+                # No finger or other code
+                pass
+
+        except Exception as e:
+            log("ERROR", f"Capture error: {e}")
             time.sleep(1)
-    except KeyboardInterrupt:
-        pass
+
+        time.sleep(0.1)
+
+def listen_for_commands():
+    global terminate_flag, current_finger_index
+    # Listen for finger index changes from stdin
+    for line in sys.stdin:
+        try:
+            data = json.loads(line.strip())
+            cmd = data.get("command")
+            if cmd == "exit":
+                terminate_flag = True
+                break
+            elif cmd == "set_finger":
+                current_finger_index = data.get("index", 0)
+                log("INFO", f"Switched to Finger Index: {current_finger_index}")
+        except Exception as e:
+            # log("ERROR", f"Failed to parse command: {e}")
+            pass
 
 if __name__ == "__main__":
-    enroll()
+    try:
+        # Start command listener in thread
+        cmd_thread = threading.Thread(target=listen_for_commands, daemon=True)
+        cmd_thread.start()
+
+        initialize_sdk()
+        open_device()
+        capture_loop()
+    except KeyboardInterrupt:
+        log("INFO", "Terminating...")
+    finally:
+        terminate_flag = True
+        if h_device:
+            try:
+                zkfp.zkfp_CloseDevice(h_device)
+                zkfp.zkfp_Terminate()
+            except:
+                pass
+        log("INFO", "Shutdown complete")
