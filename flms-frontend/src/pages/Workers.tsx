@@ -367,12 +367,6 @@ export default function Workers() {
   const handleSubmit = async () => {
     if (!validate()) return;
 
-    // Biometric Quality Validation
-    if (form.fingerprint_template && qualityScore !== null && qualityScore < 50) {
-      toast({ variant: "destructive", title: "جودة بصمة ضعيفة", description: `جودة البصمة (${qualityScore}%) غير كافية. يرجى إعادة المحاولة (يجب أن تكون > 50%).` });
-      return;
-    }
-
     try {
       setIsSaving(true);
       const formData = new FormData();
