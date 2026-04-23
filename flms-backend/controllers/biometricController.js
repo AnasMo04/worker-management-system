@@ -46,6 +46,20 @@ exports.identify = async (req, res) => {
     }
 };
 
+exports.toggleCapture = async (req, res) => {
+    const { action } = req.body; // 'start' or 'stop'
+    console.log(`[Biometric Controller] Capture ${action} requested.`);
+
+    const command = action === 'start' ? 'start_capture' : 'stop_capture';
+    const success = sendCommand(command);
+
+    if (success) {
+        res.json({ success: true, message: `Capture ${action}ed` });
+    } else {
+        res.status(503).json({ success: false, message: 'Service unavailable' });
+    }
+};
+
 exports.getStatus = async (req, res) => {
     // Basic status check
     res.json({ success: true, service: 'ZK Biometric Bridge', architecture: '32-bit' });

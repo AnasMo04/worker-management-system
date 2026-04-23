@@ -78,14 +78,19 @@ class ZKEvents:
 
                 if mode == "enroll":
                     # Fallback Quality Score based on template length
-                    q_score = last_quality if last_quality > 0 else (85 if t_len > 400 else 70 if t_len > 0 else 0)
+                    is_synthetic = False
+                    q_score = last_quality
+                    if q_score <= 0:
+                        is_synthetic = True
+                        q_score = 85 if t_len > 400 else 70 if t_len > 0 else 0
 
                     # 1. Emit comprehensive enrollment data event
                     result = {
                         "template": live_template_b64.strip(),
                         "image": last_image_b64,
                         "quality": q_score,
-                        "finger_index": current_finger_index
+                        "finger_index": current_finger_index,
+                        "is_synthetic": is_synthetic
                     }
                     print(f"ENROLLMENT: {json.dumps(result)}")
                     sys.stdout.flush()
@@ -110,7 +115,7 @@ class ZKEvents:
 
                     for item in stored_templates:
                         try:
-                            # CRITICAL: Strip whitespace/newlines from stored templates to ensure absolute accuracy
+                            # CRITICAL: Strip whitespace/newlines from stored templates
                             reg_clean = item["template"].strip()
 
                             # VerFingerFromStr(reg_template, live_template)
@@ -164,7 +169,7 @@ def initialize_activex():
         return False
 
 def listen_for_commands():
-    global terminate_flag, current_finger_index, mode, stored_templates
+    global terminate_flag, current_finger_index, mode, stored_templates, zk_ctrl
     while not terminate_flag:
         try:
             line = sys.stdin.readline()
@@ -182,6 +187,16 @@ def listen_for_commands():
             elif cmd == "load_templates":
                 stored_templates = data.get("templates", [])
                 log("INFO", f"Loaded {len(stored_templates)} templates")
+            elif cmd == "start_capture":
+                if zk_ctrl:
+                    zk_ctrl.BeginCapture()
+                    log("INFO", "Hardware Capture Started")
+            elif cmd == "stop_capture":
+                if zk_ctrl:
+                    zk_ctrl.EndEngine() # EndEngine or equivalent to release hardware
+                    # Re-init engine if we want it to stay alive but idle
+                    zk_ctrl.InitEngine()
+                    log("INFO", "Hardware Capture Stopped")
         except:
             pass
 
@@ -195,8 +210,8 @@ if __name__ == "__main__":
 
         if initialize_activex():
             if zk_ctrl.SensorCount > 0:
-                zk_ctrl.BeginCapture()
-                log("INFO", "Capture started.")
+                # We no longer auto-start capture here, waiting for command
+                log("INFO", "Hardware detected and idle.")
 
                 import pythoncom
                 while not terminate_flag:

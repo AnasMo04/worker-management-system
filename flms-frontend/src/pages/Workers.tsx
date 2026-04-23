@@ -44,6 +44,8 @@ interface Individual {
   Health_Cert_Copy?: string;
   Residency_Copy?: string;
   Personal_Photo_Copy?: string;
+  fingerprint_template?: string;
+  fingerprint_image?: string;
   createdAt: string;
   is_archived?: boolean;
 }
@@ -74,7 +76,7 @@ const emptyForm = {
   Full_Name: "", Passport_Number: "", Nationality: "", Residence_Address: "", Sponsor_ID: "",
   National_ID: "", Birth_Date: "", Category: "worker", Document_Type: "جواز سفر",
   Health_Cert_Expiry: "", Freelance: false, Family_ID: "", Relationship: "",
-  Gender: "ذكر", Current_Status: "نشط", NFC_UID: "", fingerprint_template: "", Finger_Index: "0"
+  Gender: "ذكر", Current_Status: "نشط", NFC_UID: "", fingerprint_template: "", fingerprint_image: "", Finger_Index: "0"
 };
 
 interface IndividualDocs {
@@ -114,6 +116,8 @@ export default function Workers() {
   const [isSaving, setIsSaving] = useState(false);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [isIdentifying, setIsIdentifying] = useState(false);
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [isSynthetic, setIsSynthetic] = useState(false);
   const [highlightedId, setHighlightedId] = useState<number | null>(null);
   const [biometricStatus, setBiometricStatus] = useState("جاري الاتصال...");
   const [biometricImage, setBiometricImage] = useState<string | null>(null);
@@ -168,14 +172,31 @@ export default function Workers() {
       setQualityScore(data.score);
     });
 
-    socketRef.current.on('zk:enrollment-data', (data: { index: number, template: string }) => {
-      setForm(prev => ({ ...prev, fingerprint_template: data.template, Finger_Index: data.index.toString() }));
+    socketRef.current.on('zk:enrollment-data', (data: {
+      template: string,
+      image?: string,
+      quality?: number,
+      finger_index?: number,
+      is_synthetic?: boolean
+    }) => {
+      setForm(prev => ({
+        ...prev,
+        fingerprint_template: data.template,
+        fingerprint_image: data.image || prev.fingerprint_image,
+        Finger_Index: data.finger_index?.toString() || prev.Finger_Index
+      }));
+
+      if (data.quality !== undefined) setQualityScore(data.quality);
+      if (data.is_synthetic !== undefined) setIsSynthetic(data.is_synthetic);
+
       setIsEnrolling(false);
-      toast({ title: "تم التقاط البصمة", description: `تم تسجيل بصمة الإصبع (الفهرس: ${data.index}) بنجاح.` });
+      setIsCapturing(false);
+      toast({ title: "تم التقاط البصمة", description: "تم تسجيل بصمة الإصبع بنجاح." });
     });
 
     socketRef.current.on('zk:identified', (data: { id: number }) => {
       setIsIdentifying(false);
+      setIsCapturing(false);
       setHighlightedId(data.id);
 
       // Find the worker to show their name in the toast
@@ -369,6 +390,7 @@ export default function Workers() {
 
     try {
       setIsSaving(true);
+      if (isCapturing) await api.post("/api/biometric/capture", { action: 'stop' });
       const formData = new FormData();
       Object.entries(form).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
@@ -423,7 +445,11 @@ export default function Workers() {
       Current_Status: ind?.Current_Status || "نشط",
       NFC_UID: ind?.NFC_UID || "",
       fingerprint_template: ind?.fingerprint_template || "",
+      fingerprint_image: ind?.fingerprint_image || "",
     });
+    if (ind?.fingerprint_image) {
+      setBiometricImage(ind.fingerprint_image.startsWith('data:') ? ind.fingerprint_image : `data:image/bmp;base64,${ind.fingerprint_image}`);
+    }
     const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
     const getFullUrl = (p: string) => p?.startsWith('http') ? p : `${backendUrl}/${p}`;
     setDocs({
@@ -446,6 +472,24 @@ export default function Workers() {
     }
   };
 
+  const handleToggleCapture = async () => {
+    try {
+      const nextState = !isCapturing;
+      const action = nextState ? 'start' : 'stop';
+      const res = await api.post("/api/biometric/capture", { action });
+      if (res.data.success) {
+        setIsCapturing(nextState);
+        if (nextState) {
+          setBiometricImage(null);
+          setQualityScore(null);
+          setIsSynthetic(false);
+        }
+      }
+    } catch (error) {
+      toast({ variant: "destructive", title: "خطأ", description: "فشل في التحكم بالجهاز." });
+    }
+  };
+
   const handleIdentifyFingerprint = async () => {
     try {
       setIsIdentifying(true);
@@ -464,6 +508,7 @@ export default function Workers() {
       // 2. Trigger Identify on Backend
       const res = await api.post("/api/biometric/identify", { templates: workersWithTemplates });
       if (res.data.success) {
+        setIsCapturing(true);
         toast({ title: "نظام البحث جاهز", description: "يرجى وضع الإصبع على الحساس للمطابقة." });
       }
     } catch (error: any) {
@@ -477,6 +522,7 @@ export default function Workers() {
       setIsEnrolling(true);
       const res = await api.post("/api/biometric/enroll", { fingerIndex: parseInt(form.Finger_Index) });
       if (res.data.success) {
+        setIsCapturing(true);
         toast({ title: "جهاز البصمة جاهز", description: res.data.message });
       }
     } catch (error: any) {
@@ -485,9 +531,12 @@ export default function Workers() {
     }
   };
 
-  const handleClose = () => {
+  const handleClose = async () => {
+    if (isCapturing) await api.post("/api/biometric/capture", { action: 'stop' });
+    setIsCapturing(false);
     setAddOpen(false); setEditMode(false); setSelectedId(null);
     setForm(emptyForm); setDocs(emptyDocs); setErrors({});
+    setBiometricImage(null); setQualityScore(null);
   };
 
   return (
@@ -771,7 +820,12 @@ export default function Workers() {
             <div className="border-t pt-4 space-y-3">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-semibold">البيانات الحيوية (Biometrics)</p>
-                <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{biometricStatus}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{biometricStatus}</span>
+                  <Button size="sm" variant={isCapturing ? "destructive" : "secondary"} onClick={handleToggleCapture} className="h-6 text-[10px] gap-1">
+                    {isCapturing ? "إيقاف الحساس" : "تشغيل الحساس"}
+                  </Button>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 gap-3 p-4 rounded-xl bg-muted/30 border border-dashed border-border/60">
@@ -821,7 +875,7 @@ export default function Workers() {
                   </div>
                   <div className="flex-1 space-y-2">
                     <div className="flex items-center justify-between text-[10px] font-bold">
-                      <span>جودة الصورة:</span>
+                      <span>جودة الصورة: {isSynthetic && <span className="text-orange-500 font-normal">(Synthetic Quality)</span>}</span>
                       <span className={cn(
                         qualityScore !== null && qualityScore >= 50 ? "text-green-600" : "text-destructive"
                       )}>
