@@ -39,7 +39,6 @@ const startZKProcess = () => {
             }
 
             // 3. Handle Comprehensive Enrollment Data
-            // Format: ENROLLMENT: {"template": "...", "image": "...", "quality": 85, "finger_index": 0}
             if (trimmedLine.startsWith('ENROLLMENT:')) {
                 try {
                     const jsonData = JSON.parse(trimmedLine.replace('ENROLLMENT:', '').trim());
