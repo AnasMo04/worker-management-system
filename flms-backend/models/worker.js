@@ -39,7 +39,7 @@ module.exports = (sequelize, DataTypes) => {
     Relationship: DataTypes.STRING, // Spouse, Child, Parent
     Gender: DataTypes.STRING, // Male / Female
     fingerprint_template: DataTypes.TEXT,
-    fingerprint_image: DataTypes.TEXT,
+    fingerprint_image: DataTypes.TEXT('long'),
     is_archived: {
       type: DataTypes.BOOLEAN,
       defaultValue: false

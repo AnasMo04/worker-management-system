@@ -10,6 +10,7 @@ import threading
 zk_ctrl = None
 zk_event_sink = None
 terminate_flag = False
+is_capturing_flag = False # Strict hardware capture toggle
 current_finger_index = 0
 mode = "enroll"  # "enroll" or "identify"
 stored_templates = []  # List of { "id": 1, "template": "..." }
@@ -32,7 +33,10 @@ class ZKEvents:
         self.zk_ctrl = ctrl
 
     def OnImageReceived(self, AImageValid):
-        global last_image_b64, last_quality
+        global last_image_b64, last_quality, is_capturing_flag
+        if not is_capturing_flag:
+            return
+
         if AImageValid:
             try:
                 if not self.zk_ctrl:
@@ -66,7 +70,10 @@ class ZKEvents:
                 log("DEBUG", f"ActiveX Image Process Error: {e}")
 
     def OnCapture(self, ActionResult, ATemplate):
-        global mode, last_identify_time, stored_templates, last_image_b64, last_quality, current_finger_index
+        global mode, last_identify_time, stored_templates, last_image_b64, last_quality, current_finger_index, is_capturing_flag
+        if not is_capturing_flag:
+            return
+
         if ActionResult:
             try:
                 # Live template from capture
@@ -77,24 +84,25 @@ class ZKEvents:
                 log("DEBUG", f"Live Template Captured. Length: {t_len}")
 
                 if mode == "enroll":
-                    # Fallback Quality Score based on template length
+                    # Quality Fallback
                     is_synthetic = False
                     q_score = last_quality
                     if q_score <= 0:
                         is_synthetic = True
                         q_score = 85 if t_len > 400 else 70 if t_len > 0 else 0
 
-                    # 1. Emit comprehensive enrollment data event
-                    result = {
+                    # EXACT JSON STRUCTURE as requested
+                    payload = {
+                        "type": "ENROLLMENT",
                         "template": live_template_b64.strip(),
                         "image": last_image_b64,
                         "quality": q_score,
                         "finger_index": current_finger_index,
                         "is_synthetic": is_synthetic
                     }
-                    print(f"ENROLLMENT: {json.dumps(result)}")
+                    print(f"BIOMETRIC_DATA: {json.dumps(payload)}")
                     sys.stdout.flush()
-                    log("INFO", f"Enrolled finger {current_finger_index} successfully.")
+                    log("INFO", f"Enrolled finger {current_finger_index}")
 
                 elif mode == "identify":
                     # Manual 1:1 Identification Loop
@@ -104,28 +112,25 @@ class ZKEvents:
                     last_identify_time = now
 
                     if not stored_templates:
-                        log("FEEDBACK", "No templates loaded for search.")
+                        log("FEEDBACK", "No templates loaded.")
                         return
 
                     log("INFO", f"Searching {len(stored_templates)} records...")
                     match_found = False
-
-                    # Prepare live template for comparison
                     live_clean = live_template_b64.strip()
 
                     for item in stored_templates:
                         try:
-                            # CRITICAL: Strip whitespace/newlines from stored templates
                             reg_clean = item["template"].strip()
-
-                            # VerFingerFromStr(reg_template, live_template)
                             score = self.zk_ctrl.VerFingerFromStr(reg_clean, live_clean)
-
                             if score > 10:
-                                log("IDENTIFIED", str(item["id"]))
+                                # EXACT JSON STRUCTURE for identified
+                                payload = { "type": "IDENTIFIED", "id": item["id"] }
+                                print(f"BIOMETRIC_DATA: {json.dumps(payload)}")
+                                sys.stdout.flush()
                                 match_found = True
                                 break
-                        except Exception as e:
+                        except:
                             continue
 
                     if not match_found:
@@ -169,7 +174,7 @@ def initialize_activex():
         return False
 
 def listen_for_commands():
-    global terminate_flag, current_finger_index, mode, stored_templates, zk_ctrl
+    global terminate_flag, current_finger_index, mode, stored_templates, zk_ctrl, is_capturing_flag
     while not terminate_flag:
         try:
             line = sys.stdin.readline()
@@ -190,13 +195,11 @@ def listen_for_commands():
             elif cmd == "start_capture":
                 if zk_ctrl:
                     zk_ctrl.BeginCapture()
-                    log("INFO", "Hardware Capture Started")
+                    is_capturing_flag = True
+                    log("INFO", "Capture STARTED")
             elif cmd == "stop_capture":
-                if zk_ctrl:
-                    zk_ctrl.EndEngine() # EndEngine or equivalent to release hardware
-                    # Re-init engine if we want it to stay alive but idle
-                    zk_ctrl.InitEngine()
-                    log("INFO", "Hardware Capture Stopped")
+                is_capturing_flag = False
+                log("INFO", "Capture STOPPED")
         except:
             pass
 
@@ -210,7 +213,6 @@ if __name__ == "__main__":
 
         if initialize_activex():
             if zk_ctrl.SensorCount > 0:
-                # We no longer auto-start capture here, waiting for command
                 log("INFO", "Hardware detected and idle.")
 
                 import pythoncom

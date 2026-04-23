@@ -531,12 +531,22 @@ export default function Workers() {
     }
   };
 
+  const resetBiometrics = () => {
+    setBiometricImage(null);
+    setQualityScore(null);
+    setIsSynthetic(false);
+    setIsCapturing(false);
+  };
+
   const handleClose = async () => {
     if (isCapturing) await api.post("/api/biometric/capture", { action: 'stop' });
-    setIsCapturing(false);
-    setAddOpen(false); setEditMode(false); setSelectedId(null);
-    setForm(emptyForm); setDocs(emptyDocs); setErrors({});
-    setBiometricImage(null); setQualityScore(null);
+    resetBiometrics();
+    setAddOpen(false);
+    setEditMode(false);
+    setSelectedId(null);
+    setForm(emptyForm);
+    setDocs(emptyDocs);
+    setErrors({});
   };
 
   return (
