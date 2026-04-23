@@ -63,14 +63,20 @@ const startZKProcess = () => {
 
             // Handle Quality Score
             if (trimmedLine.startsWith('[QUALITY]')) {
-                const score = parseInt(trimmedLine.replace('[QUALITY]', '').trim());
-                if (io) io.emit('zk:quality-score', { score });
+                const scoreStr = trimmedLine.replace('[QUALITY]', '').trim();
+                const score = parseInt(scoreStr);
+                if (!isNaN(score)) {
+                    if (io) io.emit('zk:quality-score', { score });
+                }
             }
 
             // Handle Identification Match
             if (trimmedLine.startsWith('[IDENTIFIED]')) {
-                const matchId = parseInt(trimmedLine.replace('[IDENTIFIED]', '').trim());
-                if (io) io.emit('zk:identified', { id: matchId });
+                const matchIdStr = trimmedLine.replace('[IDENTIFIED]', '').trim();
+                const matchId = parseInt(matchIdStr);
+                if (!isNaN(matchId)) {
+                    if (io) io.emit('zk:identified', { id: matchId });
+                }
             }
         });
     });
