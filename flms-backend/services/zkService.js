@@ -28,55 +28,49 @@ const startZKProcess = () => {
 
             console.log(`[ZK Python] ${trimmedLine}`);
 
-            // Handle Status Updates
+            // 1. Handle Status Updates
             if (trimmedLine.startsWith('[STATUS]') || trimmedLine.startsWith('[WAITING]') || trimmedLine.startsWith('[INFO]')) {
                 if (io) io.emit('zk:status', { message: trimmedLine });
             }
 
-            // Handle Errors
+            // 2. Handle Errors
             if (trimmedLine.startsWith('[ERROR]')) {
                 if (io) io.emit('zk:error', { message: trimmedLine.replace('[ERROR]', '').trim() });
             }
 
-            // Handle Enrollment Data
-            // Format expected: ENROLLMENT: {"index": 0, "template": "..."}
+            // 3. Handle Comprehensive Enrollment Data
+            // Format: ENROLLMENT: {"template": "...", "image": "...", "quality": 85, "finger_index": 0}
             if (trimmedLine.startsWith('ENROLLMENT:')) {
                 try {
                     const jsonData = JSON.parse(trimmedLine.replace('ENROLLMENT:', '').trim());
                     if (io) io.emit('zk:enrollment-data', jsonData);
-                    console.log(`[ZK Service] Emitted Enrollment Data for index ${jsonData.index}`);
+                    console.log(`[ZK Service] Emitted Unified Enrollment Data for Index ${jsonData.finger_index}`);
                 } catch (e) {
                     console.error('[ZK Service] Failed to parse enrollment data:', e.message);
                 }
             }
 
-            // Handle Capture/Image Quality Feedback
-            if (trimmedLine.startsWith('[FEEDBACK]')) {
-                if (io) io.emit('zk:feedback', { message: trimmedLine.replace('[FEEDBACK]', '').trim() });
-            }
-
-            // Handle Live Image Preview
+            // 4. Handle Live Image Preview
             if (trimmedLine.startsWith('[IMAGE_DATA]')) {
                 const imageData = trimmedLine.replace('[IMAGE_DATA]', '').trim();
                 if (io) io.emit('zk:image-preview', { image: imageData });
             }
 
-            // Handle Quality Score
+            // 5. Handle Quality Score
             if (trimmedLine.startsWith('[QUALITY]')) {
-                const scoreStr = trimmedLine.replace('[QUALITY]', '').trim();
-                const score = parseInt(scoreStr);
-                if (!isNaN(score)) {
-                    if (io) io.emit('zk:quality-score', { score });
-                }
+                const score = parseInt(trimmedLine.replace('[QUALITY]', '').trim());
+                if (!isNaN(score) && io) io.emit('zk:quality-score', { score });
             }
 
-            // Handle Identification Match
+            // 6. Handle Identification Match
             if (trimmedLine.startsWith('[IDENTIFIED]')) {
-                const matchIdStr = trimmedLine.replace('[IDENTIFIED]', '').trim();
-                const matchId = parseInt(matchIdStr);
-                if (!isNaN(matchId)) {
-                    if (io) io.emit('zk:identified', { id: matchId });
-                }
+                const matchId = parseInt(trimmedLine.replace('[IDENTIFIED]', '').trim());
+                if (!isNaN(matchId) && io) io.emit('zk:identified', { id: matchId });
+            }
+
+            // 7. Handle Capture/Image Quality Feedback
+            if (trimmedLine.startsWith('[FEEDBACK]')) {
+                if (io) io.emit('zk:feedback', { message: trimmedLine.replace('[FEEDBACK]', '').trim() });
             }
         });
     });
