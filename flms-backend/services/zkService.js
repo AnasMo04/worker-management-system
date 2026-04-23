@@ -38,14 +38,21 @@ const startZKProcess = () => {
                 if (io) io.emit('zk:error', { message: trimmedLine.replace('[ERROR]', '').trim() });
             }
 
-            // 3. Handle Comprehensive Enrollment Data
-            if (trimmedLine.startsWith('ENROLLMENT:')) {
+            // 3. Handle Structured Biometric Data
+            // Format: BIOMETRIC_DATA: {"type": "ENROLLMENT", ...}
+            if (trimmedLine.startsWith('BIOMETRIC_DATA:')) {
                 try {
-                    const jsonData = JSON.parse(trimmedLine.replace('ENROLLMENT:', '').trim());
-                    if (io) io.emit('zk:enrollment-data', jsonData);
-                    console.log(`[ZK Service] Emitted Unified Enrollment Data for Index ${jsonData.finger_index}`);
+                    const jsonData = JSON.parse(trimmedLine.replace('BIOMETRIC_DATA:', '').trim());
+
+                    if (jsonData.type === 'ENROLLMENT') {
+                        if (io) io.emit('zk:enrollment-data', jsonData);
+                        console.log(`[ZK Service] Emitted ENROLLMENT data for index ${jsonData.finger_index}`);
+                    } else if (jsonData.type === 'IDENTIFIED') {
+                        if (io) io.emit('zk:identified', { id: jsonData.id });
+                        console.log(`[ZK Service] Emitted IDENTIFIED for worker ID ${jsonData.id}`);
+                    }
                 } catch (e) {
-                    console.error('[ZK Service] Failed to parse enrollment data:', e.message);
+                    console.error('[ZK Service] Failed to parse biometric data:', e.message);
                 }
             }
 
@@ -61,13 +68,7 @@ const startZKProcess = () => {
                 if (!isNaN(score) && io) io.emit('zk:quality-score', { score });
             }
 
-            // 6. Handle Identification Match
-            if (trimmedLine.startsWith('[IDENTIFIED]')) {
-                const matchId = parseInt(trimmedLine.replace('[IDENTIFIED]', '').trim());
-                if (!isNaN(matchId) && io) io.emit('zk:identified', { id: matchId });
-            }
-
-            // 7. Handle Capture/Image Quality Feedback
+            // 6. Handle Feedback
             if (trimmedLine.startsWith('[FEEDBACK]')) {
                 if (io) io.emit('zk:feedback', { message: trimmedLine.replace('[FEEDBACK]', '').trim() });
             }
