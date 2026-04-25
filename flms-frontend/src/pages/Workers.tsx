@@ -74,7 +74,7 @@ const emptyForm = {
   Full_Name: "", Passport_Number: "", Nationality: "", Residence_Address: "", Sponsor_ID: "",
   National_ID: "", Birth_Date: "", Category: "worker", Document_Type: "جواز سفر",
   Health_Cert_Expiry: "", Freelance: false, Family_ID: "", Relationship: "",
-  Gender: "ذكر", Current_Status: "نشط", NFC_UID: "", fingerprint_template: "", Finger_Index: "0"
+  Gender: "ذكر", Current_Status: "نشط", NFC_UID: "", fingerprint_template: "", fingerprint_image: "", Finger_Index: "0"
 };
 
 interface IndividualDocs {
@@ -168,10 +168,17 @@ export default function Workers() {
       setQualityScore(data.score);
     });
 
-    socketRef.current.on('zk:enrollment-data', (data: { index: number, template: string }) => {
-      setForm(prev => ({ ...prev, fingerprint_template: data.template, Finger_Index: data.index.toString() }));
+    socketRef.current.on('zk:enrollment-data', (data: { finger_index: number, template: string, image: string, quality: number }) => {
+      setForm(prev => ({
+        ...prev,
+        fingerprint_template: data.template,
+        fingerprint_image: data.image,
+        Finger_Index: data.finger_index.toString()
+      }));
+      setBiometricImage(`data:image/bmp;base64,${data.image}`);
+      setQualityScore(data.quality);
       setIsEnrolling(false);
-      toast({ title: "تم التقاط البصمة", description: `تم تسجيل بصمة الإصبع (الفهرس: ${data.index}) بنجاح.` });
+      toast({ title: "تم التقاط البصمة", description: `تم تسجيل بصمة الإصبع (الفهرس: ${data.finger_index}) بنجاح.` });
     });
 
     socketRef.current.on('zk:identified', (data: { id: number }) => {
@@ -813,7 +820,7 @@ export default function Workers() {
 
                 <div className="flex items-center gap-4">
                   <div className="w-[200px] h-[240px] bg-[#f0f0f0] rounded-lg border flex items-center justify-center overflow-hidden p-1">
-                    {biometricImage ? (
+                    {biometricImage && biometricImage.length > 30 ? (
                       <img src={biometricImage} alt="Fingerprint Preview" className="w-[200px] h-auto object-contain" />
                     ) : (
                       <Fingerprint className="w-8 h-8 text-muted-foreground/30" />

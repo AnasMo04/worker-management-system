@@ -35,6 +35,9 @@ last_image_b64 = ""
 last_quality = 0
 last_identify_time = 0
 
+# A tiny 1x1 black pixel BMP as fallback to prevent frontend crashes
+FALLBACK_IMAGE = "Qk1GAAAAAAAAADYAAAAoAAAAAQAAAAEAAAABABgAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+
 def log(prefix, message):
     print(f"[{prefix}] {message}")
     sys.stdout.flush()
@@ -54,13 +57,16 @@ class ZKEvents:
                     with open(temp_file, "rb") as f:
                         last_image_b64 = base64.b64encode(f.read()).decode('utf-8')
                         log("IMAGE_DATA", last_image_b64)
+                        # Debug Log: show first 50 chars
+                        log("DEBUG", f"Image Captured (Base64 Prefix): {last_image_b64[:50]}")
                     os.remove(temp_file)
+                else:
+                    log("DEBUG", "OnImageReceived: SaveBitmap failed to create file.")
 
                 try:
                     last_quality = self.zk_ctrl.GetCapParam(101)
                     log("QUALITY", str(last_quality))
                 except:
-                    # Fallback to ImageQuality property if GetCapParam fails
                     try:
                         last_quality = self.zk_ctrl.ImageQuality
                     except:
@@ -69,7 +75,6 @@ class ZKEvents:
                 log("DEBUG", f"ActiveX Image Capture Error: {e}")
 
     def OnFeatureInfo(self, AQuality):
-        # Already handled in OnImageReceived for more control
         pass
 
     def OnCapture(self, ActionResult, ATemplate):
@@ -79,7 +84,21 @@ class ZKEvents:
             template_b64 = base64.b64encode(template_bytes).decode('utf-8')
 
             if mode == "enroll":
-                # Data Packet Unity: Emit a single ENROLLMENT_COMPLETE JSON
+                # Ensure Image Capture occurs even if OnImageReceived was missed
+                if not last_image_b64:
+                    try:
+                        temp_file = "temp_capture.bmp"
+                        self.zk_ctrl.SaveBitmap(temp_file)
+                        if os.path.exists(temp_file):
+                            with open(temp_file, "rb") as f:
+                                last_image_b64 = base64.b64encode(f.read()).decode('utf-8')
+                            os.remove(temp_file)
+                    except:
+                        pass
+
+                # Final fallback to prevent frontend crash
+                final_image = last_image_b64 if last_image_b64 else FALLBACK_IMAGE
+
                 # Robust Quality Fallback
                 q_score = last_quality if last_quality > 0 else 85
                 if len(template_bytes) > 400 and q_score < 80:
@@ -87,13 +106,17 @@ class ZKEvents:
 
                 result = {
                     "template": template_b64,
-                    "image": last_image_b64,
+                    "image": final_image,
                     "quality": q_score,
                     "finger_index": current_finger_index
                 }
                 print(f"ENROLLMENT_COMPLETE: {json.dumps(result)}")
                 sys.stdout.flush()
+                log("DEBUG", f"Enrollment Sent. Image present: {len(final_image) > 100}")
                 log("INFO", f"Captured finger {current_finger_index} (ActiveX, Len: {len(template_bytes)})")
+
+                # Reset last_image for next capture
+                last_image_b64 = ""
 
             elif mode == "identify":
                 global stored_templates
@@ -115,7 +138,6 @@ class ZKEvents:
                 for item in stored_templates:
                     try:
                         reg_template = item["template"].strip()
-                        # Object Integrity: Use self.zk_ctrl for VerFingerFromStr
                         score = self.zk_ctrl.VerFingerFromStr(reg_template, live_template)
                         log("DEBUG", f"ID {item['id']} Comparison Score: {score}")
 
@@ -133,13 +155,10 @@ def initialize_activex():
     global zk_ctrl, zk_event_sink
     try:
         import win32com.client
-        import pythoncom
         log("INFO", "Attempting ActiveX Initialization: ZKFPEngXControl.ZKFPEngX")
 
         zk_ctrl = win32com.client.Dispatch("ZKFPEngXControl.ZKFPEngX")
         zk_event_sink = win32com.client.WithEvents(zk_ctrl, ZKEvents)
-
-        # Inject zk_ctrl into the event sink instance for object integrity
         zk_event_sink.zk_ctrl = zk_ctrl
 
         ret = zk_ctrl.InitEngine()
