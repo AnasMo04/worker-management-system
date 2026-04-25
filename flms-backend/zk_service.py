@@ -14,7 +14,7 @@ is_capturing_flag = False # Strict hardware capture toggle
 current_finger_index = 0
 mode = "enroll"  # "enroll" or "identify"
 stored_templates = []  # List of { "id": 1, "template": "..." }
-last_identify_time = 0
+last_identify_time = 0 # Initialized globally
 
 # Shared data between events
 last_image_b64 = ""
@@ -30,6 +30,7 @@ class ZKEvents:
         self.zk_ctrl = None
 
     def set_ctrl(self, ctrl):
+        """Explicitly set the reference to the Dispatch control object."""
         self.zk_ctrl = ctrl
 
     def OnImageReceived(self, AImageValid):
@@ -38,6 +39,7 @@ class ZKEvents:
             return
 
         if AImageValid:
+            img_b64 = "" # User fix: Initialize before the try block
             try:
                 if not self.zk_ctrl:
                     return
@@ -59,18 +61,22 @@ class ZKEvents:
                 temp_file = os.path.join(os.environ.get('TEMP', '.'), "preview.bmp")
                 self.zk_ctrl.SaveBitmap(temp_file)
                 if os.path.exists(temp_file):
-                    with open(temp_file, "rb") as f:
-                        last_image_b64 = base64.b64encode(f.read()).decode('utf-8')
-                        log("IMAGE_DATA", last_image_b64)
                     try:
+                        with open(temp_file, "rb") as f:
+                            img_b64 = base64.b64encode(f.read()).decode('utf-8')
+                            log("IMAGE_DATA", img_b64)
                         os.remove(temp_file)
-                    except:
-                        pass
+                    except Exception as e:
+                        log("DEBUG", f"File process error: {e}")
+
+                # Update global storage for the image
+                last_image_b64 = img_b64
+
             except Exception as e:
                 log("DEBUG", f"ActiveX Image Process Error: {e}")
 
     def OnCapture(self, ActionResult, ATemplate):
-        global mode, last_identify_time, stored_templates, last_image_b64, last_quality, current_finger_index, is_capturing_flag
+        global mode, stored_templates, last_image_b64, last_quality, current_finger_index, is_capturing_flag
         if not is_capturing_flag:
             return
 
@@ -95,7 +101,7 @@ class ZKEvents:
                     payload = {
                         "type": "ENROLLMENT",
                         "template": live_template_b64.strip(),
-                        "image": last_image_b64,
+                        "image": last_image_b64, # Correctly uses initialized variable
                         "quality": q_score,
                         "finger_index": current_finger_index,
                         "is_synthetic": is_synthetic
@@ -106,7 +112,7 @@ class ZKEvents:
 
                 elif mode == "identify":
                     # Manual 1:1 Identification Loop for Angle Invariance
-                    global last_identify_time
+                    global last_identify_time # User fix: Add global keyword
                     now = time.time()
                     if now - last_identify_time < 2.0: # Rate limit
                         return
@@ -168,7 +174,7 @@ def initialize_activex():
         zk_event_sink = win32com.client.WithEvents(zk_ctrl, ZKEvents)
         zk_event_sink.set_ctrl(zk_ctrl)
 
-        # Set security level / engine version to 10 for rotation support BEFORE InitEngine
+        # CRITICAL: Set security level / engine version to 10 specifically BEFORE InitEngine
         zk_ctrl.FPEngineVersion = "10"
 
         if zk_ctrl.InitEngine() == 0:
