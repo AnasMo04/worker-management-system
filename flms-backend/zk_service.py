@@ -14,7 +14,7 @@ is_capturing_flag = False # Strict hardware capture toggle
 current_finger_index = 0
 mode = "enroll"  # "enroll" or "identify"
 stored_templates = []  # List of { "id": 1, "template": "..." }
-last_identify_time = 0 # Initialized globally
+last_identify_time = 0
 
 # Shared data between events
 last_image_b64 = ""
@@ -38,8 +38,10 @@ class ZKEvents:
         if not is_capturing_flag:
             return
 
+        # User fix: Initialize before the try block
+        img_b64 = ""
+
         if AImageValid:
-            img_b64 = "" # User fix: Initialize before the try block
             try:
                 if not self.zk_ctrl:
                     return
@@ -68,15 +70,14 @@ class ZKEvents:
                         os.remove(temp_file)
                     except Exception as e:
                         log("DEBUG", f"File process error: {e}")
-
-                # Update global storage for the image
-                last_image_b64 = img_b64
-
             except Exception as e:
                 log("DEBUG", f"ActiveX Image Process Error: {e}")
 
+        # Ensure the global shared variable is updated
+        last_image_b64 = img_b64
+
     def OnCapture(self, ActionResult, ATemplate):
-        global mode, stored_templates, last_image_b64, last_quality, current_finger_index, is_capturing_flag
+        global mode, last_identify_time, stored_templates, last_image_b64, last_quality, current_finger_index, is_capturing_flag
         if not is_capturing_flag:
             return
 
@@ -101,7 +102,7 @@ class ZKEvents:
                     payload = {
                         "type": "ENROLLMENT",
                         "template": live_template_b64.strip(),
-                        "image": last_image_b64, # Correctly uses initialized variable
+                        "image": last_image_b64,
                         "quality": q_score,
                         "finger_index": current_finger_index,
                         "is_synthetic": is_synthetic
@@ -112,7 +113,7 @@ class ZKEvents:
 
                 elif mode == "identify":
                     # Manual 1:1 Identification Loop for Angle Invariance
-                    global last_identify_time # User fix: Add global keyword
+                    global last_identify_time
                     now = time.time()
                     if now - last_identify_time < 2.0: # Rate limit
                         return
@@ -124,15 +125,18 @@ class ZKEvents:
 
                     log("INFO", f"Searching {len(stored_templates)} records...")
                     match_found = False
+                    # Apply .strip() to live template to ensure clean matching
                     live_clean = live_template_b64.strip()
 
                     for item in stored_templates:
                         try:
+                            # Apply .strip() to database template
                             reg_clean = item["template"].strip()
-                            # Use manual 1:1 matching loop as IdentificationFromStr can be flaky with rotations
+
+                            # Use ONLY manual 1:1 matching loop (VerFingerFromStr)
                             score = self.zk_ctrl.VerFingerFromStr(reg_clean, live_clean)
 
-                            # Threshold set to 10 (forgiving) for better rotation handling
+                            # Threshold set to 10 (forgiving) for rotation/angle support
                             if score > 10:
                                 payload = { "type": "IDENTIFIED", "id": item["id"] }
                                 print(f"BIOMETRIC_DATA: {json.dumps(payload)}")
@@ -174,7 +178,7 @@ def initialize_activex():
         zk_event_sink = win32com.client.WithEvents(zk_ctrl, ZKEvents)
         zk_event_sink.set_ctrl(zk_ctrl)
 
-        # CRITICAL: Set security level / engine version to 10 specifically BEFORE InitEngine
+        # Set security level / engine version to 10 BEFORE InitEngine
         zk_ctrl.FPEngineVersion = "10"
 
         if zk_ctrl.InitEngine() == 0:
