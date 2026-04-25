@@ -250,7 +250,7 @@ export default function Workers() {
     // 1. Fuzzy Search Logic
     if (searchQuery.trim()) {
       const fuse = new Fuse(result, {
-        keys: ["Full_Name", "Passport_Number", "Family_ID"],
+        keys: ["Full_Name", "Passport_Number", "Family_ID", "NFC_UID"],
         threshold: 0.3,
       });
       result = fuse.search(searchQuery).map(r => r.item);
