@@ -39,7 +39,9 @@ def get_nfc_uid():
         data, sw1, sw2 = connection.transmit(GET_UID)
 
         if sw1 == 0x90 and sw2 == 0x00:
-            return toHexString(data).replace(" ", ":")
+            # Convert byte array to a single large integer (Decimal string)
+            # as requested for frontend compatibility.
+            return str(int.from_bytes(bytes(data), byteorder='big'))
         return None
     except Exception as e:
         # Silently fail if no card is present or busy
