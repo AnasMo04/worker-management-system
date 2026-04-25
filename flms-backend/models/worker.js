@@ -25,7 +25,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       defaultValue: 'نشط'
     },
-    NFC_UID: DataTypes.STRING,
+    NFC_UID: {
+      type: DataTypes.STRING,
+      field: 'NFC_UID' // Ensure exact mapping to the DB column
+    },
     Primary_Card_Serial: DataTypes.STRING,
     Passport_Copy: DataTypes.TEXT, // Document Copy
     Health_Cert_Copy: DataTypes.TEXT,
