@@ -29,10 +29,24 @@ async function syncDocuments(worker, transaction) {
   }
 }
 
+const { Op } = require('sequelize');
+
 exports.getAll = async (req, res) => {
   try {
-    const { includeArchived } = req.query;
-    const where = includeArchived === 'true' ? {} : { is_archived: false };
+    const { includeArchived, search } = req.query;
+    let where = includeArchived === 'true' ? {} : { is_archived: false };
+
+    if (search && search.trim()) {
+      const searchTerm = `%${search.trim()}%`;
+      where = {
+        ...where,
+        [Op.or]: [
+          { Full_Name: { [Op.like]: searchTerm } },
+          { Passport_Number: { [Op.like]: searchTerm } },
+          { NFC_UID: { [Op.like]: searchTerm } }
+        ]
+      };
+    }
 
     const workers = await Worker.findAll({
       where,
