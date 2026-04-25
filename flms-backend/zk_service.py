@@ -16,6 +16,7 @@ terminate_flag = False
 current_finger_index = 0
 mode = "enroll" # "enroll" or "identify"
 stored_templates = [] # List of { "id": 1, "template": "..." }
+last_identify_time = 0
 
 def log(prefix, message):
     print(f"[{prefix}] {message}")
@@ -24,19 +25,17 @@ def log(prefix, message):
 class ZKEvents:
     """Event Sink for ZK ActiveX Component."""
     def OnImageReceived(self, AImageValid):
-        global zk_ctrl
         if AImageValid:
             try:
                 # 1. Extract Features FIRST to allow quality calculation
-                # Use zk_ctrl (Dispatch) for method calls
                 try:
-                    zk_ctrl.ExtractFeatures()
+                    self.zk_ctrl.ExtractFeatures()
                 except Exception as e:
                     log("DEBUG", f"ExtractFeatures failed: {e}")
 
                 # 2. Capture and Emit Image
                 temp_file = "temp_preview.bmp"
-                zk_ctrl.SaveBitmap(temp_file)
+                self.zk_ctrl.SaveBitmap(temp_file)
                 if os.path.exists(temp_file):
                     with open(temp_file, "rb") as f:
                         b64 = base64.b64encode(f.read()).decode('utf-8')
@@ -45,12 +44,11 @@ class ZKEvents:
 
                 # 3. Capture and Emit Quality immediately
                 try:
-                    # Use GetCapParam(101) to fetch actual quality score after feature extraction
-                    quality = zk_ctrl.GetCapParam(101)
+                    quality = self.zk_ctrl.GetCapParam(101)
                     log("QUALITY", str(quality))
                 except:
                     try:
-                        quality = zk_ctrl.ImageQuality
+                        quality = self.zk_ctrl.ImageQuality
                         log("QUALITY", str(quality))
                     except:
                         pass
@@ -63,14 +61,13 @@ class ZKEvents:
             log("FEEDBACK", "Poor quality, please try again")
 
     def OnCapture(self, ActionResult, ATemplate):
-        global mode, last_identify_time, zk_ctrl
+        global mode, last_identify_time, current_finger_index, stored_templates
         if ActionResult:
             template_bytes = bytes(ATemplate)
             template_b64 = base64.b64encode(template_bytes).decode('utf-8')
 
             if mode == "enroll":
                 # Synthetic Quality Score based on template length
-                # User requested: > 400 bytes -> 85%
                 q_score = 0
                 t_len = len(template_bytes)
                 if t_len > 400:
@@ -80,16 +77,30 @@ class ZKEvents:
 
                 log("QUALITY", str(q_score))
 
-                result = { "index": current_finger_index, "template": template_b64 }
-                print(f"ENROLLMENT: {json.dumps(result)}")
+                # Capture Image for Enrollment
+                enroll_image = ""
+                temp_file = "enroll_temp.bmp"
+                try:
+                    self.zk_ctrl.SaveBitmap(temp_file)
+                    if os.path.exists(temp_file):
+                        with open(temp_file, "rb") as f:
+                            enroll_image = base64.b64encode(f.read()).decode('utf-8')
+                        os.remove(temp_file)
+                except Exception as e:
+                    log("DEBUG", f"Enrollment image capture failed: {e}")
+
+                result = {
+                    "template": template_b64,
+                    "image": enroll_image,
+                    "quality": q_score,
+                    "finger_index": current_finger_index
+                }
+                print(f"ENROLLMENT_COMPLETE: {json.dumps(result)}")
                 sys.stdout.flush()
                 log("INFO", f"Captured finger {current_finger_index} (ActiveX, Len: {t_len})")
 
             elif mode == "identify":
                 # Manual 1:1 Identification Loop
-                global stored_templates
-
-                # Rate limit identification attempts
                 now = time.time()
                 if now - last_identify_time < 2:
                     return
@@ -103,11 +114,19 @@ class ZKEvents:
                 match_found = False
 
                 for item in stored_templates:
+                    reg_template = item.get("template")
+                    if not reg_template:
+                        continue
+
                     try:
+                        # Cast both to string and strip
+                        t1 = str(template_b64).strip()
+                        t2 = str(reg_template).strip()
+
                         # VerFingerFromStr(Template1, Template2) returns score (e.g. 0-100)
                         # Threshold 10 as requested
-                        score = zk_ctrl.VerFingerFromStr(template_b64, item["template"])
-                        log("DEBUG", f"ID {item['id']} Comparison Score: {score}")
+                        score = self.zk_ctrl.VerFingerFromStr(t1, t2)
+                        log('DEBUG', f"ID {item['id']} Score: {score}")
 
                         if score > 10:
                             log("IDENTIFIED", str(item["id"]))
@@ -118,9 +137,6 @@ class ZKEvents:
 
                 if not match_found:
                     log("FEEDBACK", "No match found")
-
-# Rate limit variable
-last_identify_time = 0
 
 def clean_com_cache():
     """Clears the gen_py folder to force a fresh COM mapping."""
@@ -146,6 +162,9 @@ def initialize_activex():
 
         # 2. Bind Events to a separate handler
         zk_event_sink = win32com.client.WithEvents(zk_ctrl, ZKEvents)
+
+        # Mandatory: Pass reference to event sink
+        zk_event_sink.zk_ctrl = zk_ctrl
 
         # 3. Use Dispatch object for initialization
         ret = zk_ctrl.InitEngine()
