@@ -1,6 +1,7 @@
 const { spawn } = require('child_process');
 const path = require('path');
 const { Server } = require('socket.io');
+const { Worker } = require('../models');
 
 let io;
 let nfcProcess;
@@ -31,16 +32,46 @@ const startNFCReader = () => {
   try {
     nfcProcess = spawn(pythonPath, [scriptPath]);
 
-    nfcProcess.stdout.on('data', (data) => {
+    nfcProcess.stdout.on('data', async (data) => {
       const output = data.toString().trim();
-      console.log(`NFC Reader: ${output}`);
 
-      // Look for UID in the output (format: "UID: 04:A1:B2:C3")
-      if (output.startsWith('UID:')) {
-        const uid = output.replace('UID:', '').trim();
-        if (io) {
-          io.emit('nfc:card-tapped', { uid });
-          console.log(`Emitted NFC UID: ${uid}`);
+      // Handle multiple lines if they arrive together
+      const lines = output.split('\n');
+      for (let line of lines) {
+        line = line.trim();
+        if (line.startsWith('UID:')) {
+          const uid = line.replace('UID:', '').trim();
+          console.log(`NFC Card Tapped: ${uid}`);
+
+          if (io) {
+            // 1. Emit generic tap event
+            io.emit('nfc:card-tapped', { uid });
+
+            // 2. Automated Worker Identification
+            try {
+              const worker = await Worker.findOne({
+                where: { NFC_UID: uid },
+                attributes: ['id', 'Full_Name', 'Current_Status', 'Passport_Number']
+              });
+
+              if (worker) {
+                console.log(`Worker Identified: ${worker.Full_Name} (ID: ${worker.id})`);
+                // Emit event that the frontend uses to reaction
+                io.emit('card-scanned', {
+                  id: worker.id,
+                  name: worker.Full_Name,
+                  status: worker.Current_Status,
+                  passport: worker.Passport_Number,
+                  uid: uid
+                });
+              } else {
+                console.log(`No worker found for UID: ${uid}`);
+                io.emit('nfc:unknown-card', { uid });
+              }
+            } catch (dbErr) {
+              console.error(`Database error during NFC identification: ${dbErr.message}`);
+            }
+          }
         }
       }
     });
@@ -51,7 +82,6 @@ const startNFCReader = () => {
 
     nfcProcess.on('error', (err) => {
       console.error(`Failed to start NFC process: ${err.message}`);
-      // If C:\Python314\python.exe fails, we might be in a different environment, but following user's instruction.
     });
 
     nfcProcess.on('close', (code) => {

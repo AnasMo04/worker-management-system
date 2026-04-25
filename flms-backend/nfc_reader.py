@@ -40,8 +40,9 @@ def get_nfc_uid():
 
         if sw1 == 0x90 and sw2 == 0x00:
             # Convert byte array to a single large integer (Decimal string)
-            # as requested for frontend compatibility.
-            return str(int.from_bytes(bytes(data), byteorder='big'))
+            # Ensure it's a clean string without extra spaces.
+            uid_int = int.from_bytes(bytes(data), byteorder='big')
+            return str(uid_int).strip()
         return None
     except Exception as e:
         # Silently fail if no card is present or busy
@@ -54,6 +55,7 @@ if __name__ == "__main__":
     while True:
         uid = get_nfc_uid()
         if uid and uid != last_uid:
+            # Output in a predictable format for the Node.js backend
             print(f"UID: {uid}")
             sys.stdout.flush()
             last_uid = uid
