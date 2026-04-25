@@ -48,17 +48,18 @@ initZK(io);
 
 const PORT = process.env.PORT || 3000;
 
-// Sync database and start server
+// Start server without automatic sync to avoid Duplicate Column errors
 async function startServer() {
   try {
-    await db.sequelize.sync({ alter: true });
-    console.log(' Database synchronized successfully.');
+    // Database synchronization is now managed manually or via migrations.
+    // await db.sequelize.sync({ alter: true });
+    // console.log(' Database synchronized successfully.');
 
     server.listen(PORT, () => {
       console.log(` Server is running successfully on: http://localhost:${PORT}`);
     });
   } catch (error) {
-    console.error(' Failed to synchronize database or start server:', error);
+    console.error(' Failed to start server:', error);
   }
 }
 
