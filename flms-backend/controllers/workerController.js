@@ -118,7 +118,8 @@ exports.create = async (req, res) => {
       Family_ID: data.Family_ID,
       Relationship: data.Relationship,
       Gender: data.Gender,
-      fingerprint_template: data.fingerprint_template
+      fingerprint_template: data.fingerprint_template,
+      fingerprint_image: data.fingerprint_image
     }, { transaction: t });
 
     await syncDocuments(newWorker, t);
@@ -187,7 +188,8 @@ exports.update = async (req, res) => {
       Family_ID: data.Family_ID,
       Relationship: data.Relationship,
       Gender: data.Gender,
-      fingerprint_template: data.fingerprint_template
+      fingerprint_template: data.fingerprint_template,
+      fingerprint_image: data.fingerprint_image
     }, { transaction: t });
 
     await syncDocuments(worker, t);

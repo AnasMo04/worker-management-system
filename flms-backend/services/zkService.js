@@ -39,12 +39,11 @@ const startZKProcess = () => {
             }
 
             // Handle Enrollment Data
-            // Format expected: ENROLLMENT: {"index": 0, "template": "..."}
-            if (trimmedLine.startsWith('ENROLLMENT:')) {
+            if (trimmedLine.startsWith('ENROLLMENT_COMPLETE:')) {
                 try {
-                    const jsonData = JSON.parse(trimmedLine.replace('ENROLLMENT:', '').trim());
+                    const jsonData = JSON.parse(trimmedLine.replace('ENROLLMENT_COMPLETE:', '').trim());
                     if (io) io.emit('zk:enrollment-data', jsonData);
-                    console.log(`[ZK Service] Emitted Enrollment Data for index ${jsonData.index}`);
+                    console.log(`[ZK Service] Emitted ENROLLMENT_COMPLETE for finger ${jsonData.finger_index}`);
                 } catch (e) {
                     console.error('[ZK Service] Failed to parse enrollment data:', e.message);
                 }

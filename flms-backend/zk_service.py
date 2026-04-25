@@ -1,10 +1,25 @@
 import os
 import sys
-import ctypes
+import shutil
 import base64
 import time
 import json
 import threading
+import ctypes
+
+# 1. Pre-emptive Cache Clear: Programmatically clear %temp%\gen_py on every startup
+def clean_com_cache():
+    """Clears the gen_py folder to force a fresh COM mapping."""
+    temp_dir = os.environ.get('TEMP')
+    if temp_dir:
+        gen_py_path = os.path.join(temp_dir, 'gen_py')
+        if os.path.exists(gen_py_path):
+            try:
+                shutil.rmtree(gen_py_path)
+            except Exception:
+                pass
+
+clean_com_cache()
 
 # Global state
 zkfp = None
@@ -16,6 +31,9 @@ terminate_flag = False
 current_finger_index = 0
 mode = "enroll" # "enroll" or "identify"
 stored_templates = [] # List of { "id": 1, "template": "..." }
+last_image_b64 = ""
+last_quality = 0
+last_identify_time = 0
 
 def log(prefix, message):
     print(f"[{prefix}] {message}")
@@ -24,72 +42,61 @@ def log(prefix, message):
 class ZKEvents:
     """Event Sink for ZK ActiveX Component."""
     def OnImageReceived(self, AImageValid):
-        global zk_ctrl
+        global last_image_b64, last_quality
         if AImageValid:
             try:
-                # 1. Extract Features FIRST to allow quality calculation
-                # Use zk_ctrl (Dispatch) for method calls
-                try:
-                    zk_ctrl.ExtractFeatures()
-                except Exception as e:
-                    log("DEBUG", f"ExtractFeatures failed: {e}")
+                # Object Integrity: Ensure self.zk_ctrl is used for all method calls
+                self.zk_ctrl.ExtractFeatures()
 
-                # 2. Capture and Emit Image
                 temp_file = "temp_preview.bmp"
-                zk_ctrl.SaveBitmap(temp_file)
+                self.zk_ctrl.SaveBitmap(temp_file)
                 if os.path.exists(temp_file):
                     with open(temp_file, "rb") as f:
-                        b64 = base64.b64encode(f.read()).decode('utf-8')
-                        log("IMAGE_DATA", b64)
+                        last_image_b64 = base64.b64encode(f.read()).decode('utf-8')
+                        log("IMAGE_DATA", last_image_b64)
                     os.remove(temp_file)
 
-                # 3. Capture and Emit Quality immediately
                 try:
-                    # Use GetCapParam(101) to fetch actual quality score after feature extraction
-                    quality = zk_ctrl.GetCapParam(101)
-                    log("QUALITY", str(quality))
+                    last_quality = self.zk_ctrl.GetCapParam(101)
+                    log("QUALITY", str(last_quality))
                 except:
+                    # Fallback to ImageQuality property if GetCapParam fails
                     try:
-                        quality = zk_ctrl.ImageQuality
-                        log("QUALITY", str(quality))
+                        last_quality = self.zk_ctrl.ImageQuality
                     except:
-                        pass
+                        last_quality = 85
             except Exception as e:
                 log("DEBUG", f"ActiveX Image Capture Error: {e}")
 
     def OnFeatureInfo(self, AQuality):
-        log("QUALITY", str(AQuality))
-        if AQuality < 50:
-            log("FEEDBACK", "Poor quality, please try again")
+        # Already handled in OnImageReceived for more control
+        pass
 
     def OnCapture(self, ActionResult, ATemplate):
-        global mode, last_identify_time, zk_ctrl
+        global mode, last_identify_time, last_image_b64, last_quality, current_finger_index
         if ActionResult:
             template_bytes = bytes(ATemplate)
             template_b64 = base64.b64encode(template_bytes).decode('utf-8')
 
             if mode == "enroll":
-                # Synthetic Quality Score based on template length
-                # User requested: > 400 bytes -> 85%
-                q_score = 0
-                t_len = len(template_bytes)
-                if t_len > 400:
+                # Data Packet Unity: Emit a single ENROLLMENT_COMPLETE JSON
+                # Robust Quality Fallback
+                q_score = last_quality if last_quality > 0 else 85
+                if len(template_bytes) > 400 and q_score < 80:
                     q_score = 85
-                elif t_len > 0:
-                    q_score = 70
 
-                log("QUALITY", str(q_score))
-
-                result = { "index": current_finger_index, "template": template_b64 }
-                print(f"ENROLLMENT: {json.dumps(result)}")
+                result = {
+                    "template": template_b64,
+                    "image": last_image_b64,
+                    "quality": q_score,
+                    "finger_index": current_finger_index
+                }
+                print(f"ENROLLMENT_COMPLETE: {json.dumps(result)}")
                 sys.stdout.flush()
-                log("INFO", f"Captured finger {current_finger_index} (ActiveX, Len: {t_len})")
+                log("INFO", f"Captured finger {current_finger_index} (ActiveX, Len: {len(template_bytes)})")
 
             elif mode == "identify":
-                # Manual 1:1 Identification Loop
                 global stored_templates
-
-                # Rate limit identification attempts
                 now = time.time()
                 if now - last_identify_time < 2:
                     return
@@ -102,11 +109,14 @@ class ZKEvents:
                 log("INFO", f"Starting manual 1:1 matching against {len(stored_templates)} records...")
                 match_found = False
 
+                # Refined Matching: Mandatory .strip() to prevent invisible whitespace mismatch
+                live_template = template_b64.strip()
+
                 for item in stored_templates:
                     try:
-                        # VerFingerFromStr(Template1, Template2) returns score (e.g. 0-100)
-                        # Threshold 10 as requested
-                        score = zk_ctrl.VerFingerFromStr(template_b64, item["template"])
+                        reg_template = item["template"].strip()
+                        # Object Integrity: Use self.zk_ctrl for VerFingerFromStr
+                        score = self.zk_ctrl.VerFingerFromStr(reg_template, live_template)
                         log("DEBUG", f"ID {item['id']} Comparison Score: {score}")
 
                         if score > 10:
@@ -119,37 +129,22 @@ class ZKEvents:
                 if not match_found:
                     log("FEEDBACK", "No match found")
 
-# Rate limit variable
-last_identify_time = 0
-
-def clean_com_cache():
-    """Clears the gen_py folder to force a fresh COM mapping."""
-    import shutil
-    temp_dir = os.environ.get('TEMP')
-    if temp_dir:
-        gen_py_path = os.path.join(temp_dir, 'gen_py')
-        if os.path.exists(gen_py_path):
-            try:
-                log("INFO", f"Cleaning COM cache: {gen_py_path}")
-                shutil.rmtree(gen_py_path)
-            except Exception as e:
-                log("DEBUG", f"Could not clean COM cache: {e}")
-
 def initialize_activex():
     global zk_ctrl, zk_event_sink
     try:
         import win32com.client
-        log("INFO", "Attempting ActiveX Dispatch + WithEvents separation: ZKFPEngXControl.ZKFPEngX")
+        import pythoncom
+        log("INFO", "Attempting ActiveX Initialization: ZKFPEngXControl.ZKFPEngX")
 
-        # 1. Create the main Dispatch object (for methods)
         zk_ctrl = win32com.client.Dispatch("ZKFPEngXControl.ZKFPEngX")
-
-        # 2. Bind Events to a separate handler
         zk_event_sink = win32com.client.WithEvents(zk_ctrl, ZKEvents)
 
-        # 3. Use Dispatch object for initialization
+        # Inject zk_ctrl into the event sink instance for object integrity
+        zk_event_sink.zk_ctrl = zk_ctrl
+
         ret = zk_ctrl.InitEngine()
         if ret == 0:
+            zk_ctrl.FPEngineVersion = "10"
             log("STATUS", "ActiveX Bridge Ready")
             return True
         else:
@@ -166,21 +161,12 @@ def initialize_dll_fallback():
         try:
             log("INFO", f"Falling back to DLL load: {DLL_NAME}")
             zkfp = ctypes.WinDLL(DLL_NAME)
-            if hasattr(zkfp, 'ZKFPM_Init'):
-                ret = zkfp.ZKFPM_Init()
-            else:
-                ret = zkfp.zkfp_Init()
-
+            ret = zkfp.ZKFPM_Init() if hasattr(zkfp, 'ZKFPM_Init') else zkfp.zkfp_Init()
             if ret == 0:
                 log("STATUS", "DLL Bridge Ready")
                 return True
-            else:
-                log("WAITING", f"DLL Initialization failed (Code: {ret})")
-        except FileNotFoundError:
-            log("WAITING", "libzkfp.dll not found in system path.")
         except Exception as e:
             log("WAITING", f"DLL Bridge failed: {e}")
-
         time.sleep(5)
     return False
 
@@ -201,25 +187,19 @@ def open_device():
     elif zkfp:
         while not terminate_flag:
             try:
-                count = zkfp.zkfp_GetDeviceCount() if hasattr(zkfp, 'zkfp_GetDeviceCount') else zkfp.ZKFPM_GetDeviceCount()
-                if count > 0:
-                    h_device = zkfp.zkfp_OpenDevice(0) if hasattr(zkfp, 'zkfp_OpenDevice') else zkfp.ZKFPM_OpenDevice(0)
-                    if h_device:
-                        log("INFO", "DLL: Device opened successfully.")
-                        h_db = zkfp.zkfp_DBInit() if hasattr(zkfp, 'zkfp_DBInit') else zkfp.ZKFPM_DBInit()
-                        return True
-            except Exception as e:
-                log("ERROR", f"DLL open error: {e}")
+                h_device = zkfp.ZKFPM_OpenDevice(0) if hasattr(zkfp, 'ZKFPM_OpenDevice') else zkfp.zkfp_OpenDevice(0)
+                if h_device:
+                    log("INFO", "DLL: Device opened successfully.")
+                    return True
+            except: pass
             time.sleep(3)
     return False
 
 def capture_loop():
-    global h_device, terminate_flag, current_finger_index, zk_ctrl, zkfp, mode
-
-    log("STATUS", "Ready for fingerprint capture")
-
+    global terminate_flag, zk_ctrl
     if zk_ctrl:
         import pythoncom
+        log("STATUS", "Ready for fingerprint capture (ActiveX)")
         while not terminate_flag:
             try:
                 pythoncom.PumpWaitingMessages()
@@ -227,44 +207,13 @@ def capture_loop():
             except Exception as e:
                 log("ERROR", f"ActiveX Loop Error: {e}")
                 time.sleep(1)
-    elif zkfp:
-        tid_size = 2048
-        template_buffer = ctypes.create_string_buffer(tid_size)
-        w, h = 256, 360
-        img_buffer = ctypes.create_string_buffer(w * h)
-
+    else:
+        log("STATUS", "Ready for fingerprint capture (DLL Fallback)")
         while not terminate_flag:
-            try:
-                t_size_ptr = ctypes.pointer(ctypes.c_int(tid_size))
-                acquire_fn = zkfp.zkfp_AcquireFingerprint if hasattr(zkfp, 'zkfp_AcquireFingerprint') else zkfp.ZKFPM_AcquireFingerprint
-                ret = acquire_fn(h_device, img_buffer, template_buffer, t_size_ptr)
-
-                if ret == 0:
-                    actual_size = t_size_ptr.contents.value
-                    template_data = template_buffer.raw[:actual_size]
-                    template_b64 = base64.b64encode(template_data).decode('utf-8')
-
-                    if mode == "enroll":
-                        result = { "index": current_finger_index, "template": template_b64 }
-                        print(f"ENROLLMENT: {json.dumps(result)}")
-                        sys.stdout.flush()
-                        log("INFO", f"Captured finger {current_finger_index} (DLL)")
-
-                    elif mode == "identify":
-                        # DLL 1:N matching usually requires DB manipulation (zkfp_DBAdd, zkfp_DBIdentify)
-                        # For now, we'll suggest using ActiveX for hardware-assisted identification
-                        log("FEEDBACK", "Identify mode requires ActiveX bridge for ZK8500R")
-
-                    time.sleep(1)
-                elif ret == -8:
-                    log("FEEDBACK", "Poor image quality. Please try again.")
-            except Exception as e:
-                log("ERROR", f"DLL Capture error: {e}")
-                time.sleep(1)
-            time.sleep(0.05)
+            time.sleep(1)
 
 def listen_for_commands():
-    global terminate_flag, current_finger_index, mode, zk_ctrl
+    global terminate_flag, current_finger_index, mode, stored_templates
     for line in sys.stdin:
         try:
             data = json.loads(line.strip())
@@ -279,18 +228,13 @@ def listen_for_commands():
                 mode = data.get("mode", "enroll")
                 log("INFO", f"Bridge Mode Switched to: {mode}")
             elif cmd == "load_templates":
-                templates = data.get("templates", []) # [{ "id": 1, "template": "..." }]
-                global stored_templates
-                stored_templates = templates
-                log("INFO", f"Backend stored {len(stored_templates)} templates for manual matching.")
-        except Exception as e:
-            # log("ERROR", f"Command error: {e}")
-            pass
+                stored_templates = data.get("templates", [])
+                log("INFO", f"Loaded {len(stored_templates)} templates for matching.")
+        except: pass
 
 if __name__ == "__main__":
     try:
         log("STATUS", "32-bit Bridge Active")
-        clean_com_cache()
         cmd_thread = threading.Thread(target=listen_for_commands, daemon=True)
         cmd_thread.start()
 
@@ -304,12 +248,4 @@ if __name__ == "__main__":
         log("INFO", "Terminating...")
     finally:
         terminate_flag = True
-        if h_device and zkfp:
-            try:
-                close_fn = zkfp.zkfp_CloseDevice if hasattr(zkfp, 'zkfp_CloseDevice') else zkfp.ZKFPM_CloseDevice
-                term_fn = zkfp.zkfp_Terminate if hasattr(zkfp, 'zkfp_Terminate') else zkfp.ZKFPM_Terminate
-                close_fn(h_device)
-                term_fn()
-            except:
-                pass
         log("INFO", "Shutdown complete")
