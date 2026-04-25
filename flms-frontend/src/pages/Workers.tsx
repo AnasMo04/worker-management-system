@@ -138,13 +138,18 @@ export default function Workers() {
           title: "تم اكتشاف بطاقة",
           description: `الرقم التسلسلي: ${data.uid}`,
         });
-      } else {
-        // Global Search via NFC
+      }
+    });
+
+    socketRef.current.on('card-scanned', (data: { uid: string, name: string, id: number }) => {
+      if (!addOpen) {
         setSearchQuery(data.uid);
         toast({
-          title: "البحث عن طريق البطاقة",
-          description: `تم تلقي الرقم: ${data.uid}`,
+          title: "تم التعرف على العامل تلقائياً",
+          description: `الاسم: ${data.name} (UID: ${data.uid})`,
         });
+        setHighlightedId(data.id);
+        setTimeout(() => setHighlightedId(null), 5000);
       }
     });
 
