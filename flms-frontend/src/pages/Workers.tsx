@@ -186,6 +186,9 @@ export default function Workers() {
         Finger_Index: data.finger_index?.toString() || prev.Finger_Index
       }));
 
+      if (data.image) {
+        setBiometricImage(data.image.startsWith('data:') ? data.image : `data:image/bmp;base64,${data.image}`);
+      }
       if (data.quality !== undefined) setQualityScore(data.quality);
       if (data.is_synthetic !== undefined) setIsSynthetic(data.is_synthetic);
 
@@ -876,11 +879,12 @@ export default function Workers() {
                 </div>
 
                 <div className="flex items-center gap-4">
+                  {/* Production-ready Fingerprint Preview: 200x240 fixed container with object-fit: contain */}
                   <div className="w-[200px] h-[240px] bg-[#f0f0f0] rounded-lg border flex items-center justify-center overflow-hidden p-1">
                     {biometricImage ? (
-                      <img src={biometricImage} alt="Fingerprint Preview" className="w-[200px] h-auto object-contain" />
+                      <img src={biometricImage} alt="Fingerprint Preview" className="w-full h-full object-contain" />
                     ) : (
-                      <Fingerprint className="w-8 h-8 text-muted-foreground/30" />
+                      <Fingerprint className="w-12 h-12 text-muted-foreground/20" />
                     )}
                   </div>
                   <div className="flex-1 space-y-2">

@@ -42,7 +42,7 @@ class ZKEvents:
                 if not self.zk_ctrl:
                     return
 
-                # 1. Extract Features FIRST
+                # 1. Extract Features FIRST - Must use the Dispatch object reference
                 try:
                     self.zk_ctrl.ExtractFeatures()
                 except Exception as e:
@@ -55,8 +55,8 @@ class ZKEvents:
                 except Exception as e:
                     log("DEBUG", f"GetCapParam(101) failed: {e}")
 
-                # 3. Capture and Emit Image Preview
-                temp_file = os.path.join(os.environ.get('TEMP', '.'), "temp_preview.bmp")
+                # 3. Capture and Emit Image Preview - Full frame
+                temp_file = os.path.join(os.environ.get('TEMP', '.'), "preview.bmp")
                 self.zk_ctrl.SaveBitmap(temp_file)
                 if os.path.exists(temp_file):
                     with open(temp_file, "rb") as f:
@@ -91,7 +91,7 @@ class ZKEvents:
                         is_synthetic = True
                         q_score = 85 if t_len > 400 else 70 if t_len > 0 else 0
 
-                    # EXACT JSON STRUCTURE as requested
+                    # PRODUCTION READY JSON STRUCTURE
                     payload = {
                         "type": "ENROLLMENT",
                         "template": live_template_b64.strip(),
@@ -105,9 +105,10 @@ class ZKEvents:
                     log("INFO", f"Enrolled finger {current_finger_index}")
 
                 elif mode == "identify":
-                    # Manual 1:1 Identification Loop
+                    # Manual 1:1 Identification Loop for Angle Invariance
+                    global last_identify_time
                     now = time.time()
-                    if now - last_identify_time < 1.5:
+                    if now - last_identify_time < 2.0: # Rate limit
                         return
                     last_identify_time = now
 
@@ -122,15 +123,18 @@ class ZKEvents:
                     for item in stored_templates:
                         try:
                             reg_clean = item["template"].strip()
+                            # Use manual 1:1 matching loop as IdentificationFromStr can be flaky with rotations
                             score = self.zk_ctrl.VerFingerFromStr(reg_clean, live_clean)
+
+                            # Threshold set to 10 (forgiving) for better rotation handling
                             if score > 10:
-                                # EXACT JSON STRUCTURE for identified
                                 payload = { "type": "IDENTIFIED", "id": item["id"] }
                                 print(f"BIOMETRIC_DATA: {json.dumps(payload)}")
                                 sys.stdout.flush()
                                 match_found = True
                                 break
-                        except:
+                        except Exception as e:
+                            log("DEBUG", f"Matching error for ID {item.get('id')}: {e}")
                             continue
 
                     if not match_found:
@@ -158,13 +162,17 @@ def initialize_activex():
         import pythoncom
 
         log("INFO", "Initializing ZKFPEngXControl.ZKFPEngX...")
+        # Use Dispatch for the control
         zk_ctrl = win32com.client.Dispatch("ZKFPEngXControl.ZKFPEngX")
+        # Use WithEvents for the sink, passing the control reference
         zk_event_sink = win32com.client.WithEvents(zk_ctrl, ZKEvents)
         zk_event_sink.set_ctrl(zk_ctrl)
 
+        # Set security level / engine version to 10 for rotation support BEFORE InitEngine
+        zk_ctrl.FPEngineVersion = "10"
+
         if zk_ctrl.InitEngine() == 0:
-            zk_ctrl.FPEngineVersion = "9"
-            log("STATUS", "Biometric Bridge Ready")
+            log("STATUS", "Biometric Bridge Ready (Engine V10)")
             return True
         else:
             log("ERROR", "InitEngine failed.")
