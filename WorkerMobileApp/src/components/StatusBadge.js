@@ -1,12 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { Theme } from '../theme';
 
 const variantStyles = {
-  active: { bg: 'rgba(21, 128, 61, 0.15)', text: '#15803d', border: 'rgba(21, 128, 61, 0.2)' },
-  suspended: { bg: 'rgba(217, 119, 6, 0.15)', text: '#d97706', border: 'rgba(217, 119, 6, 0.2)' },
-  expired: { bg: 'rgba(100, 116, 139, 0.15)', text: '#64748b', border: 'rgba(100, 116, 139, 0.2)' },
-  runaway: { bg: 'rgba(220, 38, 38, 0.15)', text: '#dc2626', border: 'rgba(220, 38, 38, 0.2)' },
-  default: { bg: 'rgba(148, 163, 184, 0.15)', text: '#64748b', border: 'rgba(148, 163, 184, 0.2)' },
+  active: { bg: Theme.colors.success + '26', text: Theme.colors.success, border: Theme.colors.success + '33' },
+  suspended: { bg: Theme.colors.warning + '26', text: Theme.colors.warning, border: Theme.colors.warning + '33' },
+  expired: { bg: Theme.colors.muted, text: Theme.colors.mutedForeground, border: Theme.colors.border },
+  runaway: { bg: Theme.colors.destructive + '26', text: Theme.colors.destructive, border: Theme.colors.destructive + '33' },
+  default: { bg: Theme.colors.muted, text: Theme.colors.mutedForeground, border: Theme.colors.border },
 };
 
 const arabicLabels = {
@@ -34,14 +35,14 @@ export const StatusBadge = ({ variant, label, style }) => {
 
 const styles = StyleSheet.create({
   badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 8,
     borderWidth: 1,
     alignSelf: 'flex-start',
   },
   text: {
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
 });

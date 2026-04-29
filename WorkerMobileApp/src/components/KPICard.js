@@ -1,16 +1,16 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient'; // Needs installation if real project
+import { Theme } from '../theme';
 
 const gradients = {
-  'kpi-gradient-1': ['#1e40af', '#1e3a8a'], // blue-800 to blue-900
-  'kpi-gradient-2': ['#0d9488', '#0f766e'], // teal-600 to teal-700
-  'kpi-gradient-3': ['#d97706', '#b45309'], // amber-600 to amber-700
-  'kpi-gradient-4': ['#dc2626', '#b91c1c'], // red-600 to red-700
+  'kpi-gradient-1': Theme.gradients.kpi1,
+  'kpi-gradient-2': Theme.gradients.kpi2,
+  'kpi-gradient-3': Theme.gradients.kpi3,
+  'kpi-gradient-4': Theme.gradients.kpi4,
 };
 
 export const KPICard = ({ title, value, icon, gradient, change }) => {
-  const colors = gradients[gradient] || ['#4b5563', '#374151'];
+  const colors = gradients[gradient] || [Theme.colors.muted, Theme.colors.muted];
 
   return (
     <View style={[styles.card, { backgroundColor: colors[0] }]}>
@@ -38,6 +38,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
+    flex: 1,
+    marginHorizontal: 4,
   },
   container: {
     flexDirection: 'row-reverse',
@@ -49,18 +51,18 @@ const styles = StyleSheet.create({
   },
   title: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: 12,
     opacity: 0.85,
     marginBottom: 4,
   },
   value: {
     color: '#fff',
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
   },
   change: {
     color: '#fff',
-    fontSize: 12,
+    fontSize: 10,
     opacity: 0.75,
     marginTop: 4,
   },
