@@ -9,6 +9,7 @@ const authorize = require('../middleware/rbacMiddleware');
 router.use(authMiddleware);
 
 router.get('/', authorize('workers', 'view'), workerController.getAll);
+router.get('/nfc/:uid', authorize('workers', 'view'), workerController.getByNfcUid);
 router.get('/:id', authorize('workers', 'view'), workerController.getById);
 router.post('/', authorize('workers', 'create'), upload.fields([
   { name: 'passportPhoto', maxCount: 1 },

@@ -46,6 +46,12 @@ Endpoints for managing worker records. All routes require a valid JWT token in t
     *   `search` (string, optional) - Filters by Full_Name, Passport_Number, or NFC_UID.
 *   **Response:** `Array<WorkerObject>`
 
+### Get Worker by NFC UID
+*   **Method:** `GET`
+*   **Path:** `/api/workers/nfc/:uid`
+*   **Description:** Retrieves a worker record by their NFC UID.
+*   **Response:** `WorkerObject`
+
 ### Get Worker by ID
 *   **Method:** `GET`
 *   **Path:** `/api/workers/:id`
