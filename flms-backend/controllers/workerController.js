@@ -75,6 +75,23 @@ exports.getById = async (req, res) => {
   }
 };
 
+exports.getByNfcUid = async (req, res) => {
+  try {
+    const { uid } = req.params;
+    const worker = await Worker.findOne({
+      where: { NFC_UID: uid },
+      include: [{ model: Sponsor, attributes: ['Sponsor_Name'] }]
+    });
+    if (!worker) {
+      return res.status(404).json({ message: 'Worker not found with this NFC UID' });
+    }
+    res.json(worker);
+  } catch (error) {
+    console.error('Get Worker By NFC UID Error:', error);
+    res.status(500).json({ message: 'Error retrieving worker by NFC UID' });
+  }
+};
+
 exports.create = async (req, res) => {
   const t = await sequelize.transaction();
   try {
