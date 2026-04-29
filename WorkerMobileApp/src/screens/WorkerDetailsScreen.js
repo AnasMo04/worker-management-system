@@ -6,9 +6,11 @@ import {
   ScrollView,
   Image,
   ActivityIndicator,
+  SafeAreaView,
 } from 'react-native';
 import workerService from '../api/workerService';
 import { BASE_URL } from '../api/apiClient';
+import { StatusBadge } from '../components/StatusBadge';
 
 const WorkerDetailsScreen = ({ route }) => {
   const { workerId } = route.params;
@@ -34,7 +36,7 @@ const WorkerDetailsScreen = ({ route }) => {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color="#1e40af" />
       </View>
     );
   }
@@ -53,41 +55,45 @@ const WorkerDetailsScreen = ({ route }) => {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.photoContainer}>
-          {worker.Personal_Photo_Copy ? (
-            <Image
-              source={{ uri: getImageUrl(worker.Personal_Photo_Copy) }}
-              style={styles.personalPhoto}
-            />
-          ) : (
-            <View style={[styles.personalPhoto, styles.placeholderPhoto]}>
-              <Text>لا توجد صورة</Text>
-            </View>
-          )}
+    <SafeAreaView style={styles.container}>
+      <ScrollView>
+        <View style={styles.header}>
+          <View style={styles.photoContainer}>
+            {worker.Personal_Photo_Copy ? (
+              <Image
+                source={{ uri: getImageUrl(worker.Personal_Photo_Copy) }}
+                style={styles.personalPhoto}
+              />
+            ) : (
+              <View style={[styles.personalPhoto, styles.placeholderPhoto]}>
+                <Text style={styles.placeholderText}>لا توجد صورة</Text>
+              </View>
+            )}
+          </View>
+          <Text style={styles.fullName}>{worker.Full_Name}</Text>
+          <StatusBadge variant={worker.Current_Status} style={styles.statusBadge} />
         </View>
-        <Text style={styles.fullName}>{worker.Full_Name}</Text>
-        <View style={[styles.statusBadge, { backgroundColor: worker.Current_Status === 'Active' ? '#4CAF50' : '#F44336' }]}>
-          <Text style={styles.statusText}>{worker.Current_Status === 'Active' ? 'نشط' : 'غير نشط'}</Text>
-        </View>
-      </View>
 
-      <View style={styles.detailsContainer}>
-        <DetailItem label="رقم الجواز" value={worker.Passport_Number} />
-        <DetailItem label="الجنسية" value={worker.Nationality} />
-        <DetailItem label="تاريخ الميلاد" value={worker.Birth_Date} />
-        <DetailItem label="NFC UID" value={worker.NFC_UID || 'غير متوفر'} />
-        <DetailItem label="الفئة" value={worker.Category} />
-        <DetailItem label="جهة العمل (الكفيل)" value={worker.Sponsor?.Sponsor_Name || (worker.Freelance ? 'عمل حر' : 'غير محدد')} />
-        <DetailItem
-          label="انتهاء الشهادة الصحية"
-          value={worker.Health_Cert_Expiry}
-          isExpiry
-          expired={new Date(worker.Health_Cert_Expiry) < new Date()}
-        />
-      </View>
-    </ScrollView>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>المعلومات الشخصية</Text>
+        </View>
+
+        <View style={styles.detailsContainer}>
+          <DetailItem label="رقم الجواز" value={worker.Passport_Number} />
+          <DetailItem label="الجنسية" value={worker.Nationality} />
+          <DetailItem label="تاريخ الميلاد" value={worker.Birth_Date} />
+          <DetailItem label="NFC UID" value={worker.NFC_UID || 'غير متوفر'} />
+          <DetailItem label="الفئة" value={worker.Category} />
+          <DetailItem label="جهة العمل (الكفيل)" value={worker.Sponsor?.Sponsor_Name || (worker.Freelance ? 'عمل حر' : 'غير محدد')} />
+          <DetailItem
+            label="انتهاء الشهادة الصحية"
+            value={worker.Health_Cert_Expiry}
+            isExpiry
+            expired={new Date(worker.Health_Cert_Expiry) < new Date()}
+          />
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
@@ -96,7 +102,7 @@ const DetailItem = ({ label, value, isExpiry, expired }) => (
     <Text style={styles.detailLabel}>{label}</Text>
     <Text style={[
       styles.detailValue,
-      isExpiry && expired ? { color: '#F44336', fontWeight: 'bold' } : {}
+      isExpiry && expired ? styles.expiredValue : {}
     ]}>
       {value}
     </Text>
@@ -106,7 +112,7 @@ const DetailItem = ({ label, value, isExpiry, expired }) => (
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f8fafc',
   },
   centered: {
     flex: 1,
@@ -115,19 +121,20 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#fff',
-    padding: 20,
+    padding: 32,
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: '#e2e8f0',
   },
   photoContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
     overflow: 'hidden',
-    marginBottom: 15,
-    elevation: 3,
-    backgroundColor: '#fff',
+    marginBottom: 20,
+    borderWidth: 4,
+    borderColor: '#f1f5f9',
+    elevation: 4,
   },
   personalPhoto: {
     width: '100%',
@@ -136,42 +143,60 @@ const styles = StyleSheet.create({
   placeholderPhoto: {
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#eee',
+    backgroundColor: '#f1f5f9',
+  },
+  placeholderText: {
+    color: '#94a3b8',
+    fontSize: 12,
   },
   fullName: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 10,
+    color: '#0f172a',
+    marginBottom: 12,
     textAlign: 'center',
   },
   statusBadge: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 4,
   },
-  statusText: {
-    color: '#fff',
+  sectionHeader: {
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 8,
+    alignItems: 'flex-end',
+  },
+  sectionTitle: {
+    fontSize: 14,
     fontWeight: 'bold',
+    color: '#64748b',
+    textTransform: 'uppercase',
   },
   detailsContainer: {
-    padding: 20,
+    padding: 16,
   },
   detailItem: {
     backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 10,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 8,
     flexDirection: 'row-reverse',
     justifyContent: 'space-between',
-    elevation: 1,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
   },
   detailLabel: {
     fontSize: 14,
-    color: '#666',
+    color: '#64748b',
   },
   detailValue: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1e293b',
+  },
+  expiredValue: {
+    color: '#dc2626',
+    fontWeight: 'bold',
   },
 });
 
