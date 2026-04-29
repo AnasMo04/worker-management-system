@@ -5,18 +5,40 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInput,
-  FlatList,
   ActivityIndicator,
+  ScrollView,
+  SafeAreaView,
   Alert,
+  StatusBar,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../context/AuthContext';
 import workerService from '../api/workerService';
+import apiClient from '../api/apiClient';
+import { KPICard } from '../components/KPICard';
+import { StatusBadge } from '../components/StatusBadge';
+import { Theme } from '../theme';
 
 const DashboardScreen = ({ navigation }) => {
   const { logout, user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
+  const [dashboardData, setDashboardData] = useState(null);
   const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchDashboardData();
+    fetchWorkers();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      const response = await apiClient.get('/api/dashboard/summary');
+      setDashboardData(response.data);
+    } catch (error) {
+      console.error("Error fetching summary:", error);
+    }
+  };
 
   const fetchWorkers = async (query = '') => {
     setLoading(true);
@@ -44,16 +66,13 @@ const DashboardScreen = ({ navigation }) => {
     }
   };
 
-  useEffect(() => {
-    fetchWorkers();
-  }, []);
-
   const handleSearch = () => {
     fetchWorkers(searchQuery);
   };
 
-  const renderWorkerItem = ({ item }) => (
+  const renderWorkerItem = (item) => (
     <TouchableOpacity
+      key={item.id}
       style={styles.workerCard}
       onPress={() => navigation.navigate('WorkerDetails', { workerId: item.id })}
     >
@@ -61,167 +80,252 @@ const DashboardScreen = ({ navigation }) => {
         <Text style={styles.workerName}>{item.Full_Name}</Text>
         <Text style={styles.workerSub}>جواز: {item.Passport_Number}</Text>
         {item.Sponsor && (
-          <Text style={styles.workerSub}>الكفيل: {item.Sponsor.Sponsor_Name}</Text>
+          <Text style={styles.workerSub}>جهة العمل: {item.Sponsor.Sponsor_Name}</Text>
         )}
       </View>
-      <View style={[styles.statusBadge, { backgroundColor: item.Current_Status === 'Active' ? '#4CAF50' : '#F44336' }]}>
-        <Text style={styles.statusText}>{item.Current_Status}</Text>
-      </View>
+      <StatusBadge variant={item.Current_Status} />
     </TouchableOpacity>
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
       <View style={styles.header}>
-        <Text style={styles.welcomeText}>مرحباً، {user?.name}</Text>
-        <TouchableOpacity onPress={logout}>
-          <Text style={styles.logoutText}>خروج</Text>
+        <View style={styles.welcomeContainer}>
+          <Text style={styles.welcomeTitle}>لوحة التحكم</Text>
+          <Text style={styles.welcomeSubtitle}>نظرة عامة على النظام</Text>
+        </View>
+        <TouchableOpacity onPress={logout} style={styles.logoutButton}>
+          <Icon name="logout-variant" size={20} color={Theme.colors.destructive} />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="بحث بالاسم أو الرقم أو NFC UID..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-        <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
-          <Text style={styles.searchButtonText}>بحث</Text>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* KPI Section */}
+        <View style={styles.kpiContainer}>
+          <View style={styles.kpiRow}>
+            <KPICard
+              title="إجمالي العمال"
+              value={dashboardData?.counts?.totalWorkers || 0}
+              gradient="kpi-gradient-1"
+              iconName="account-group"
+            />
+            <KPICard
+              title="البطاقات النشطة"
+              value={dashboardData?.counts?.activeCards || 0}
+              gradient="kpi-gradient-2"
+              iconName="credit-card-chip"
+            />
+          </View>
+        </View>
+
+        {/* Action Buttons */}
+        <TouchableOpacity
+          style={styles.nfcButton}
+          onPress={() => {
+            if (searchQuery) handleNfcScan(searchQuery);
+            else Alert.alert('تنبيه', 'يرجى إدخال NFC UID في مربع البحث لمحاكاة المسح');
+          }}
+        >
+          <Icon name="nfc-variant" size={24} color="#fff" style={{ marginLeft: 12 }} />
+          <Text style={styles.nfcButtonText}>مسح بطاقة NFC ميدانياً</Text>
         </TouchableOpacity>
-      </View>
 
-      <TouchableOpacity
-        style={styles.nfcButton}
-        onPress={() => {
-          // Simulation of NFC Scan using the search query as UID
-          if (searchQuery) {
-            handleNfcScan(searchQuery);
-          } else {
-            Alert.alert('تنبيه', 'يرجى إدخال NFC UID في مربع البحث لمحاكاة المسح');
-          }
-        }}
-      >
-        <Text style={styles.nfcButtonText}>مسح بطاقة NFC</Text>
-      </TouchableOpacity>
+        {/* Search Bar */}
+        <View style={styles.searchSection}>
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="بحث بالاسم أو الرقم أو NFC UID..."
+              placeholderTextColor={Theme.colors.mutedForeground}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
+              <Icon name="magnify" size={24} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        </View>
 
-      {loading ? (
-        <ActivityIndicator size="large" color="#007AFF" style={{ marginTop: 50 }} />
-      ) : (
-        <FlatList
-          data={workers}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={renderWorkerItem}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={<Text style={styles.emptyText}>لا يوجد عمال مطابقين للبحث</Text>}
-        />
-      )}
-    </View>
+        {/* Recent Workers Section */}
+        <View style={styles.listSection}>
+          <View style={styles.listHeader}>
+            <Text style={styles.listTitle}>آخر التحديثات</Text>
+            <View style={styles.badgeLabel}>
+              <Text style={styles.badgeLabelText}>ميداني</Text>
+            </View>
+          </View>
+
+          {loading ? (
+            <ActivityIndicator size="large" color={Theme.colors.primary} style={{ marginTop: 20 }} />
+          ) : (
+            <View style={styles.listContainer}>
+              {workers.map(worker => renderWorkerItem(worker))}
+              {workers.length === 0 && (
+                <Text style={styles.emptyText}>لا توجد بيانات متاحة حالياً</Text>
+              )}
+            </View>
+          )}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: Theme.colors.background,
+  },
+  scrollContent: {
+    paddingBottom: 24,
   },
   header: {
     flexDirection: 'row-reverse',
     justifyContent: 'space-between',
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     backgroundColor: '#fff',
-    elevation: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: Theme.colors.border,
+    ...Theme.shadows.sm,
   },
-  welcomeText: {
-    fontSize: 16,
-    fontWeight: 'bold',
+  welcomeContainer: {
+    alignItems: 'flex-end',
   },
-  logoutText: {
-    color: '#F44336',
-    fontWeight: 'bold',
+  welcomeTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: Theme.colors.foreground,
   },
-  searchContainer: {
-    flexDirection: 'row-reverse',
-    padding: 15,
+  welcomeSubtitle: {
+    fontSize: 12,
+    color: Theme.colors.mutedForeground,
+  },
+  logoutButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: Theme.colors.destructive + '15',
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  searchInput: {
-    flex: 1,
-    height: 45,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    textAlign: 'right',
-    borderWidth: 1,
-    borderColor: '#ddd',
+  kpiContainer: {
+    padding: 12,
   },
-  searchButton: {
-    marginLeft: 10,
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 20,
-    height: 45,
-    borderRadius: 8,
-    justifyContent: 'center',
-  },
-  searchButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+  kpiRow: {
+    flexDirection: 'row',
   },
   nfcButton: {
-    backgroundColor: '#34C759',
-    margin: 15,
-    marginTop: 0,
-    height: 50,
-    borderRadius: 8,
+    flexDirection: 'row-reverse',
+    backgroundColor: Theme.colors.secondary,
+    marginHorizontal: 16,
+    marginBottom: 20,
+    height: 56,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 2,
+    ...Theme.shadows.md,
   },
   nfcButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '800',
   },
-  listContent: {
-    padding: 15,
+  searchSection: {
+    paddingHorizontal: 16,
+    marginBottom: 24,
+  },
+  searchContainer: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
+    overflow: 'hidden',
+    ...Theme.shadows.sm,
+  },
+  searchInput: {
+    flex: 1,
+    height: 52,
+    paddingHorizontal: 16,
+    textAlign: 'right',
+    fontSize: 14,
+    color: Theme.colors.foreground,
+  },
+  searchButton: {
+    backgroundColor: Theme.colors.primary,
+    width: 52,
+    height: 52,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  listSection: {
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
+    overflow: 'hidden',
+    paddingBottom: 8,
+    ...Theme.shadows.sm,
+  },
+  listHeader: {
+    flexDirection: 'row-reverse',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Theme.colors.border,
+    alignItems: 'center',
+  },
+  listTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: Theme.colors.foreground,
+  },
+  badgeLabel: {
+    backgroundColor: Theme.colors.primary + '15',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  badgeLabelText: {
+    fontSize: 10,
+    color: Theme.colors.primary,
+    fontWeight: '800',
+  },
+  listContainer: {
+    paddingTop: 8,
   },
   workerCard: {
     flexDirection: 'row-reverse',
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 15,
-    marginBottom: 10,
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Theme.colors.border + '50',
     alignItems: 'center',
     justifyContent: 'space-between',
-    elevation: 1,
   },
   workerInfo: {
     flex: 1,
     alignItems: 'flex-end',
   },
   workerName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 5,
+    fontSize: 15,
+    fontWeight: '700',
+    color: Theme.colors.foreground,
+    marginBottom: 4,
   },
   workerSub: {
-    fontSize: 14,
-    color: '#666',
-  },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 5,
-  },
-  statusText: {
-    color: '#fff',
     fontSize: 12,
-    fontWeight: 'bold',
+    color: Theme.colors.mutedForeground,
   },
   emptyText: {
     textAlign: 'center',
-    marginTop: 50,
-    color: '#999',
+    padding: 32,
+    color: Theme.colors.mutedForeground,
+    fontStyle: 'italic',
+    fontSize: 13,
   },
 });
 

@@ -6,9 +6,13 @@ import {
   ScrollView,
   Image,
   ActivityIndicator,
+  SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import workerService from '../api/workerService';
 import { BASE_URL } from '../api/apiClient';
+import { StatusBadge } from '../components/StatusBadge';
+import { Theme } from '../theme';
 
 const WorkerDetailsScreen = ({ route }) => {
   const { workerId } = route.params;
@@ -34,7 +38,7 @@ const WorkerDetailsScreen = ({ route }) => {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color={Theme.colors.primary} />
       </View>
     );
   }
@@ -53,50 +57,71 @@ const WorkerDetailsScreen = ({ route }) => {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.photoContainer}>
-          {worker.Personal_Photo_Copy ? (
-            <Image
-              source={{ uri: getImageUrl(worker.Personal_Photo_Copy) }}
-              style={styles.personalPhoto}
-            />
-          ) : (
-            <View style={[styles.personalPhoto, styles.placeholderPhoto]}>
-              <Text>لا توجد صورة</Text>
-            </View>
-          )}
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" />
+      <ScrollView>
+        <View style={styles.profileHeader}>
+          <View style={styles.photoContainer}>
+            {worker.Personal_Photo_Copy ? (
+              <Image
+                source={{ uri: getImageUrl(worker.Personal_Photo_Copy) }}
+                style={styles.personalPhoto}
+              />
+            ) : (
+              <View style={[styles.personalPhoto, styles.placeholderPhoto]}>
+                <Text style={styles.placeholderIcon}>👤</Text>
+              </View>
+            )}
+          </View>
+          <Text style={styles.fullName}>{worker.Full_Name}</Text>
+          <StatusBadge variant={worker.Current_Status} style={styles.headerBadge} />
         </View>
-        <Text style={styles.fullName}>{worker.Full_Name}</Text>
-        <View style={[styles.statusBadge, { backgroundColor: worker.Current_Status === 'Active' ? '#4CAF50' : '#F44336' }]}>
-          <Text style={styles.statusText}>{worker.Current_Status === 'Active' ? 'نشط' : 'غير نشط'}</Text>
-        </View>
-      </View>
 
-      <View style={styles.detailsContainer}>
-        <DetailItem label="رقم الجواز" value={worker.Passport_Number} />
-        <DetailItem label="الجنسية" value={worker.Nationality} />
-        <DetailItem label="تاريخ الميلاد" value={worker.Birth_Date} />
-        <DetailItem label="NFC UID" value={worker.NFC_UID || 'غير متوفر'} />
-        <DetailItem label="الفئة" value={worker.Category} />
-        <DetailItem label="جهة العمل (الكفيل)" value={worker.Sponsor?.Sponsor_Name || (worker.Freelance ? 'عمل حر' : 'غير محدد')} />
-        <DetailItem
-          label="انتهاء الشهادة الصحية"
-          value={worker.Health_Cert_Expiry}
-          isExpiry
-          expired={new Date(worker.Health_Cert_Expiry) < new Date()}
-        />
-      </View>
-    </ScrollView>
+        <View style={styles.infoSection}>
+          <View style={styles.sectionTitleRow}>
+            <Text style={styles.sectionTitle}>المعلومات الأساسية</Text>
+          </View>
+
+          <View style={styles.grid}>
+            <InfoItem label="رقم الجواز" value={worker.Passport_Number} />
+            <InfoItem label="الجنسية" value={worker.Nationality} />
+            <InfoItem label="تاريخ الميلاد" value={worker.Birth_Date} />
+            <InfoItem label="NFC UID" value={worker.NFC_UID || '—'} />
+          </View>
+        </View>
+
+        <View style={styles.infoSection}>
+          <View style={styles.sectionTitleRow}>
+            <Text style={styles.sectionTitle}>بيانات العمل</Text>
+          </View>
+
+          <View style={styles.grid}>
+            <InfoItem label="الفئة" value={worker.Category} />
+            <InfoItem label="جهة العمل" value={worker.Sponsor?.Sponsor_Name || (worker.Freelance ? 'عمل حر' : 'غير محدد')} />
+            <InfoItem
+              label="انتهاء الشهادة الصحية"
+              value={worker.Health_Cert_Expiry}
+              isExpiry
+              expired={new Date(worker.Health_Cert_Expiry) < new Date()}
+            />
+          </View>
+        </View>
+
+        <View style={styles.footerInfo}>
+          <Text style={styles.footerTitle}>نظام إدارة العمالة الأجانب</Text>
+          <Text style={styles.footerText}>بيانات موثقة من وزارة العمل</Text>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
-const DetailItem = ({ label, value, isExpiry, expired }) => (
-  <View style={styles.detailItem}>
-    <Text style={styles.detailLabel}>{label}</Text>
+const InfoItem = ({ label, value, isExpiry, expired }) => (
+  <View style={styles.infoItem}>
+    <Text style={styles.infoLabel}>{label}</Text>
     <Text style={[
-      styles.detailValue,
-      isExpiry && expired ? { color: '#F44336', fontWeight: 'bold' } : {}
+      styles.infoValue,
+      isExpiry && expired ? styles.expiredText : {}
     ]}>
       {value}
     </Text>
@@ -106,28 +131,34 @@ const DetailItem = ({ label, value, isExpiry, expired }) => (
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: Theme.colors.background,
   },
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: Theme.colors.background,
   },
-  header: {
+  profileHeader: {
     backgroundColor: '#fff',
-    padding: 20,
+    padding: 32,
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: Theme.colors.border,
   },
   photoContainer: {
     width: 120,
     height: 120,
     borderRadius: 60,
     overflow: 'hidden',
-    marginBottom: 15,
-    elevation: 3,
-    backgroundColor: '#fff',
+    marginBottom: 16,
+    borderWidth: 4,
+    borderColor: Theme.colors.background,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
   },
   personalPhoto: {
     width: '100%',
@@ -136,42 +167,77 @@ const styles = StyleSheet.create({
   placeholderPhoto: {
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#eee',
+    backgroundColor: Theme.colors.muted,
+  },
+  placeholderIcon: {
+    fontSize: 40,
   },
   fullName: {
     fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 10,
+    fontWeight: '800',
+    color: Theme.colors.foreground,
+    marginBottom: 8,
     textAlign: 'center',
   },
-  statusBadge: {
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 20,
+  headerBadge: {
+    paddingHorizontal: 16,
+    paddingVertical: 4,
   },
-  statusText: {
-    color: '#fff',
-    fontWeight: 'bold',
+  infoSection: {
+    marginTop: 20,
+    paddingHorizontal: 16,
   },
-  detailsContainer: {
-    padding: 20,
-  },
-  detailItem: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 8,
+  sectionTitleRow: {
     marginBottom: 10,
+    paddingHorizontal: 4,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: Theme.colors.primary,
+    textAlign: 'right',
+  },
+  grid: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Theme.colors.border,
+    overflow: 'hidden',
+  },
+  infoItem: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Theme.colors.border + '50',
     flexDirection: 'row-reverse',
     justifyContent: 'space-between',
-    elevation: 1,
   },
-  detailLabel: {
+  infoLabel: {
+    fontSize: 13,
+    color: Theme.colors.mutedForeground,
+    fontWeight: '600',
+  },
+  infoValue: {
     fontSize: 14,
-    color: '#666',
+    fontWeight: '700',
+    color: Theme.colors.foreground,
   },
-  detailValue: {
-    fontSize: 16,
-    fontWeight: '500',
+  expiredText: {
+    color: Theme.colors.destructive,
+  },
+  footerInfo: {
+    marginTop: 32,
+    marginBottom: 40,
+    alignItems: 'center',
+  },
+  footerTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#94a3b8',
+  },
+  footerText: {
+    fontSize: 10,
+    color: '#cbd5e1',
+    marginTop: 4,
   },
 });
 
