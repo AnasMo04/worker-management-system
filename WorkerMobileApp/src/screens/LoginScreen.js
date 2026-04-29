@@ -12,6 +12,8 @@ import {
   SafeAreaView,
   StatusBar,
 } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../context/AuthContext';
 import { Theme } from '../theme';
 
@@ -39,93 +41,116 @@ const LoginScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="light-content" />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.flex}
+      <LinearGradient
+        colors={Theme.gradients.login}
+        style={styles.gradient}
       >
-        <View style={styles.innerContainer}>
-          <View style={styles.branding}>
-            <View style={styles.logoSquare}>
-              <Text style={styles.logoIcon}>🛡️</Text>
-            </View>
-            <Text style={styles.title}>منظومة إدارة العمالة الوافدة</Text>
-            <Text style={styles.subtitle}>النظام الوطني الموحد لمتابعة شؤون العمالة</Text>
-          </View>
+        <SafeAreaView style={styles.flex}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.flex}
+          >
+            <View style={styles.innerContainer}>
+              <View style={styles.branding}>
+                <LinearGradient
+                  colors={['#38d4c8', '#38948a']}
+                  style={styles.logoSquare}
+                >
+                  <Icon name="shield-check" size={40} color={Theme.dark.background} />
+                </LinearGradient>
+                <Text style={styles.title}>منظومة إدارة العمالة الوافدة</Text>
+                <Text style={styles.subtitle}>النظام الوطني الموحد لمتابعة شؤون العمالة</Text>
+              </View>
 
-          <View style={styles.formCard}>
-            <View style={styles.formHeader}>
-              <Text style={styles.loginTitle}>تسجيل الدخول</Text>
-              <Text style={styles.loginSubtitle}>أدخل بيانات الاعتماد للوصول إلى المنظومة</Text>
-            </View>
+              <View style={styles.formCard}>
+                <View style={styles.formHeader}>
+                  <Text style={styles.loginTitle}>تسجيل الدخول</Text>
+                  <Text style={styles.loginSubtitle}>أدخل بيانات الاعتماد للوصول إلى المنظومة</Text>
+                </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>اسم المستخدم</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="أدخل اسم المستخدم"
-                placeholderTextColor={Theme.colors.mutedForeground}
-                value={username}
-                onChangeText={setUsername}
-                autoCapitalize="none"
-              />
-            </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>اسم المستخدم</Text>
+                  <View style={styles.inputWrapper}>
+                    <Icon name="account-outline" size={20} color={Theme.colors.mutedForeground} style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="اسم المستخدم"
+                      placeholderTextColor="#475569"
+                      value={username}
+                      onChangeText={setUsername}
+                      autoCapitalize="none"
+                    />
+                  </View>
+                </View>
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>كلمة المرور</Text>
-              <View style={styles.passwordContainer}>
-                <TextInput
-                  style={styles.passwordInput}
-                  placeholder="أدخل كلمة المرور"
-                  placeholderTextColor={Theme.colors.mutedForeground}
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPass}
-                />
-                <TouchableOpacity onPress={() => setShowPass(!showPass)} style={styles.eyeIcon}>
-                  <Text style={{fontSize: 18}}>{showPass ? '👁️' : '🕶️'}</Text>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>كلمة المرور</Text>
+                  <View style={styles.inputWrapper}>
+                    <Icon name="lock-outline" size={20} color={Theme.colors.mutedForeground} style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="كلمة المرور"
+                      placeholderTextColor="#475569"
+                      value={password}
+                      onChangeText={setPassword}
+                      secureTextEntry={!showPass}
+                    />
+                    <TouchableOpacity onPress={() => setShowPass(!showPass)} style={styles.eyeIcon}>
+                      <Icon name={showPass ? "eye-off-outline" : "eye-outline"} size={20} color={Theme.colors.mutedForeground} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={handleLogin}
+                  disabled={loading}
+                >
+                  <LinearGradient
+                    colors={['#38d4c8', '#38948a']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={styles.buttonGradient}
+                  >
+                    {loading ? (
+                      <ActivityIndicator color={Theme.dark.background} />
+                    ) : (
+                      <Text style={styles.buttonText}>تسجيل الدخول</Text>
+                    )}
+                  </LinearGradient>
+                </TouchableOpacity>
+
+                <View style={styles.divider}>
+                  <View style={styles.line} />
+                  <Text style={styles.orText}>أو</Text>
+                  <View style={styles.line} />
+                </View>
+
+                <TouchableOpacity style={styles.biometricButton}>
+                  <Icon name="fingerprint" size={24} color={Theme.colors.mutedForeground} style={{ marginLeft: 10 }} />
+                  <Text style={styles.biometricText}>الدخول بالبصمة</Text>
                 </TouchableOpacity>
               </View>
+
+              <View style={styles.footer}>
+                <Text style={styles.footerText}>© 2026 وزارة العمل والتأهيل - ليبيا</Text>
+              </View>
             </View>
-
-            <TouchableOpacity
-              style={styles.button}
-              onPress={handleLogin}
-              disabled={loading}
-            >
-              {loading ? (
-                <ActivityIndicator color={Theme.dark.card} />
-              ) : (
-                <Text style={styles.buttonText}>تسجيل الدخول</Text>
-              )}
-            </TouchableOpacity>
-
-            <View style={styles.divider}>
-              <View style={styles.line} />
-              <Text style={styles.orText}>أو</Text>
-              <View style={styles.line} />
-            </View>
-
-            <TouchableOpacity style={styles.biometricButton}>
-              <Text style={styles.biometricIcon}>☝️</Text>
-              <Text style={styles.biometricText}>الدخول بالبصمة</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>© 2026 وزارة العمل والتأهيل - ليبيا</Text>
-          </View>
-        </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
+      </LinearGradient>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Theme.dark.background,
+  },
+  gradient: {
+    flex: 1,
   },
   flex: {
     flex: 1,
@@ -140,121 +165,104 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   logoSquare: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
-    backgroundColor: Theme.dark.primary,
+    width: 72,
+    height: 72,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
-    shadowColor: Theme.dark.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  logoIcon: {
-    fontSize: 32,
+    marginBottom: 20,
+    ...Theme.shadows.lg,
   },
   title: {
-    fontSize: 22,
-    fontWeight: 'bold',
+    fontSize: 24,
+    fontWeight: '800',
     color: '#fff',
     textAlign: 'center',
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 13,
-    color: Theme.colors.mutedForeground,
+    fontSize: 14,
+    color: '#94a3b8',
     textAlign: 'center',
   },
   formCard: {
-    backgroundColor: Theme.dark.card,
+    backgroundColor: '#151a21e6', // Translucent card
     borderRadius: 24,
-    padding: 24,
+    padding: 28,
     borderWidth: 1,
     borderColor: '#1e293b',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
+    ...Theme.shadows.lg,
   },
   formHeader: {
-    marginBottom: 24,
+    marginBottom: 28,
   },
   loginTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '800',
     color: '#fff',
     textAlign: 'right',
   },
   loginSubtitle: {
-    fontSize: 12,
-    color: Theme.colors.mutedForeground,
+    fontSize: 13,
+    color: '#64748b',
     textAlign: 'right',
-    marginTop: 4,
+    marginTop: 6,
   },
   inputGroup: {
-    marginBottom: 16,
+    marginBottom: 20,
   },
   label: {
     fontSize: 12,
-    color: Theme.colors.mutedForeground,
+    color: '#94a3b8',
     marginBottom: 8,
     textAlign: 'right',
+    fontWeight: '600',
   },
-  input: {
-    height: 48,
-    backgroundColor: '#0c1117',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    color: '#fff',
-    textAlign: 'right',
-    borderWidth: 1,
-    borderColor: '#1e293b',
-  },
-  passwordContainer: {
+  inputWrapper: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
-    height: 48,
+    height: 52,
     backgroundColor: '#0c1117',
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: '#1e293b',
-  },
-  passwordInput: {
-    flex: 1,
-    height: '100%',
-    paddingHorizontal: 16,
-    color: '#fff',
-    textAlign: 'right',
-  },
-  eyeIcon: {
     paddingHorizontal: 12,
   },
+  input: {
+    flex: 1,
+    height: '100%',
+    color: '#fff',
+    textAlign: 'right',
+    fontSize: 14,
+    paddingRight: 8,
+  },
+  inputIcon: {
+    opacity: 0.5,
+  },
+  eyeIcon: {
+    paddingHorizontal: 8,
+  },
   button: {
-    height: 48,
-    backgroundColor: Theme.dark.primary,
-    borderRadius: 12,
+    height: 52,
+    borderRadius: 14,
+    marginTop: 12,
+    overflow: 'hidden',
+    ...Theme.shadows.md,
+  },
+  buttonGradient: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 8,
-    shadowColor: Theme.dark.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
   },
   buttonText: {
-    color: Theme.dark.card,
-    fontSize: 15,
-    fontWeight: 'bold',
+    color: '#0c1117',
+    fontSize: 16,
+    fontWeight: '800',
   },
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 20,
+    marginVertical: 24,
   },
   line: {
     flex: 1,
@@ -262,35 +270,32 @@ const styles = StyleSheet.create({
     backgroundColor: '#1e293b',
   },
   orText: {
-    marginHorizontal: 10,
+    marginHorizontal: 12,
     color: '#475569',
-    fontSize: 11,
+    fontSize: 12,
   },
   biometricButton: {
-    height: 48,
-    backgroundColor: '#1e293b',
-    borderRadius: 12,
+    height: 52,
+    backgroundColor: '#151a21',
+    borderRadius: 14,
     flexDirection: 'row-reverse',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#334155',
-  },
-  biometricIcon: {
-    fontSize: 18,
-    marginLeft: 8,
+    borderColor: '#1e293b',
   },
   biometricText: {
-    color: Theme.colors.mutedForeground,
+    color: '#94a3b8',
     fontSize: 14,
+    fontWeight: '600',
   },
   footer: {
-    marginTop: 32,
+    marginTop: 40,
     alignItems: 'center',
   },
   footerText: {
     fontSize: 11,
-    color: '#334155',
+    color: '#475569',
   },
 });
 

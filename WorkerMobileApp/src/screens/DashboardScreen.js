@@ -11,6 +11,7 @@ import {
   Alert,
   StatusBar,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../context/AuthContext';
 import workerService from '../api/workerService';
 import apiClient from '../api/apiClient';
@@ -95,7 +96,7 @@ const DashboardScreen = ({ navigation }) => {
           <Text style={styles.welcomeSubtitle}>نظرة عامة على النظام</Text>
         </View>
         <TouchableOpacity onPress={logout} style={styles.logoutButton}>
-          <Text style={styles.logoutText}>خروج</Text>
+          <Icon name="logout-variant" size={20} color={Theme.colors.destructive} />
         </TouchableOpacity>
       </View>
 
@@ -107,18 +108,18 @@ const DashboardScreen = ({ navigation }) => {
               title="إجمالي العمال"
               value={dashboardData?.counts?.totalWorkers || 0}
               gradient="kpi-gradient-1"
-              icon={<Text style={{fontSize: 24}}>👥</Text>}
+              iconName="account-group"
             />
             <KPICard
               title="البطاقات النشطة"
               value={dashboardData?.counts?.activeCards || 0}
               gradient="kpi-gradient-2"
-              icon={<Text style={{fontSize: 24}}>💳</Text>}
+              iconName="credit-card-chip"
             />
           </View>
         </View>
 
-        {/* NFC Scan Action */}
+        {/* Action Buttons */}
         <TouchableOpacity
           style={styles.nfcButton}
           onPress={() => {
@@ -126,7 +127,7 @@ const DashboardScreen = ({ navigation }) => {
             else Alert.alert('تنبيه', 'يرجى إدخال NFC UID في مربع البحث لمحاكاة المسح');
           }}
         >
-          <Text style={styles.nfcButtonIcon}>📡</Text>
+          <Icon name="nfc-variant" size={24} color="#fff" style={{ marginLeft: 12 }} />
           <Text style={styles.nfcButtonText}>مسح بطاقة NFC ميدانياً</Text>
         </TouchableOpacity>
 
@@ -141,7 +142,7 @@ const DashboardScreen = ({ navigation }) => {
               onChangeText={setSearchQuery}
             />
             <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
-              <Text style={styles.searchButtonText}>بحث</Text>
+              <Icon name="magnify" size={24} color="#fff" />
             </TouchableOpacity>
           </View>
         </View>
@@ -187,6 +188,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: Theme.colors.border,
+    ...Theme.shadows.sm,
   },
   welcomeContainer: {
     alignItems: 'flex-end',
@@ -201,16 +203,12 @@ const styles = StyleSheet.create({
     color: Theme.colors.mutedForeground,
   },
   logoutButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: Theme.colors.destructive + '10',
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: Theme.colors.destructive + '15',
     justifyContent: 'center',
-  },
-  logoutText: {
-    color: Theme.colors.destructive,
-    fontWeight: '700',
-    fontSize: 13,
+    alignItems: 'center',
   },
   kpiContainer: {
     padding: 12,
@@ -222,57 +220,46 @@ const styles = StyleSheet.create({
     flexDirection: 'row-reverse',
     backgroundColor: Theme.colors.secondary,
     marginHorizontal: 16,
-    marginBottom: 16,
-    height: 52,
+    marginBottom: 20,
+    height: 56,
     borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: Theme.colors.secondary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  nfcButtonIcon: {
-    fontSize: 20,
-    marginLeft: 10,
+    ...Theme.shadows.md,
   },
   nfcButtonText: {
     color: '#fff',
-    fontSize: 15,
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: '800',
   },
   searchSection: {
     paddingHorizontal: 16,
-    marginBottom: 20,
+    marginBottom: 24,
   },
   searchContainer: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
     backgroundColor: '#fff',
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: Theme.colors.border,
     overflow: 'hidden',
+    ...Theme.shadows.sm,
   },
   searchInput: {
     flex: 1,
-    height: 44,
+    height: 52,
     paddingHorizontal: 16,
     textAlign: 'right',
-    fontSize: 13,
+    fontSize: 14,
     color: Theme.colors.foreground,
   },
   searchButton: {
     backgroundColor: Theme.colors.primary,
-    paddingHorizontal: 16,
-    height: 44,
+    width: 52,
+    height: 52,
     justifyContent: 'center',
-  },
-  searchButtonText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 13,
+    alignItems: 'center',
   },
   listSection: {
     backgroundColor: '#fff',
@@ -282,6 +269,7 @@ const styles = StyleSheet.create({
     borderColor: Theme.colors.border,
     overflow: 'hidden',
     paddingBottom: 8,
+    ...Theme.shadows.sm,
   },
   listHeader: {
     flexDirection: 'row-reverse',
@@ -293,7 +281,7 @@ const styles = StyleSheet.create({
   },
   listTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
     color: Theme.colors.foreground,
   },
   badgeLabel: {
@@ -305,7 +293,7 @@ const styles = StyleSheet.create({
   badgeLabelText: {
     fontSize: 10,
     color: Theme.colors.primary,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   listContainer: {
     paddingTop: 8,
@@ -323,10 +311,10 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   workerName: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
     color: Theme.colors.foreground,
-    marginBottom: 2,
+    marginBottom: 4,
   },
   workerSub: {
     fontSize: 12,

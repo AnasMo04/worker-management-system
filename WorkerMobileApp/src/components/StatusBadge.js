@@ -3,10 +3,10 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Theme } from '../theme';
 
 const variantStyles = {
-  active: { bg: Theme.colors.success + '26', text: Theme.colors.success, border: Theme.colors.success + '33' },
-  suspended: { bg: Theme.colors.warning + '26', text: Theme.colors.warning, border: Theme.colors.warning + '33' },
+  active: { bg: Theme.colors.success + '26', text: Theme.colors.success, border: Theme.colors.success + '4D' },
+  suspended: { bg: Theme.colors.warning + '26', text: Theme.colors.warning, border: Theme.colors.warning + '4D' },
   expired: { bg: Theme.colors.muted, text: Theme.colors.mutedForeground, border: Theme.colors.border },
-  runaway: { bg: Theme.colors.destructive + '26', text: Theme.colors.destructive, border: Theme.colors.destructive + '33' },
+  runaway: { bg: Theme.colors.destructive + '26', text: Theme.colors.destructive, border: Theme.colors.destructive + '4D' },
   default: { bg: Theme.colors.muted, text: Theme.colors.mutedForeground, border: Theme.colors.border },
 };
 
@@ -18,7 +18,8 @@ const arabicLabels = {
 };
 
 export const StatusBadge = ({ variant, label, style }) => {
-  const theme = variantStyles[variant?.toLowerCase()] || variantStyles.default;
+  const v = variant?.toLowerCase();
+  const theme = variantStyles[v] || variantStyles.default;
 
   return (
     <View style={[
@@ -27,7 +28,7 @@ export const StatusBadge = ({ variant, label, style }) => {
       style
     ]}>
       <Text style={[styles.text, { color: theme.text }]}>
-        {label || arabicLabels[variant?.toLowerCase()] || variant}
+        {label || arabicLabels[v] || variant}
       </Text>
     </View>
   );
@@ -42,7 +43,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   text: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 11,
+    fontWeight: '800',
   },
 });
