@@ -23,12 +23,12 @@ const NfcScanScreen = ({ navigation }) => {
       if (worker && worker.id) {
         navigation.replace('WorkerDetails', { workerId: worker.id });
       } else {
-        Alert.alert('فشل التحقق', 'لم يتم العثور على سجل مطابق لهذه البطاقة في قاعدة البيانات المركزية');
+        Alert.alert('فشل التحقق', 'لم يتم العثور على سجل مطابق لهذه البطاقة في قاعدة البيانات');
         setScanning(false);
         setProgress(0);
       }
     } catch (error) {
-      Alert.alert('خطأ فني', 'حدث خطأ أثناء محاولة الوصول إلى سجلات النظام المشفرة');
+      Alert.alert('خطأ فني', 'حدث خطأ أثناء محاولة الوصول إلى سجلات النظام');
       setScanning(false);
       setProgress(0);
     }
@@ -65,7 +65,7 @@ const NfcScanScreen = ({ navigation }) => {
           }, 300);
           return 100;
         }
-        return p + 5;
+        return p + 4;
       });
     }, 100);
 
@@ -75,57 +75,87 @@ const NfcScanScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" />
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-           <MaterialCommunityIcons name="close" size={24} color={theme.colors.textSecondary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>التحقق الميداني (NFC)</Text>
-      </View>
-
-      <View style={styles.container}>
-        <View style={styles.scanTargetContainer}>
-          <View style={[styles.scanCircle, scanning && styles.scanCircleActive]}>
-            {scanning ? (
-              <MaterialCommunityIcons name="broadcast" size={80} color={theme.colors.primary} />
-            ) : (
-               <MaterialCommunityIcons name="nfc" size={80} color={theme.colors.textSecondary} style={{opacity: 0.3}} />
-            )}
-          </View>
-
-          {scanning && (
-             <View style={styles.progressContainer}>
-                <View style={[styles.progressBar, { width: `${progress}%` }]} />
-             </View>
-          )}
+      <View style={styles.innerContainer}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+          >
+            <MaterialCommunityIcons name="arrow-right" size={16} color="#94A3B8" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>مسح بطاقة NFC</Text>
+          <View style={{ width: 36 }} />
         </View>
 
-        <View style={styles.instructionContainer}>
+        {/* Scan Area */}
+        <View style={styles.scanArea}>
+          <View style={styles.circleContainer}>
+            {scanning && (
+              <View style={styles.pulseRingOne} />
+            )}
+            <View style={[
+              styles.mainCircle,
+              scanning ? styles.mainCircleActive : styles.mainCircleInactive
+            ]}>
+              <MaterialCommunityIcons
+                name={scanning ? "wifi" : "credit-card-outline"}
+                size={56}
+                color={scanning ? "#34D399" : "#334155"}
+              />
+            </View>
+          </View>
+
           <Text style={styles.title}>
-            {scanning ? 'جاري قراءة البيانات الرقمية...' : 'جاهز للمسح الميداني'}
+            {scanning ? "جاري القراءة..." : "ضع البطاقة على الجهاز"}
           </Text>
           <Text style={styles.subtitle}>
             {scanning
-              ? 'يرجى الحفاظ على استقرار البطاقة خلف الجهاز لإتمام عملية القراءة'
-              : 'قم بتقريب بطاقة العامل من منطقة مستشعر NFC خلف الهاتف لبدء المطابقة الرقمية'}
+              ? "يرجى عدم تحريك البطاقة حتى اكتمال القراءة"
+              : "تأكد من تفعيل NFC في إعدادات الجهاز"}
           </Text>
+
+          {scanning && (
+            <View style={styles.progressSection}>
+              <View style={styles.progressTrack}>
+                <View style={[styles.progressBar, { width: `${progress}%` }]} />
+              </View>
+              <Text style={styles.progressText}>{progress}%</Text>
+            </View>
+          )}
+
+          {/* NFC Status */}
+          <View style={styles.statusBadge}>
+            <View style={styles.statusDot} />
+            <Text style={styles.statusText}>NFC جاهز</Text>
+          </View>
+
+          {!scanning ? (
+            <TouchableOpacity
+              style={styles.startButton}
+              onPress={startScan}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.startButtonText}>بدء المسح</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => navigation.goBack()}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.cancelButtonText}>إلغاء</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
-        <View style={styles.statusIndicator}>
-           <MaterialCommunityIcons name="check-circle" size={16} color={theme.colors.success} />
-           <Text style={styles.statusText}>نظام الاستشعار نشط ومؤمن</Text>
-        </View>
-
-        {!scanning && (
-          <TouchableOpacity style={styles.startBtn} onPress={startScan} activeOpacity={0.8}>
-            <MaterialCommunityIcons name="radar" size={20} color={theme.colors.background} style={{marginLeft: 10}} />
-            <Text style={styles.startBtnText}>بدء عملية التحقق</Text>
+        {/* Flashlight toggle */}
+        <View style={styles.footer}>
+          <TouchableOpacity style={styles.flashButton}>
+            <MaterialCommunityIcons name="flashlight" size={16} color="#64748B" />
+            <Text style={styles.flashText}>الإضاءة</Text>
           </TouchableOpacity>
-        )}
-      </View>
-
-      <View style={styles.footer}>
-         <MaterialCommunityIcons name="shield-lock-outline" size={14} color={theme.colors.textSecondary} style={{opacity: 0.4, marginBottom: 4}} />
-         <Text style={styles.footerText}>نظام التفتيش الموحد - FLMS v2.0</Text>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -134,114 +164,170 @@ const NfcScanScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#0F172A',
+  },
+  innerContainer: {
+    flex: 1,
+    paddingTop: 40,
   },
   header: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    paddingVertical: 12,
+  },
+  backButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: '#1E293B',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTitle: {
-    color: theme.colors.textPrimary,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
+    color: '#F8FAFC',
   },
-  backBtn: {
-    padding: 5,
-  },
-  container: {
+  scanArea: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: 32,
   },
-  scanTargetContainer: {
-    marginBottom: 40,
-    alignItems: 'center',
-  },
-  scanCircle: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: theme.colors.surface,
-    borderWidth: 2,
-    borderColor: theme.colors.borderStrong,
+  circleContainer: {
+    position: 'relative',
+    marginBottom: 32,
+    width: 160,
+    height: 160,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  scanCircleActive: {
-    borderColor: theme.colors.primary,
-    backgroundColor: 'rgba(52, 211, 153, 0.05)',
-  },
-  progressContainer: {
+  pulseRingOne: {
+    position: 'absolute',
     width: 200,
-    height: 4,
-    backgroundColor: theme.colors.surface,
-    borderRadius: 2,
-    marginTop: 30,
+    height: 200,
+    borderRadius: 100,
+    borderWidth: 2,
+    borderColor: 'rgba(52, 211, 153, 0.2)',
+  },
+  mainCircle: {
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+  },
+  mainCircleInactive: {
+    backgroundColor: '#1E293B',
+    borderColor: '#334155',
+  },
+  mainCircleActive: {
+    backgroundColor: 'rgba(52, 211, 153, 0.15)',
+    borderColor: '#34D399',
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#F8FAFC',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 12,
+    color: '#64748B',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  progressSection: {
+    width: '100%',
+    maxWidth: 320,
+    marginBottom: 24,
+  },
+  progressTrack: {
+    height: 6,
+    backgroundColor: '#1E293B',
+    borderRadius: 99,
     overflow: 'hidden',
   },
   progressBar: {
     height: '100%',
-    backgroundColor: theme.colors.primary,
+    backgroundColor: '#34D399',
   },
-  instructionContainer: {
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  title: {
-    color: theme.colors.textPrimary,
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 12,
-  },
-  subtitle: {
-    color: theme.colors.textSecondary,
-    fontSize: 14,
+  progressText: {
+    fontSize: 10,
+    color: '#475569',
     textAlign: 'center',
-    lineHeight: 22,
+    marginTop: 8,
   },
-  statusIndicator: {
-    flexDirection: 'row-reverse',
+  statusBadge: {
+    flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.successSurface,
+    gap: 8,
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
-    gap: 8,
-    marginBottom: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.2)',
+    marginBottom: 32,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#10B981',
   },
   statusText: {
-    color: theme.colors.success,
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 10,
+    color: '#10B981',
+    fontWeight: '500',
   },
-  startBtn: {
+  startButton: {
     width: '100%',
-    height: 54,
-    backgroundColor: theme.colors.primary,
+    height: 48,
+    backgroundColor: '#34D399',
     borderRadius: 12,
-    flexDirection: 'row-reverse',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  startBtnText: {
-    color: theme.colors.background,
-    fontSize: 16,
+  startButtonText: {
+    color: '#0F172A',
+    fontSize: 14,
     fontWeight: 'bold',
+  },
+  cancelButton: {
+    width: '100%',
+    height: 48,
+    backgroundColor: '#1E293B',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#334155',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: '#EF4444',
+    fontSize: 14,
+    fontWeight: '600',
   },
   footer: {
     paddingBottom: 40,
     alignItems: 'center',
   },
-  footerText: {
-    color: theme.colors.textSecondary,
-    fontSize: 11,
-    opacity: 0.5,
+  flashButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 12,
+    backgroundColor: '#1E293B',
+  },
+  flashText: {
+    fontSize: 12,
+    color: '#64748B',
   },
 });
 
