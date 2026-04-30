@@ -12,6 +12,7 @@ import {
   StatusBar,
   SafeAreaView,
 } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../context/AuthContext';
 import theme from '../theme';
 
@@ -23,16 +24,19 @@ const LoginScreen = () => {
   const { login } = useAuth();
 
   const handleLogin = async () => {
-    if (!username || !password) {
-      Alert.alert('خطأ', 'يرجى إدخال اسم المستخدم وكلمة المرور');
+    const trimmedUsername = username.trim();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedUsername || !trimmedPassword) {
+      Alert.alert('خطأ في التحقق', 'يرجى إدخال اسم المستخدم وكلمة المرور للمتابعة');
       return;
     }
 
     setLoading(true);
     try {
-      await login(username, password);
+      await login(trimmedUsername, trimmedPassword);
     } catch (error) {
-      Alert.alert('فشل تسجيل الدخول', error.message || 'حدث خطأ ما');
+      Alert.alert('فشل تسجيل الدخول', error.message || 'حدث خطأ أثناء محاولة الاتصال بالنظام');
     } finally {
       setLoading(false);
     }
@@ -49,71 +53,92 @@ const LoginScreen = () => {
           {/* Logo Section */}
           <View style={styles.logoContainer}>
             <View style={styles.logoBox}>
-              <Text style={styles.logoIcon}>🛡️</Text>
+              <MaterialCommunityIcons name="shield-check" size={54} color={theme.colors.background} />
             </View>
             <Text style={styles.logoTitle}>FLMS</Text>
-            <Text style={styles.logoSubtitle}>تطبيق التفتيش الميداني</Text>
+            <Text style={styles.logoSubtitle}>نظام إدارة ومتابعة العمالة الوافدة</Text>
+            <Text style={styles.departmentName}>تطبيق التفتيش الميداني والأمن</Text>
           </View>
 
           {/* Form Section */}
           <View style={styles.formContainer}>
-            <View style={styles.inputWrapper}>
-              <TextInput
-                style={styles.input}
-                placeholder="اسم المستخدم"
-                placeholderTextColor={theme.colors.textSecondary}
-                value={username}
-                onChangeText={setUsername}
-                autoCapitalize="none"
-              />
-              <Text style={styles.inputIcon}>👤</Text>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>اسم المستخدم</Text>
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="أدخل اسم المستخدم"
+                  placeholderTextColor={theme.colors.textSecondary}
+                  value={username}
+                  onChangeText={setUsername}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <View style={styles.inputIcon}>
+                  <MaterialCommunityIcons name="account" size={20} color={theme.colors.textSecondary} />
+                </View>
+              </View>
             </View>
 
-            <View style={styles.inputWrapper}>
-              <TextInput
-                style={[styles.input, { paddingLeft: 45 }]}
-                placeholder="كلمة المرور"
-                placeholderTextColor={theme.colors.textSecondary}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-              />
-              <Text style={styles.inputIcon}>🔒</Text>
-              <TouchableOpacity
-                style={styles.eyeIcon}
-                onPress={() => setShowPassword(!showPassword)}
-              >
-                <Text style={{ fontSize: 16 }}>{showPassword ? '👁️' : '🕶️'}</Text>
-              </TouchableOpacity>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>كلمة المرور</Text>
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="أدخل كلمة المرور"
+                  placeholderTextColor={theme.colors.textSecondary}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+                <TouchableOpacity
+                  style={styles.eyeIcon}
+                  onPress={() => setShowPassword(!showPassword)}
+                >
+                   <MaterialCommunityIcons
+                    name={showPassword ? "eye-off" : "eye"}
+                    size={20}
+                    color={theme.colors.primary}
+                  />
+                </TouchableOpacity>
+                <View style={styles.inputIcon}>
+                  <MaterialCommunityIcons name="lock" size={20} color={theme.colors.textSecondary} />
+                </View>
+              </View>
             </View>
 
             <TouchableOpacity
               style={styles.loginButton}
               onPress={handleLogin}
               disabled={loading}
+              activeOpacity={0.8}
             >
               {loading ? (
                 <ActivityIndicator color={theme.colors.background} />
               ) : (
-                <Text style={styles.loginButtonText}>تسجيل الدخول</Text>
+                <Text style={styles.loginButtonText}>دخول النظام</Text>
               )}
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.fingerprintButton}
-              onPress={() => Alert.alert('معلومات', 'خاصية البصمة ستكون متاحة قريباً')}
+              onPress={() => Alert.alert('إشعار النظام', 'خاصية المصادقة الحيوية ستكون متاحة في التحديث القادم')}
+              activeOpacity={0.7}
             >
-              <Text style={styles.fingerprintIcon}>🖐️</Text>
-              <Text style={styles.fingerprintButtonText}>الدخول بالبصمة</Text>
+              <MaterialCommunityIcons name="fingerprint" size={24} color={theme.colors.textSecondary} style={{marginLeft: 8}} />
+              <Text style={styles.fingerprintButtonText}>المصادقة بالبصمة</Text>
             </TouchableOpacity>
           </View>
 
           {/* Footer Section */}
           <View style={styles.footer}>
-            <View style={styles.footerRow}>
-              <Text style={styles.footerLockIcon}>🔒</Text>
-              <Text style={styles.footerText}>وصول آمن – للمستخدمين المصرح لهم فقط</Text>
+            <View style={styles.securityRow}>
+               <MaterialCommunityIcons name="lock-check" size={14} color={theme.colors.textSecondary} style={{opacity: 0.6}} />
+               <Text style={styles.footerText}>نظام مشفر ومؤمن بالكامل</Text>
             </View>
+            <Text style={styles.footerSubText}>وزارة العمل والتأهيل - قسم التفتيش</Text>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -131,7 +156,7 @@ const styles = StyleSheet.create({
   },
   innerContainer: {
     flex: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: 32,
     justifyContent: 'space-between',
     paddingTop: 60,
     paddingBottom: 40,
@@ -141,79 +166,89 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   logoBox: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
+    width: 90,
+    height: 90,
+    borderRadius: 16,
     backgroundColor: theme.colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
     shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowRadius: 10,
     elevation: 8,
   },
-  logoIcon: {
-    fontSize: 40,
-  },
   logoTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 28,
+    fontWeight: '800',
     color: theme.colors.textPrimary,
-    letterSpacing: 1,
+    letterSpacing: 2,
   },
   logoSubtitle: {
     fontSize: 14,
+    color: theme.colors.textPrimary,
+    marginTop: 12,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  departmentName: {
+    fontSize: 12,
     color: theme.colors.textSecondary,
     marginTop: 4,
+    fontWeight: '400',
   },
   formContainer: {
     width: '100%',
-    gap: 16,
+    marginTop: 20,
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  label: {
+    color: theme.colors.textSecondary,
+    fontSize: 12,
+    marginBottom: 8,
+    fontWeight: '600',
+    textAlign: 'right',
+    paddingRight: 4,
   },
   inputWrapper: {
-    position: 'relative',
-    width: '100%',
-    marginBottom: 16,
-  },
-  input: {
-    width: '100%',
-    height: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: theme.colors.surface,
     borderRadius: 12,
-    paddingRight: 45,
-    paddingLeft: 16,
-    color: theme.colors.textPrimary,
-    fontSize: 14,
     borderWidth: 1,
     borderColor: theme.colors.border,
+  },
+  input: {
+    flex: 1,
+    height: 54,
+    paddingHorizontal: 16,
+    color: theme.colors.textPrimary,
+    fontSize: 15,
     textAlign: 'right',
   },
   inputIcon: {
-    position: 'absolute',
-    right: 14,
-    top: 15,
-    fontSize: 16,
-    color: theme.colors.textSecondary,
+    paddingHorizontal: 12,
+    borderLeftWidth: 1,
+    borderLeftColor: theme.colors.border,
   },
   eyeIcon: {
-    position: 'absolute',
-    left: 14,
-    top: 15,
+    paddingHorizontal: 12,
   },
   loginButton: {
     width: '100%',
-    height: 52,
+    height: 54,
     backgroundColor: theme.colors.primary,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 10,
     shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
-    shadowRadius: 4,
+    shadowRadius: 5,
     elevation: 4,
   },
   loginButtonText: {
@@ -223,19 +258,15 @@ const styles = StyleSheet.create({
   },
   fingerprintButton: {
     width: '100%',
-    height: 52,
-    backgroundColor: 'rgba(30, 41, 59, 0.5)',
+    height: 54,
+    backgroundColor: 'transparent',
     borderRadius: 12,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: theme.colors.borderStrong,
-    marginTop: 4,
-    gap: 8,
-  },
-  fingerprintIcon: {
-    fontSize: 20,
+    marginTop: 16,
   },
   fingerprintButtonText: {
     color: theme.colors.textSecondary,
@@ -244,22 +275,24 @@ const styles = StyleSheet.create({
   },
   footer: {
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 30,
   },
-  footerRow: {
-    flexDirection: 'row',
+  securityRow: {
+    flexDirection: 'row-reverse',
     alignItems: 'center',
     gap: 6,
-  },
-  footerLockIcon: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-    opacity: 0.5,
+    marginBottom: 4,
   },
   footerText: {
-    fontSize: 11,
+    fontSize: 12,
     color: theme.colors.textSecondary,
-    opacity: 0.5,
+    fontWeight: '600',
+  },
+  footerSubText: {
+    fontSize: 10,
+    color: theme.colors.textSecondary,
+    opacity: 0.6,
+    marginTop: 4,
   },
 });
 
