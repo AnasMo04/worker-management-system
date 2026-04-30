@@ -3,9 +3,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Replace with your machine's local IP address for real device testing
 // 'http://10.0.2.2:3000' is the default for Android Emulator to host machine
-
-//const BASE_URL = 'http://10.0.2.2:3000';
-
 const BASE_URL = 'http://192.168.11.230:5000';
 
 const apiClient = axios.create({
