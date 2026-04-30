@@ -4,12 +4,10 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  TextInput,
-  FlatList,
+  ScrollView,
   ActivityIndicator,
-  Alert,
-  StatusBar,
   SafeAreaView,
+  StatusBar,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../context/AuthContext';
@@ -18,145 +16,154 @@ import theme from '../theme';
 
 const DashboardScreen = ({ navigation }) => {
   const { logout, user } = useAuth();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const stats = [
-    { label: "تفتيش اليوم", value: "12", color: theme.colors.primary, icon: "clipboard-list-outline" },
-    { label: "مخالفات", value: "3", color: theme.colors.danger, icon: "alert-octagon-outline" },
-    { label: "تنبيهات", value: "5", color: theme.colors.warning, icon: "bell-outline" },
+    { label: "تفتيش اليوم", value: "12", icon: "clipboard-text-outline", color: "#34D399" },
+    { label: "مخالفات", value: "3", icon: "alert-triangle-outline", color: "#EF4444" },
+    { label: "تنبيهات نشطة", value: "5", icon: "bell-outline", color: "#FBBF24" },
   ];
 
-  const fetchWorkers = async (query = '') => {
-    const sanitizedQuery = query.trim();
-    setLoading(true);
-    try {
-      const data = await workerService.getAllWorkers({ search: sanitizedQuery });
-      setWorkers(data);
-    } catch (error) {
-      console.error(error);
-      Alert.alert('خطأ في النظام', 'فشل في استرجاع قائمة العمال');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const actions = [
+    { label: "مسح بطاقة NFC", icon: "credit-card-outline", screen: "NfcScan", primary: true },
+    { label: "بحث يدوي", icon: "magnify", screen: "NfcScan", primary: false },
+    { label: "سجلات التفتيش", icon: "clipboard-list-outline", screen: "Dashboard", primary: false },
+    { label: "القضايا المفتوحة", icon: "scale-balance", screen: "Dashboard", primary: false },
+  ];
 
-  useEffect(() => {
-    fetchWorkers();
-  }, []);
-
-  const handleSearch = () => {
-    fetchWorkers(searchQuery);
-  };
-
-  const renderWorkerItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.workerCard}
-      onPress={() => navigation.navigate('WorkerDetails', { workerId: item.id })}
-      activeOpacity={0.7}
-    >
-      <View style={styles.workerMainInfo}>
-        <Text style={styles.workerName}>{item.Full_Name}</Text>
-        <Text style={styles.workerSub}>رقم الجواز: {item.Passport_Number}</Text>
-      </View>
-      <View style={styles.workerStatusContainer}>
-         <View style={[styles.statusBadge, {
-           backgroundColor: item.Current_Status === 'Active' ? theme.colors.successSurface : theme.colors.dangerSurface,
-           borderColor: item.Current_Status === 'Active' ? theme.colors.success : theme.colors.danger
-         }]}>
-          <Text style={[styles.statusText, {
-            color: item.Current_Status === 'Active' ? theme.colors.success : theme.colors.danger
-          }]}>
-            {item.Current_Status === 'Active' ? 'نشط' : 'متوقف'}
-          </Text>
-        </View>
-      </View>
-      <View style={styles.workerIconContainer}>
-        <MaterialCommunityIcons name="account-circle-outline" size={32} color={theme.colors.textSecondary} style={{opacity: 0.5}} />
-      </View>
-    </TouchableOpacity>
-  );
+  const recentScans = [
+    { name: "محمد أحمد", time: "10:30 ص", status: "valid" },
+    { name: "عبدالله سالم", time: "09:45 ص", status: "violation" },
+    { name: "رحمن كريم", time: "09:15 ص", status: "valid" },
+  ];
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" />
-      <View style={styles.container}>
+      <ScrollView style={styles.container} bounces={false}>
         {/* Header */}
         <View style={styles.header}>
-          <View style={styles.userInfo}>
-            <View style={styles.avatar}>
-               <MaterialCommunityIcons name="account-tie" size={24} color={theme.colors.background} />
+          <View style={styles.headerLeft}>
+            <View style={styles.connectionBadge}>
+              <MaterialCommunityIcons name="wifi" size={12} color={theme.colors.success} />
+              <Text style={styles.connectionText}>متصل</Text>
             </View>
-            <View>
-              <Text style={styles.userName}>{user?.name || 'مسؤول التفتيش'}</Text>
-              <Text style={styles.userRole}>رقم الشارة: OFF-{user?.id || '2241'}</Text>
-            </View>
+            <TouchableOpacity style={styles.deviceButton}>
+              <MaterialCommunityIcons name="cellphone" size={16} color="#64748B" />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity onPress={logout} style={styles.logoutBtn}>
-             <MaterialCommunityIcons name="logout" size={20} color={theme.colors.danger} />
-          </TouchableOpacity>
+
+          <View style={styles.headerRight}>
+            <View style={styles.headerUserInfo}>
+              <Text style={styles.userName}>{user?.name || 'خالد الأحمدي'}</Text>
+              <Text style={styles.badgeNumber}>رقم الشارة: OFF-2241</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.profileAvatar}
+              onPress={() => navigation.navigate('Dashboard')}
+            >
+              <Text style={styles.avatarText}>خ.أ</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* Stats Grid */}
-        <View style={styles.statsGrid}>
-          {stats.map((s, index) => (
-            <View key={index} style={styles.statCard}>
-              <MaterialCommunityIcons name={s.icon} size={20} color={s.color} style={{marginBottom: 4}} />
-              <Text style={[styles.statValue, { color: s.color }]}>{s.value}</Text>
+        {/* Stats Section */}
+        <View style={styles.statsContainer}>
+          {stats.map((s, i) => (
+            <View key={i} style={styles.statCard}>
+              <MaterialCommunityIcons name={s.icon} size={20} color={s.color} style={styles.statIcon} />
+              <Text style={styles.statValue}>{s.value}</Text>
               <Text style={styles.statLabel}>{s.label}</Text>
             </View>
           ))}
         </View>
 
-        {/* Main Actions */}
-        <View style={styles.actionContainer}>
-           <TouchableOpacity
-            style={[styles.actionBtn, styles.primaryAction]}
-            onPress={() => navigation.navigate('NfcScan')}
-          >
-            <MaterialCommunityIcons name="nfc" size={24} color={theme.colors.background} style={{marginLeft: 10}} />
-            <Text style={styles.primaryActionText}>مسح بطاقة NFC</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <View style={styles.searchWrapper}>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="بحث يدوي (الاسم، الجواز، NFC)..."
-              placeholderTextColor={theme.colors.textSecondary}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              onSubmitEditing={handleSearch}
-            />
-            <MaterialCommunityIcons name="magnify" size={20} color={theme.colors.textSecondary} style={{marginLeft: 10}} />
+        {/* Quick Actions */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>إجراءات سريعة</Text>
+          <View style={styles.actionsGrid}>
+            {actions.map((a, i) => (
+              <TouchableOpacity
+                key={i}
+                style={[
+                  styles.actionButton,
+                  a.primary ? styles.primaryAction : styles.secondaryAction
+                ]}
+                onPress={() => navigation.navigate(a.screen)}
+                activeOpacity={0.7}
+              >
+                <MaterialCommunityIcons
+                  name={a.icon}
+                  size={24}
+                  color={a.primary ? '#0F172A' : '#CBD5E1'}
+                />
+                <Text style={[
+                  styles.actionLabel,
+                  { color: a.primary ? '#0F172A' : '#CBD5E1' }
+                ]}>
+                  {a.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
-          <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
-            <Text style={styles.searchButtonText}>بحث</Text>
-          </TouchableOpacity>
         </View>
 
-        {/* Workers List Header */}
-        <View style={styles.listHeader}>
-          <Text style={styles.listTitle}>سجل العمليات الأخير</Text>
-          <MaterialCommunityIcons name="history" size={16} color={theme.colors.textSecondary} style={{marginRight: 6}} />
+        {/* Recent Scans */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>آخر عمليات المسح</Text>
+          <View style={styles.scansList}>
+            {recentScans.map((scan, i) => (
+              <View key={i} style={styles.scanItem}>
+                <View style={styles.scanLeft}>
+                  <MaterialCommunityIcons
+                    name={scan.status === 'valid' ? 'check-circle' : 'alert-circle'}
+                    size={20}
+                    color={scan.status === 'valid' ? '#10B981' : '#EF4444'}
+                  />
+                </View>
+                <View style={styles.scanRight}>
+                  <View style={styles.scanInfo}>
+                    <Text style={styles.scanName}>{scan.name}</Text>
+                    <Text style={styles.scanTime}>{scan.time}</Text>
+                  </View>
+                  <View style={styles.scanAvatar}>
+                    <MaterialCommunityIcons name="account" size={16} color="#64748B" />
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
         </View>
 
-        {loading ? (
-          <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginTop: 50 }} />
-        ) : (
-          <FlatList
-            data={workers}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={renderWorkerItem}
-            contentContainerStyle={styles.listContent}
-            ListEmptyComponent={<Text style={styles.emptyText}>لا توجد سجلات مطابقة للمعايير</Text>}
-            showsVerticalScrollIndicator={false}
-          />
-        )}
-      </View>
+        {/* Bottom Navigation Placeholder */}
+        <View style={styles.bottomNavContainer}>
+          <View style={styles.bottomNav}>
+            <TouchableOpacity style={styles.navItem}>
+              <MaterialCommunityIcons name="shield" size={20} color="#34D399" />
+              <Text style={[styles.navText, { color: '#34D399' }]}>الرئيسية</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.navItem}>
+              <MaterialCommunityIcons name="clipboard-list" size={20} color="#475569" />
+              <Text style={styles.navText}>السجلات</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.navItem}
+              onPress={() => navigation.navigate('NfcScan')}
+            >
+              <MaterialCommunityIcons name="credit-card" size={20} color="#475569" />
+              <Text style={styles.navText}>مسح</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.navItem}>
+              <MaterialCommunityIcons name="scale-balance" size={20} color="#475569" />
+              <Text style={styles.navText}>القضايا</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.navItem}>
+              <MaterialCommunityIcons name="account" size={20} color="#475569" />
+              <Text style={styles.navText}>حسابي</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -164,194 +171,207 @@ const DashboardScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: '#0F172A',
   },
   container: {
     flex: 1,
+    paddingTop: 40,
   },
   header: {
-    flexDirection: 'row-reverse',
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: theme.colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    paddingTop: 16,
+    paddingBottom: 12,
   },
-  userInfo: {
-    flexDirection: 'row-reverse',
+  headerLeft: {
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
   },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: theme.colors.primary,
+  connectionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.2)',
+  },
+  connectionText: {
+    fontSize: 9,
+    color: '#10B981',
+    fontWeight: '500',
+  },
+  deviceButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: '#1E293B',
     justifyContent: 'center',
     alignItems: 'center',
   },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  headerUserInfo: {
+    alignItems: 'flex-end',
+  },
   userName: {
-    color: theme.colors.textPrimary,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: 'bold',
-    textAlign: 'right',
+    color: '#F8FAFC',
   },
-  userRole: {
-    color: theme.colors.textSecondary,
-    fontSize: 11,
-    textAlign: 'right',
+  badgeNumber: {
+    fontSize: 10,
+    color: '#64748B',
   },
-  logoutBtn: {
-    padding: 8,
-    backgroundColor: theme.colors.dangerSurface,
-    borderRadius: 10,
+  profileAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#34D399',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  statsGrid: {
-    flexDirection: 'row-reverse',
-    padding: 20,
+  avatarText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#0F172A',
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
     gap: 12,
   },
   statCard: {
     flex: 1,
-    backgroundColor: theme.colors.surface,
+    backgroundColor: '#1E293B',
+    borderWidth: 1,
+    borderColor: '#334155',
     borderRadius: 12,
     padding: 12,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+  },
+  statIcon: {
+    marginBottom: 6,
   },
   statValue: {
-    fontSize: 20,
-    fontWeight: '800',
-    marginBottom: 2,
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#F8FAFC',
   },
   statLabel: {
-    fontSize: 10,
-    color: theme.colors.textSecondary,
-    fontWeight: '600',
+    fontSize: 9,
+    color: '#64748B',
+    marginTop: 2,
   },
-  actionContainer: {
+  section: {
     paddingHorizontal: 20,
-    marginBottom: 20,
+    paddingVertical: 12,
   },
-  actionBtn: {
-    height: 54,
+  sectionTitle: {
+    fontSize: 12,
+    color: '#64748B',
+    fontWeight: '600',
+    marginBottom: 12,
+    textAlign: 'right',
+  },
+  actionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  actionButton: {
+    width: '48%',
+    height: 96,
     borderRadius: 12,
-    flexDirection: 'row-reverse',
     justifyContent: 'center',
     alignItems: 'center',
+    gap: 8,
   },
   primaryAction: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: '#34D399',
   },
-  primaryActionText: {
-    color: theme.colors.background,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  searchContainer: {
-    flexDirection: 'row-reverse',
-    paddingHorizontal: 20,
-    gap: 10,
-    marginBottom: 20,
-  },
-  searchWrapper: {
-    flex: 1,
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    backgroundColor: theme.colors.surface,
-    borderRadius: 10,
-    paddingHorizontal: 12,
+  secondaryAction: {
+    backgroundColor: '#1E293B',
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: '#334155',
   },
-  searchInput: {
-    flex: 1,
-    height: 48,
-    color: theme.colors.textPrimary,
-    textAlign: 'right',
-    fontSize: 14,
-  },
-  searchButton: {
-    backgroundColor: theme.colors.surface,
-    paddingHorizontal: 18,
-    borderRadius: 10,
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: theme.colors.borderStrong,
-  },
-  searchButtonText: {
-    color: theme.colors.textPrimary,
-    fontSize: 13,
+  actionLabel: {
+    fontSize: 12,
     fontWeight: '600',
   },
-  listHeader: {
-    paddingHorizontal: 20,
-    marginBottom: 10,
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
+  scansList: {
+    gap: 8,
   },
-  listTitle: {
-    color: theme.colors.textSecondary,
-    fontSize: 12,
-    fontWeight: '700',
-    textAlign: 'right',
-  },
-  listContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 30,
-  },
-  workerCard: {
-    flexDirection: 'row-reverse',
-    backgroundColor: theme.colors.surface,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    alignItems: 'center',
+  scanItem: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#1E293B',
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: '#334155',
+    borderRadius: 12,
+    padding: 12,
   },
-  workerIconContainer: {
-    marginRight: 0,
-    marginLeft: 12,
+  scanLeft: {
+    justifyContent: 'center',
   },
-  workerMainInfo: {
-    flex: 1,
+  scanRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  scanInfo: {
     alignItems: 'flex-end',
   },
-  workerName: {
-    color: theme.colors.textPrimary,
-    fontSize: 15,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  workerSub: {
-    color: theme.colors.textSecondary,
-    fontSize: 12,
-  },
-  workerStatusContainer: {
-    width: 80,
-    alignItems: 'center',
-    marginLeft: 10,
-  },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-    borderWidth: 1,
-  },
-  statusText: {
-    fontSize: 11,
-    fontWeight: 'bold',
-  },
-  emptyText: {
-    textAlign: 'center',
-    marginTop: 40,
-    color: theme.colors.textSecondary,
+  scanName: {
     fontSize: 14,
+    color: '#F1F5F9',
+    fontWeight: '500',
+  },
+  scanTime: {
+    fontSize: 10,
+    color: '#475569',
+  },
+  scanAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#2D3748',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bottomNavContainer: {
+    paddingHorizontal: 12,
+    paddingBottom: 32,
+    paddingTop: 8,
+  },
+  bottomNav: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    backgroundColor: '#1E293B',
+    borderWidth: 1,
+    borderColor: '#334155',
+    borderRadius: 16,
+    paddingVertical: 8,
+  },
+  navItem: {
+    alignItems: 'center',
+    gap: 2,
+    paddingHorizontal: 12,
+  },
+  navText: {
+    fontSize: 9,
+    fontWeight: '500',
+    color: '#475569',
   },
 });
 
