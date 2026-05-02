@@ -39,10 +39,17 @@ const startZKProcess = () => {
             }
 
             // Handle Enrollment Data
-            // Format expected: ENROLLMENT: {"index": 0, "template": "..."}
-            if (trimmedLine.startsWith('ENROLLMENT:')) {
+            if (trimmedLine.startsWith('ENROLLMENT:') || trimmedLine.startsWith('ENROLLMENT_COMPLETE:')) {
                 try {
-                    const jsonData = JSON.parse(trimmedLine.replace('ENROLLMENT:', '').trim());
+                    const isComplete = trimmedLine.startsWith('ENROLLMENT_COMPLETE:');
+                    const prefix = isComplete ? 'ENROLLMENT_COMPLETE:' : 'ENROLLMENT:';
+                    const jsonData = JSON.parse(trimmedLine.replace(prefix, '').trim());
+
+                    // Normalize fields (ActiveX uses finger_index, DLL uses index)
+                    if (jsonData.finger_index !== undefined && jsonData.index === undefined) {
+                        jsonData.index = jsonData.finger_index;
+                    }
+
                     if (io) io.emit('zk:enrollment-data', jsonData);
                     console.log(`[ZK Service] Emitted Enrollment Data for index ${jsonData.index}`);
                 } catch (e) {
