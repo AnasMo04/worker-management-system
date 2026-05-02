@@ -27,7 +27,7 @@ const NfcScanScreen = ({ navigation }) => {
         resetScan();
       }
     } catch (error) {
-      Alert.alert('خطأ فني', error.message || 'حدث خطأ أثناء محاولة الوصول إلى سجلات النظام');
+      Alert.alert('خطأ فني', 'حدث خطأ أثناء محاولة الوصول إلى سجلات النظام');
       resetScan();
     }
   };
@@ -52,15 +52,15 @@ const NfcScanScreen = ({ navigation }) => {
           setTimeout(() => {
             Alert.alert(
               'نظام التحقق الميداني',
-              'يرجى إدخال المعرف يدوياً أو اختيار هوية محاكاة للمتابعة',
+              'يرجى تقريب البطاقة من الجهاز أو اختيار محاكاة للمتابعة',
               [
                 {
-                  text: 'إلغاء العملية',
+                  text: 'إلغاء',
                   onPress: () => resetScan(),
                   style: 'cancel'
                 },
                 {
-                  text: 'تأكيد الهوية (محاكاة)',
+                  text: 'تأكيد (محاكاة)',
                   onPress: () => handleScanComplete('123456789')
                 }
               ]
@@ -77,21 +77,19 @@ const NfcScanScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" />
-      <View style={styles.innerContainer}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
-            <MaterialCommunityIcons name="arrow-right" size={16} color={theme.colors.textSecondary} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>مسح بطاقة NFC</Text>
-          <View style={{ width: 36 }} />
-        </View>
+      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.surface} />
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+        >
+          <MaterialCommunityIcons name="arrow-right" size={24} color={theme.colors.textPrimary} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>مسح بطاقة NFC</Text>
+        <View style={{ width: 40 }} />
+      </View>
 
-        {/* Scan Area */}
+      <View style={styles.content}>
         <View style={styles.scanArea}>
           <View style={styles.circleContainer}>
             {scanning && (
@@ -105,21 +103,21 @@ const NfcScanScreen = ({ navigation }) => {
                 <ActivityIndicator size="large" color={theme.colors.primary} />
               ) : (
                 <MaterialCommunityIcons
-                  name="credit-card-outline"
-                  size={56}
-                  color={theme.colors.border}
+                  name="nfc"
+                  size={70}
+                  color={theme.colors.primary}
                 />
               )}
             </View>
           </View>
 
           <Text style={styles.title}>
-            {scanning ? "جاري القراءة..." : "ضع البطاقة على الجهاز"}
+            {scanning ? "جاري قراءة البيانات..." : "ضع البطاقة على الجهاز"}
           </Text>
           <Text style={styles.subtitle}>
             {scanning
-              ? "يرجى عدم تحريك البطاقة حتى اكتمال القراءة"
-              : "تأكد من تفعيل NFC في إعدادات الجهاز"}
+              ? "يرجى الحفاظ على ثبات البطاقة حتى اكتمال القراءة"
+              : "تأكد من تفعيل NFC في إعدادات الجهاز ثم قرب البطاقة من خلف الهاتف"}
           </Text>
 
           {scanning && (
@@ -134,7 +132,7 @@ const NfcScanScreen = ({ navigation }) => {
           {/* NFC Status */}
           <View style={styles.statusBadge}>
             <View style={styles.statusDot} />
-            <Text style={styles.statusText}>NFC جاهز</Text>
+            <Text style={styles.statusText}>المستشعر جاهز</Text>
           </View>
 
           {!scanning ? (
@@ -143,7 +141,8 @@ const NfcScanScreen = ({ navigation }) => {
               onPress={startScan}
               activeOpacity={0.8}
             >
-              <Text style={styles.startButtonText}>بدء المسح</Text>
+              <MaterialCommunityIcons name="broadcast" size={24} color={theme.colors.textContrast} style={{marginLeft: 12}} />
+              <Text style={styles.startButtonText}>بدء عملية المسح</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
@@ -151,17 +150,17 @@ const NfcScanScreen = ({ navigation }) => {
               onPress={resetScan}
               activeOpacity={0.8}
             >
-              <Text style={styles.cancelButtonText}>إلغاء</Text>
+              <Text style={styles.cancelButtonText}>إلغاء العملية</Text>
             </TouchableOpacity>
           )}
         </View>
 
-        {/* Flashlight toggle */}
+        {/* Help section */}
         <View style={styles.footer}>
-          <TouchableOpacity style={styles.flashButton}>
-            <MaterialCommunityIcons name="flashlight" size={16} color={theme.colors.textMuted} />
-            <Text style={styles.flashText}>الإضاءة</Text>
-          </TouchableOpacity>
+           <TouchableOpacity style={styles.helpButton}>
+              <MaterialCommunityIcons name="help-circle-outline" size={18} color={theme.colors.textSecondary} />
+              <Text style={styles.helpText}>كيفية مسح البطاقة؟</Text>
+           </TouchableOpacity>
         </View>
       </View>
     </SafeAreaView>
@@ -173,168 +172,173 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
-  innerContainer: {
-    flex: 1,
-    paddingTop: 40,
-  },
   header: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
+    paddingVertical: 16,
     backgroundColor: theme.colors.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
+    elevation: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
   },
   headerTitle: {
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: 'bold',
     color: theme.colors.textPrimary,
+  },
+  backButton: {
+    padding: 8,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: 32,
   },
   scanArea: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 32,
   },
   circleContainer: {
     position: 'relative',
-    marginBottom: 32,
-    width: 160,
-    height: 160,
+    marginBottom: 40,
+    width: 200,
+    height: 200,
     justifyContent: 'center',
     alignItems: 'center',
   },
   pulseRingOne: {
     position: 'absolute',
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    borderWidth: 4,
+    borderColor: theme.colors.primaryTransparent,
+  },
+  mainCircle: {
     width: 200,
     height: 200,
     borderRadius: 100,
-    borderWidth: 2,
-    borderColor: theme.colors.pulseTransparent,
-  },
-  mainCircle: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
-  },
-  mainCircleInactive: {
     backgroundColor: theme.colors.surface,
+    elevation: 12,
+    borderWidth: 2,
     borderColor: theme.colors.border,
   },
   mainCircleActive: {
     backgroundColor: theme.colors.primaryTransparent,
     borderColor: theme.colors.primary,
   },
+  mainCircleInactive: {},
   title: {
-    fontSize: 16,
+    fontSize: 22,
     fontWeight: 'bold',
     color: theme.colors.textPrimary,
-    marginBottom: 8,
+    marginBottom: 12,
   },
   subtitle: {
-    fontSize: 12,
-    color: theme.colors.textMuted,
+    fontSize: 14,
+    color: theme.colors.textSecondary,
     textAlign: 'center',
-    marginBottom: 24,
+    lineHeight: 22,
+    marginBottom: 40,
   },
   progressSection: {
     width: '100%',
-    maxWidth: 320,
-    marginBottom: 24,
+    marginBottom: 32,
   },
   progressTrack: {
-    height: 6,
+    height: 8,
     backgroundColor: theme.colors.surface,
-    borderRadius: 99,
+    borderRadius: 4,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
   progressBar: {
     height: '100%',
     backgroundColor: theme.colors.primary,
   },
   progressText: {
-    fontSize: 10,
-    color: theme.colors.textDark,
+    fontSize: 12,
+    color: theme.colors.textPrimary,
+    fontWeight: 'bold',
     textAlign: 'center',
-    marginTop: 8,
+    marginTop: 10,
   },
   statusBadge: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 12,
+    gap: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 24,
     backgroundColor: theme.colors.successTransparent,
     borderWidth: 1,
-    borderColor: theme.colors.borderTransparent,
-    marginBottom: 32,
+    borderColor: theme.colors.success,
+    marginBottom: 40,
   },
   statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     backgroundColor: theme.colors.success,
   },
   statusText: {
-    fontSize: 10,
+    fontSize: 12,
     color: theme.colors.success,
-    fontWeight: '500',
+    fontWeight: 'bold',
   },
   startButton: {
     width: '100%',
-    height: 48,
+    height: 60,
     backgroundColor: theme.colors.primary,
-    borderRadius: 12,
+    borderRadius: 16,
+    flexDirection: 'row-reverse',
     justifyContent: 'center',
     alignItems: 'center',
+    elevation: 6,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
   startButtonText: {
-    color: theme.colors.background,
-    fontSize: 14,
+    color: theme.colors.textContrast,
+    fontSize: 18,
     fontWeight: 'bold',
   },
   cancelButton: {
     width: '100%',
-    height: 48,
+    height: 60,
     backgroundColor: theme.colors.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: theme.colors.danger,
     justifyContent: 'center',
     alignItems: 'center',
+    elevation: 2,
   },
   cancelButtonText: {
     color: theme.colors.danger,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   footer: {
     paddingBottom: 40,
     alignItems: 'center',
   },
-  flashButton: {
-    flexDirection: 'row',
+  helpButton: {
+    flexDirection: 'row-reverse',
     alignItems: 'center',
     gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 12,
-    backgroundColor: theme.colors.surface,
   },
-  flashText: {
-    fontSize: 12,
-    color: theme.colors.textMuted,
+  helpText: {
+    fontSize: 13,
+    color: theme.colors.textSecondary,
+    fontWeight: '500',
   },
 });
 

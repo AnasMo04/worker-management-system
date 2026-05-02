@@ -1,18 +1,18 @@
 const theme = {
   colors: {
-    // Core Palette
-    background: '#0F172A', // slate-950
-    surface: '#1E293B',    // slate-800
-    surfaceLight: '#2D3748', // Custom lighter surface
-    primary: '#34D399',    // emerald-400
-    textPrimary: '#F8FAFC', // slate-50
-    textSecondary: '#94A3B8', // slate-400
-    textMuted: '#64748B',    // slate-500
-    textDark: '#475569',     // slate-600
-    textContrast: '#0F172A', // slate-950 (for use on primary)
-    textSlate100: '#F1F5F9', // slate-100
-    textSlate200: '#E2E8F0', // slate-200
-    textSlate300: '#CBD5E1', // slate-300
+    // Core Palette (Light Theme)
+    background: '#F8FAFC', // Off-White
+    surface: '#FFFFFF',    // Pure White
+    surfaceLight: '#F1F5F9', // slate-100
+    primary: '#10B981',    // Emerald-500
+    textPrimary: '#1E293B', // Charcoal/Dark Slate (slate-800)
+    textSecondary: '#64748B', // slate-500
+    textMuted: '#94A3B8',    // slate-400
+    textDark: '#334155',     // slate-700
+    textContrast: '#FFFFFF', // Pure White (for use on primary)
+    textSlate100: '#F1F5F9',
+    textSlate200: '#E2E8F0',
+    textSlate300: '#CBD5E1',
 
     // Status
     danger: '#EF4444',     // red-500
@@ -24,18 +24,18 @@ const theme = {
     shadow: '#000000',
 
     // Borders
-    border: '#334155',     // slate-700
-    borderStrong: '#4A5568', // slate-600
+    border: '#E2E8F0',     // slate-200
+    borderStrong: '#CBD5E1', // slate-300
 
     // Transparent Overlays
-    primaryTransparent: 'rgba(52, 211, 153, 0.15)',
-    primarySemiTransparent: 'rgba(52, 211, 153, 0.2)',
-    dangerTransparent: 'rgba(239, 68, 68, 0.15)',
-    successTransparent: 'rgba(16, 185, 129, 0.15)',
+    primaryTransparent: 'rgba(16, 185, 129, 0.1)',
+    primarySemiTransparent: 'rgba(16, 185, 129, 0.2)',
+    dangerTransparent: 'rgba(239, 68, 68, 0.1)',
+    successTransparent: 'rgba(16, 185, 129, 0.1)',
     warningTransparent: 'rgba(251, 191, 36, 0.1)',
-    slateTransparent: 'rgba(15, 23, 42, 0.4)',
-    borderTransparent: 'rgba(16, 185, 129, 0.2)',
-    pulseTransparent: 'rgba(52, 211, 153, 0.2)',
+    slateTransparent: 'rgba(241, 245, 249, 0.5)',
+    borderTransparent: 'rgba(226, 232, 240, 0.5)',
+    pulseTransparent: 'rgba(16, 185, 129, 0.2)',
   },
   spacing: {
     xs: 4,

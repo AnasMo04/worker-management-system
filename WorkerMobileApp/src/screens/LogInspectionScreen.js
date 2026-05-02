@@ -24,7 +24,6 @@ const LogInspectionScreen = ({ route, navigation }) => {
   const [result, setResult] = useState('صالح');
   const [notes, setNotes] = useState('');
   const [location, setLocation] = useState(null);
-  const [dropdownOpen, setDocsDropdownOpen] = useState(false);
 
   const results = ['صالح', 'مخالفة', 'منتهي', 'موقوف', 'غير معروف'];
 
@@ -43,7 +42,7 @@ const LogInspectionScreen = ({ route, navigation }) => {
       if (granted === PermissionsAndroid.RESULTS.GRANTED) {
         getCurrentLocation();
       } else {
-        Alert.alert('تنبيه', 'يجب السماح بالوصول للموقع لتسجيل الإحداثيات');
+        Alert.alert('تنبيه', 'يجب السماح بالوصول للموقع لتسجيل الإحداثيات الميدانية');
       }
     }
   };
@@ -83,65 +82,78 @@ const LogInspectionScreen = ({ route, navigation }) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.surface} />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <MaterialCommunityIcons name="arrow-right" size={16} color={theme.colors.textSecondary} />
+          <MaterialCommunityIcons name="arrow-right" size={24} color={theme.colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>تسجيل تفتيش ميداني</Text>
-        <View style={{ width: 36 }} />
+        <Text style={styles.headerTitle}>تقرير تفتيش ميداني</Text>
+        <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView style={styles.container}>
-        <View style={styles.workerBrief}>
-           <Text style={styles.workerName}>{worker.Full_Name}</Text>
-           <Text style={styles.workerPassport}>{worker.Passport_Number}</Text>
+      <ScrollView style={styles.container} bounces={false}>
+        <View style={styles.workerIdentity}>
+           <View style={styles.avatarMini}>
+              <MaterialCommunityIcons name="account-search" size={30} color={theme.colors.primary} />
+           </View>
+           <View style={styles.workerInfoRow}>
+              <Text style={styles.workerName}>{worker.Full_Name}</Text>
+              <Text style={styles.workerPassport}>{worker.Passport_Number}</Text>
+           </View>
         </View>
 
-        <View style={styles.form}>
-           <Text style={styles.label}>نتيجة التفتيش</Text>
-           <View style={styles.dropdownContainer}>
+        <View style={styles.formContainer}>
+           <Text style={styles.label}>حالة المطابقة / النتيجة</Text>
+           <View style={styles.resultGrid}>
               {results.map((res) => (
                 <TouchableOpacity
                   key={res}
-                  style={[styles.resultOption, result === res && styles.resultOptionActive]}
+                  style={[styles.resultCard, result === res && styles.resultCardActive]}
                   onPress={() => setResult(res)}
+                  activeOpacity={0.7}
                 >
-                  <Text style={[styles.resultText, result === res && styles.resultTextActive]}>{res}</Text>
+                  <MaterialCommunityIcons
+                    name={result === res ? "check-circle" : "circle-outline"}
+                    size={16}
+                    color={result === res ? theme.colors.primary : theme.colors.textMuted}
+                  />
+                  <Text style={[styles.resultLabel, result === res && styles.resultLabelActive]}>{res}</Text>
                 </TouchableOpacity>
               ))}
            </View>
 
-           <Text style={styles.label}>ملاحظات إضافية</Text>
+           <Text style={styles.label}>ملاحظات الضابط الميدانية</Text>
            <TextInput
-             style={styles.textArea}
-             placeholder="أدخل ملاحظات التفتيش هنا..."
-             placeholderTextColor={theme.colors.textDark}
+             style={styles.inputArea}
+             placeholder="يرجى كتابة أي ملاحظات إضافية عن حالة العامل أو الموقع..."
+             placeholderTextColor={theme.colors.textMuted}
              multiline
-             numberOfLines={4}
+             numberOfLines={5}
              value={notes}
              onChangeText={setNotes}
+             textAlignVertical="top"
            />
 
-           <View style={styles.locationBrief}>
-              <MaterialCommunityIcons
-                name={location ? "map-marker-check" : "map-marker-alert"}
-                size={20}
-                color={location ? theme.colors.success : theme.colors.warning}
-              />
-              <Text style={styles.locationText}>
-                {location ? `إحداثيات الموقع الملتقطة: ${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}` : 'جاري جلب إحداثيات الموقع...'}
-              </Text>
+           <View style={styles.locationBox}>
+              <View style={[styles.locIndicator, { backgroundColor: location ? theme.colors.success : theme.colors.warning }]}>
+                 <MaterialCommunityIcons name={location ? "map-marker-check" : "map-marker-radius"} size={18} color={theme.colors.textContrast} />
+              </View>
+              <View style={styles.locInfo}>
+                 <Text style={styles.locTitle}>{location ? 'الإحداثيات الجغرافية الملتقطة' : 'جاري تحديد الموقع...'}</Text>
+                 <Text style={styles.locCoords}>{location ? `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}` : 'يتم الآن الاتصال بالأقمار الصناعية...'}</Text>
+              </View>
            </View>
 
            <TouchableOpacity
-            style={[styles.submitBtn, loading && {opacity: 0.7}]}
+            style={[styles.submitButton, loading && { opacity: 0.7 }]}
             onPress={handleSubmit}
             disabled={loading}
+            activeOpacity={0.8}
            >
-             {loading ? <ActivityIndicator color={theme.colors.background} /> : <Text style={styles.submitBtnText}>إرسال تقرير</Text>}
+             {loading ? <ActivityIndicator color={theme.colors.textContrast} /> : <Text style={styles.submitButtonText}>إرسال التقرير الموثق</Text>}
            </TouchableOpacity>
         </View>
+        <View style={{height: 40}} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -153,37 +165,46 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
   header: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 56,
-    paddingBottom: 12,
+    paddingVertical: 16,
+    backgroundColor: theme.colors.surface,
+    elevation: 4,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
   },
   backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: theme.colors.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
+    padding: 8,
   },
   headerTitle: {
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: 'bold',
     color: theme.colors.textPrimary,
   },
   container: {
     flex: 1,
   },
-  workerBrief: {
-    padding: 20,
-    backgroundColor: theme.colors.surface,
+  workerIdentity: {
+    flexDirection: 'row-reverse',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    padding: 24,
+    backgroundColor: theme.colors.surface,
+    marginBottom: 16,
+    elevation: 2,
+    gap: 16,
+  },
+  avatarMini: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: theme.colors.primaryTransparent,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  workerInfoRow: {
+    alignItems: 'flex-end',
   },
   workerName: {
     color: theme.colors.textPrimary,
@@ -192,83 +213,111 @@ const styles = StyleSheet.create({
   },
   workerPassport: {
     color: theme.colors.textSecondary,
-    fontSize: 14,
+    fontSize: 13,
     marginTop: 4,
   },
-  form: {
+  formContainer: {
     padding: 20,
   },
   label: {
-    color: theme.colors.textSecondary,
-    fontSize: 12,
-    marginBottom: 12,
+    color: theme.colors.textPrimary,
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 16,
     textAlign: 'right',
   },
-  dropdownContainer: {
+  resultGrid: {
     flexDirection: 'row-reverse',
     flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 24,
+    gap: 10,
+    marginBottom: 32,
   },
-  resultOption: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+  resultCard: {
+    width: '31%',
     backgroundColor: theme.colors.surface,
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: theme.colors.border,
+    elevation: 1,
+    gap: 8,
   },
-  resultOptionActive: {
-    backgroundColor: theme.colors.primaryTransparent,
+  resultCardActive: {
     borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.primaryTransparent,
   },
-  resultText: {
+  resultLabel: {
     color: theme.colors.textSecondary,
-    fontSize: 12,
+    fontSize: 11,
+    fontWeight: '600',
   },
-  resultTextActive: {
+  resultLabelActive: {
     color: theme.colors.primary,
     fontWeight: 'bold',
   },
-  textArea: {
+  inputArea: {
     backgroundColor: theme.colors.surface,
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     color: theme.colors.textPrimary,
+    fontSize: 14,
     textAlign: 'right',
     borderWidth: 1,
     borderColor: theme.colors.border,
-    minHeight: 120,
-    textAlignVertical: 'top',
-    marginBottom: 24,
+    minHeight: 140,
+    marginBottom: 32,
+    elevation: 1,
   },
-  locationBrief: {
+  locationBox: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
-    gap: 12,
     backgroundColor: theme.colors.surface,
     padding: 16,
-    borderRadius: 12,
-    marginBottom: 32,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: theme.colors.border,
+    marginBottom: 40,
+    elevation: 2,
+    gap: 16,
   },
-  locationText: {
-    color: theme.colors.textSecondary,
-    fontSize: 11,
-    flex: 1,
-    textAlign: 'right',
-  },
-  submitBtn: {
-    backgroundColor: theme.colors.primary,
-    height: 54,
-    borderRadius: 12,
+  locIndicator: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
+    elevation: 2,
   },
-  submitBtnText: {
-    color: theme.colors.background,
-    fontSize: 16,
+  locInfo: {
+    flex: 1,
+    alignItems: 'flex-end',
+  },
+  locTitle: {
+    color: theme.colors.textPrimary,
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  locCoords: {
+    color: theme.colors.textSecondary,
+    fontSize: 11,
+    marginTop: 4,
+  },
+  submitButton: {
+    backgroundColor: theme.colors.primary,
+    height: 60,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 6,
+    shadowColor: theme.colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  submitButtonText: {
+    color: theme.colors.textContrast,
+    fontSize: 18,
     fontWeight: 'bold',
   },
 });
