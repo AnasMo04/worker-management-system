@@ -21,13 +21,15 @@ const NfcScanScreen = ({ navigation }) => {
   useEffect(() => {
     const initNfc = async () => {
       try {
+        // Critical: Start the manager first as per hardware detection requirements
+        await NfcManager.start();
+
+        // Then check if supported/enabled
         const supported = await NfcManager.isSupported();
         setHasNfc(supported);
-        if (supported) {
-          await NfcManager.start();
-        }
+
       } catch (err) {
-        console.warn('NFC initialization failed', err);
+        console.warn('NFC initialization failed:', err);
         setHasNfc(false);
       }
     };
@@ -105,7 +107,7 @@ const NfcScanScreen = ({ navigation }) => {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={{ marginTop: 20, color: theme.colors.textSecondary }}>جاري فحص المستشعر...</Text>
+        <Text style={{ marginTop: 20, color: theme.colors.textSecondary }}>جاري تهيئة نظام التحقق...</Text>
       </View>
     );
   }
