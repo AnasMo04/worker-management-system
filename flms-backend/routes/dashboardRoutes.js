@@ -4,6 +4,11 @@ const dashboardController = require('../controllers/dashboardController');
 const authMiddleware = require('../middleware/authMiddleware');
 
 router.use(authMiddleware);
-router.get('/summary', dashboardController.getSummary);
+
+// Global System Summary (Web Admin)
+router.get('/system', dashboardController.getSystemSummary);
+
+// Personal Officer Summary (Mobile App)
+router.get('/officer', dashboardController.getOfficerSummary);
 
 module.exports = router;
