@@ -1,10 +1,71 @@
 const { Worker, SmartCard, LegalCase, Financial, FieldLog, AuditTrail, User, Device, sequelize } = require('../models');
+const { Op } = require('sequelize');
 
-exports.getSummary = async (req, res) => {
+/**
+ * System-wide Global Summary for WEB ADMIN
+ */
+exports.getSystemSummary = async (req, res) => {
+  try {
+    const totalWorkers = await Worker.count();
+    const activeCards = await SmartCard.count({ where: { Is_Active: true } });
+
+    const openLegalCases = await LegalCase.count({
+        where: {
+            Status: ['Open', 'pending', 'active', 'open', 'نشط']
+        }
+    });
+
+    const pendingPaymentsResult = await Financial.findAll({
+      attributes: [[sequelize.fn('SUM', sequelize.col('Amount')), 'total']],
+      where: { Status: ['Pending', 'pending'] }
+    });
+    const pendingPayments = pendingPaymentsResult[0].dataValues.total || 0;
+
+    const statusBreakdown = await Worker.findAll({
+      attributes: ['Current_Status', [sequelize.fn('COUNT', sequelize.col('id')), 'count']],
+      group: ['Current_Status']
+    });
+
+    const recentInspections = await FieldLog.findAll({
+      limit: 10,
+      order: [['Scan_Time', 'DESC']],
+      include: [
+        { model: Worker, attributes: ['Full_Name'] },
+        { model: User, attributes: ['Name'] }
+      ]
+    });
+
+    const recentAuditLogs = await AuditTrail.findAll({
+      limit: 5,
+      order: [['createdAt', 'DESC']],
+      include: [
+        { model: User, attributes: ['Name'] }
+      ]
+    });
+
+    res.json({
+      counts: {
+        totalWorkers,
+        activeCards,
+        openLegalCases,
+        pendingPayments
+      },
+      statusBreakdown,
+      recentInspections,
+      recentAuditLogs
+    });
+  } catch (error) {
+    console.error('Get System Summary Error:', error);
+    res.status(500).json({ message: 'Error retrieving system summary' });
+  }
+};
+
+/**
+ * User-specific Summary for MOBILE OFFICER
+ */
+exports.getOfficerSummary = async (req, res) => {
   try {
     const officerId = req.user.id;
-
-    // User specific stats
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -22,30 +83,7 @@ exports.getSummary = async (req, res) => {
       }
     });
 
-    const activeAlerts = 5; // Placeholder or system-wide alerts
-
-    const totalWorkers = await Worker.count();
-    const activeCards = await SmartCard.count({ where: { Is_Active: true } });
-
-    // Using simple count as a placeholder if Status might be different in actual DB
-    // In many systems 'Open' or 'pending' are common
-    const openLegalCases = await LegalCase.count({
-        where: {
-            Status: ['Open', 'pending', 'active']
-        }
-    });
-
-    // Sum of amounts for pending financials
-    const pendingPaymentsResult = await Financial.findAll({
-      attributes: [[sequelize.fn('SUM', sequelize.col('Amount')), 'total']],
-      where: { Status: ['Pending', 'pending'] }
-    });
-    const pendingPayments = pendingPaymentsResult[0].dataValues.total || 0;
-
-    const statusBreakdown = await Worker.findAll({
-      attributes: ['Current_Status', [sequelize.fn('COUNT', sequelize.col('id')), 'count']],
-      group: ['Current_Status']
-    });
+    const activeAlerts = 5; // System placeholder
 
     const recentInspections = await FieldLog.findAll({
       where: { Officer_ID: officerId },
@@ -56,30 +94,16 @@ exports.getSummary = async (req, res) => {
       ]
     });
 
-    const recentAuditLogs = await AuditTrail.findAll({
-      limit: 5,
-      order: [['createdAt', 'DESC']],
-      include: [
-        { model: User, attributes: ['Name'] }
-      ]
-    });
-
     res.json({
       counts: {
-        totalWorkers,
-        activeCards,
-        openLegalCases,
-        pendingPayments,
         todayInspections,
         myViolations,
         activeAlerts
       },
-      statusBreakdown,
-      recentInspections,
-      recentAuditLogs
+      recentInspections
     });
   } catch (error) {
-    console.error('Get Dashboard Summary Error:', error);
-    res.status(500).json({ message: 'Error retrieving dashboard data' });
+    console.error('Get Officer Summary Error:', error);
+    res.status(500).json({ message: 'Error retrieving officer summary' });
   }
 };
