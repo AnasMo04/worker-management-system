@@ -41,7 +41,7 @@ const LoginScreen = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.background} />
+      <StatusBar barStyle="light-content" backgroundColor={theme.colors.background} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.container}
@@ -50,16 +50,16 @@ const LoginScreen = () => {
           {/* Logo Section */}
           <View style={styles.logoContainer}>
             <View style={styles.logoBox}>
-              <MaterialCommunityIcons name="shield-check" size={48} color={theme.colors.textContrast} />
+              <MaterialCommunityIcons name="shield-check" size={40} color={theme.colors.textContrast} />
             </View>
             <Text style={styles.logoTitle}>FLMS</Text>
-            <Text style={styles.logoSubtitle}>Foreign Labor Management System</Text>
+            <Text style={styles.logoSubtitle}>Field Inspection App</Text>
           </View>
 
           {/* Form Section */}
           <View style={styles.formContainer}>
             <View style={styles.inputWrapper}>
-              <MaterialCommunityIcons name="account-outline" size={20} color={theme.colors.textMuted} style={styles.inputIcon} />
+              <MaterialCommunityIcons name="account-outline" size={18} color={theme.colors.textMuted} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder="اسم المستخدم"
@@ -71,7 +71,7 @@ const LoginScreen = () => {
             </View>
 
             <View style={styles.inputWrapper}>
-              <MaterialCommunityIcons name="lock-outline" size={20} color={theme.colors.textMuted} style={styles.inputIcon} />
+              <MaterialCommunityIcons name="lock-outline" size={18} color={theme.colors.textMuted} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 placeholder="كلمة المرور"
@@ -86,7 +86,7 @@ const LoginScreen = () => {
               >
                 <MaterialCommunityIcons
                   name={showPassword ? "eye-off-outline" : "eye-outline"}
-                  size={20}
+                  size={18}
                   color={theme.colors.textMuted}
                 />
               </TouchableOpacity>
@@ -107,18 +107,18 @@ const LoginScreen = () => {
 
             <TouchableOpacity
               style={styles.fingerprintButton}
-              onPress={() => Alert.alert('معلومات', 'خاصية البصمة ستكون متاحة قريباً')}
+              onPress={handleLogin}
               activeOpacity={0.6}
             >
-              <MaterialCommunityIcons name="fingerprint" size={24} color={theme.colors.primary} />
+              <MaterialCommunityIcons name="fingerprint" size={20} color={theme.colors.textSecondary} />
               <Text style={styles.fingerprintButtonText}>الدخول بالبصمة</Text>
             </TouchableOpacity>
           </View>
 
           {/* Footer Section */}
           <View style={styles.footer}>
-            <MaterialCommunityIcons name="shield-lock-outline" size={14} color={theme.colors.textMuted} />
-            <Text style={styles.footerText}>نظام تفتيش ميداني مؤمن بالكامل</Text>
+            <MaterialCommunityIcons name="lock" size={12} color={theme.colors.textMuted} />
+            <Text style={styles.footerText}>وصول آمن – للمستخدمين المصرح لهم فقط</Text>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -136,21 +136,22 @@ const styles = StyleSheet.create({
   },
   innerContainer: {
     flex: 1,
-    padding: 32,
-    justifyContent: 'center',
+    padding: 24,
+    paddingTop: 64,
   },
   logoContainer: {
     alignItems: 'center',
-    marginBottom: 48,
+    marginBottom: 40,
+    marginTop: 48,
   },
   logoBox: {
-    width: 90,
-    height: 90,
-    borderRadius: 20,
+    width: 80,
+    height: 80,
+    borderRadius: 16,
     backgroundColor: theme.colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
     elevation: 8,
     shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 4 },
@@ -158,90 +159,81 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
   },
   logoTitle: {
-    fontSize: 28,
+    fontSize: 20,
     fontWeight: 'bold',
     color: theme.colors.textPrimary,
-    letterSpacing: 2,
+    letterSpacing: 1.5,
   },
   logoSubtitle: {
     fontSize: 12,
-    color: theme.colors.textSecondary,
-    marginTop: 8,
-    fontWeight: '600',
+    color: theme.colors.textMuted,
+    marginTop: 4,
   },
   formContainer: {
     gap: 16,
+    flex: 1,
   },
   inputWrapper: {
     flexDirection: 'row-reverse',
     alignItems: 'center',
-    height: 56,
-    backgroundColor: theme.colors.surface,
+    height: 48,
+    backgroundColor: 'rgba(30, 41, 59, 0.6)', // surface semi-transparent
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    paddingHorizontal: 16,
-    elevation: 2,
+    borderColor: '#2D3748', // border
+    paddingHorizontal: 12,
   },
   inputIcon: {
-    marginLeft: 12,
+    marginLeft: 8,
   },
   input: {
     flex: 1,
     color: theme.colors.textPrimary,
-    fontSize: 15,
+    fontSize: 14,
     textAlign: 'right',
   },
   eyeButton: {
-    marginRight: 8,
+    marginRight: 4,
   },
   loginButton: {
-    height: 56,
+    height: 48,
     backgroundColor: theme.colors.primary,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 8,
-    elevation: 4,
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
   },
   loginButtonText: {
     color: theme.colors.textContrast,
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
   },
   fingerprintButton: {
-    height: 56,
-    backgroundColor: theme.colors.surface,
+    height: 48,
+    backgroundColor: 'rgba(30, 41, 59, 0.7)',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: '#334155',
     flexDirection: 'row-reverse',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 10,
-    marginTop: 8,
-    elevation: 1,
+    gap: 8,
+    marginTop: 0,
   },
   fingerprintButtonText: {
-    color: theme.colors.textPrimary,
-    fontSize: 15,
-    fontWeight: '600',
+    color: theme.colors.textSecondary,
+    fontSize: 14,
   },
   footer: {
     flexDirection: 'row-reverse',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
-    marginTop: 48,
+    gap: 6,
+    marginBottom: 32,
   },
   footerText: {
-    fontSize: 12,
+    fontSize: 10,
     color: theme.colors.textMuted,
-    fontWeight: '500',
   },
 });
 

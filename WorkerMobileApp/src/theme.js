@@ -1,41 +1,32 @@
 const theme = {
   colors: {
-    // Core Palette (Light Theme)
-    background: '#F8FAFC', // Off-White
-    surface: '#FFFFFF',    // Pure White
-    surfaceLight: '#F1F5F9', // slate-100
-    primary: '#10B981',    // Emerald-500
-    textPrimary: '#1E293B', // Charcoal/Dark Slate (slate-800)
-    textSecondary: '#64748B', // slate-500
-    textMuted: '#94A3B8',    // slate-400
-    textDark: '#334155',     // slate-700
-    textContrast: '#FFFFFF', // Pure White (for use on primary)
-    textSlate100: '#F1F5F9',
-    textSlate200: '#E2E8F0',
-    textSlate300: '#CBD5E1',
+    // Core Palette (Dark Theme per UI_GUIDELINES.md)
+    background: '#0F172A', // Dark Navy
+    backgroundSecondary: '#0D1117', // Deeper Navy for gradients
+    surface: '#1E293B',    // Slate-800
+    surfaceLight: '#334155', // Slate-700
+    primary: '#34D399',    // Mint Green (Emerald-400ish)
+    textPrimary: '#FFFFFF',
+    textSecondary: '#94A3B8', // Slate-400
+    textMuted: '#64748B',    // Slate-500
+    textContrast: '#0F172A', // Dark Navy (for use on primary)
 
     // Status
-    danger: '#EF4444',     // red-500
-    success: '#10B981',    // emerald-500
-    warning: '#FBBF24',    // amber-400
-    info: '#3B82F6',       // blue-500
+    danger: '#EF4444',
+    success: '#10B981',
+    warning: '#FBBF24',
+    info: '#3B82F6',
 
-    // Shadows
+    // Shadows/Borders
+    border: '#2D3748',
+    borderLight: '#334155',
     shadow: '#000000',
 
-    // Borders
-    border: '#E2E8F0',     // slate-200
-    borderStrong: '#CBD5E1', // slate-300
-
     // Transparent Overlays
-    primaryTransparent: 'rgba(16, 185, 129, 0.1)',
-    primarySemiTransparent: 'rgba(16, 185, 129, 0.2)',
-    dangerTransparent: 'rgba(239, 68, 68, 0.1)',
-    successTransparent: 'rgba(16, 185, 129, 0.1)',
-    warningTransparent: 'rgba(251, 191, 36, 0.1)',
-    slateTransparent: 'rgba(241, 245, 249, 0.5)',
-    borderTransparent: 'rgba(226, 232, 240, 0.5)',
-    pulseTransparent: 'rgba(16, 185, 129, 0.2)',
+    primaryTransparent: 'rgba(52, 211, 153, 0.15)',
+    surfaceTransparent: 'rgba(30, 41, 59, 0.7)',
+    dangerTransparent: 'rgba(239, 68, 68, 0.15)',
+    successTransparent: 'rgba(16, 185, 129, 0.15)',
   },
   spacing: {
     xs: 4,
@@ -52,7 +43,6 @@ const theme = {
     lg: 12,
     xl: 16,
     xxl: 24,
-    full: 9999,
   }
 };
 
