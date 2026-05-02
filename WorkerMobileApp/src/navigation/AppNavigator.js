@@ -8,6 +8,9 @@ import LoginScreen from '../screens/LoginScreen';
 import DashboardScreen from '../screens/DashboardScreen';
 import WorkerDetailsScreen from '../screens/WorkerDetailsScreen';
 import NfcScanScreen from '../screens/NfcScanScreen';
+import InspectionRecordsScreen from '../screens/InspectionRecordsScreen';
+import CasesScreen from '../screens/CasesScreen';
+import LogInspectionScreen from '../screens/LogInspectionScreen';
 
 const Stack = createStackNavigator();
 
@@ -42,6 +45,18 @@ const AppNavigator = () => {
           <Stack.Screen
             name="WorkerDetails"
             component={WorkerDetailsScreen}
+          />
+          <Stack.Screen
+            name="InspectionRecords"
+            component={InspectionRecordsScreen}
+          />
+          <Stack.Screen
+            name="Cases"
+            component={CasesScreen}
+          />
+          <Stack.Screen
+            name="LogInspection"
+            component={LogInspectionScreen}
           />
         </>
       ) : (

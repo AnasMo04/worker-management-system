@@ -23,3 +23,20 @@ exports.logInspection = async (req, res) => {
     res.status(500).json({ message: 'Error logging inspection' });
   }
 };
+
+exports.getMyLogs = async (req, res) => {
+  try {
+    const Officer_ID = req.user.id;
+    const logs = await FieldLog.findAll({
+      where: { Officer_ID },
+      include: [
+        { model: require('../models').Worker, attributes: ['Full_Name', 'Passport_Number'] }
+      ],
+      order: [['Scan_Time', 'DESC']]
+    });
+    res.json(logs);
+  } catch (error) {
+    console.error('Get My Logs Error:', error);
+    res.status(500).json({ message: 'Error retrieving logs' });
+  }
+};

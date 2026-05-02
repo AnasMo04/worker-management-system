@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const fieldLogController = require('../controllers/fieldLogController');
+const legalCaseController = require('../controllers/legalCaseController');
 const authMiddleware = require('../middleware/authMiddleware');
 
 router.use(authMiddleware);
 
-router.post('/log', fieldLogController.logInspection);
-router.get('/my-logs', fieldLogController.getMyLogs);
+router.get('/my-cases', legalCaseController.getMyCases);
+router.get('/summary', legalCaseController.getSummary);
 
 module.exports = router;

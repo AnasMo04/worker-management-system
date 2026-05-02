@@ -2,6 +2,28 @@ const { Worker, SmartCard, LegalCase, Financial, FieldLog, AuditTrail, User, Dev
 
 exports.getSummary = async (req, res) => {
   try {
+    const officerId = req.user.id;
+
+    // User specific stats
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const todayInspections = await FieldLog.count({
+      where: {
+        Officer_ID: officerId,
+        Scan_Time: { [Op.gte]: today }
+      }
+    });
+
+    const myViolations = await LegalCase.count({
+      where: {
+        Reported_By: officerId,
+        Status: ['Open', 'open', 'نشط']
+      }
+    });
+
+    const activeAlerts = 5; // Placeholder or system-wide alerts
+
     const totalWorkers = await Worker.count();
     const activeCards = await SmartCard.count({ where: { Is_Active: true } });
 
@@ -26,12 +48,11 @@ exports.getSummary = async (req, res) => {
     });
 
     const recentInspections = await FieldLog.findAll({
+      where: { Officer_ID: officerId },
       limit: 5,
       order: [['Scan_Time', 'DESC']],
       include: [
-        { model: Worker, attributes: ['Full_Name'] },
-        { model: User, attributes: ['Name'] },
-        { model: Device, attributes: ['id'] }
+        { model: Worker, attributes: ['Full_Name'] }
       ]
     });
 
@@ -48,7 +69,10 @@ exports.getSummary = async (req, res) => {
         totalWorkers,
         activeCards,
         openLegalCases,
-        pendingPayments
+        pendingPayments,
+        todayInspections,
+        myViolations,
+        activeAlerts
       },
       statusBreakdown,
       recentInspections,
