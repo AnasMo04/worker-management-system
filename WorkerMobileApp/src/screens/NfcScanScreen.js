@@ -21,17 +21,20 @@ const NfcScanScreen = ({ navigation }) => {
     try {
       const worker = await workerService.searchByNfcUid(uid);
       if (worker && worker.id) {
-        navigation.replace('WorkerDetails', { workerId: worker.id });
+        navigation.replace('WorkerDetails', { workerData: worker });
       } else {
-        Alert.alert('فشل التحقق', 'لم يتم العثور على سجل مطابق لهذه البطاقة في قاعدة البيانات');
-        setScanning(false);
-        setProgress(0);
+        Alert.alert('فشل التحقق', 'لم يتم العثور على سجل مطابق لهذه البطاقة في قاعدة البيانات المركزية');
+        resetScan();
       }
     } catch (error) {
-      Alert.alert('خطأ فني', 'حدث خطأ أثناء محاولة الوصول إلى سجلات النظام');
-      setScanning(false);
-      setProgress(0);
+      Alert.alert('خطأ فني', error.message || 'حدث خطأ أثناء محاولة الوصول إلى سجلات النظام');
+      resetScan();
     }
+  };
+
+  const resetScan = () => {
+    setScanning(false);
+    setProgress(0);
   };
 
   const startScan = () => {
@@ -48,12 +51,12 @@ const NfcScanScreen = ({ navigation }) => {
           clearInterval(interval);
           setTimeout(() => {
             Alert.alert(
-              'محاكاة التحقق الرقمي',
-              'يرجى إدخال المعرف يدوياً للمتابعة (أغراض العرض التقني)',
+              'نظام التحقق الميداني',
+              'يرجى إدخال المعرف يدوياً أو اختيار هوية محاكاة للمتابعة',
               [
                 {
                   text: 'إلغاء العملية',
-                  onPress: () => { setScanning(false); setProgress(0); },
+                  onPress: () => resetScan(),
                   style: 'cancel'
                 },
                 {
@@ -82,7 +85,7 @@ const NfcScanScreen = ({ navigation }) => {
             onPress={() => navigation.goBack()}
             style={styles.backButton}
           >
-            <MaterialCommunityIcons name="arrow-right" size={16} color="#94A3B8" />
+            <MaterialCommunityIcons name="arrow-right" size={16} color={theme.colors.textSecondary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>مسح بطاقة NFC</Text>
           <View style={{ width: 36 }} />
@@ -98,11 +101,15 @@ const NfcScanScreen = ({ navigation }) => {
               styles.mainCircle,
               scanning ? styles.mainCircleActive : styles.mainCircleInactive
             ]}>
-              <MaterialCommunityIcons
-                name={scanning ? "wifi" : "credit-card-outline"}
-                size={56}
-                color={scanning ? "#34D399" : "#334155"}
-              />
+              {scanning ? (
+                <ActivityIndicator size="large" color={theme.colors.primary} />
+              ) : (
+                <MaterialCommunityIcons
+                  name="credit-card-outline"
+                  size={56}
+                  color={theme.colors.border}
+                />
+              )}
             </View>
           </View>
 
@@ -141,7 +148,7 @@ const NfcScanScreen = ({ navigation }) => {
           ) : (
             <TouchableOpacity
               style={styles.cancelButton}
-              onPress={() => navigation.goBack()}
+              onPress={resetScan}
               activeOpacity={0.8}
             >
               <Text style={styles.cancelButtonText}>إلغاء</Text>
@@ -152,7 +159,7 @@ const NfcScanScreen = ({ navigation }) => {
         {/* Flashlight toggle */}
         <View style={styles.footer}>
           <TouchableOpacity style={styles.flashButton}>
-            <MaterialCommunityIcons name="flashlight" size={16} color="#64748B" />
+            <MaterialCommunityIcons name="flashlight" size={16} color={theme.colors.textMuted} />
             <Text style={styles.flashText}>الإضاءة</Text>
           </TouchableOpacity>
         </View>
@@ -164,7 +171,7 @@ const NfcScanScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: theme.colors.background,
   },
   innerContainer: {
     flex: 1,
@@ -181,14 +188,14 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 8,
-    backgroundColor: '#1E293B',
+    backgroundColor: theme.colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#F8FAFC',
+    color: theme.colors.textPrimary,
   },
   scanArea: {
     flex: 1,
@@ -210,7 +217,7 @@ const styles = StyleSheet.create({
     height: 200,
     borderRadius: 100,
     borderWidth: 2,
-    borderColor: 'rgba(52, 211, 153, 0.2)',
+    borderColor: theme.colors.pulseTransparent,
   },
   mainCircle: {
     width: 160,
@@ -221,22 +228,22 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   mainCircleInactive: {
-    backgroundColor: '#1E293B',
-    borderColor: '#334155',
+    backgroundColor: theme.colors.surface,
+    borderColor: theme.colors.border,
   },
   mainCircleActive: {
-    backgroundColor: 'rgba(52, 211, 153, 0.15)',
-    borderColor: '#34D399',
+    backgroundColor: theme.colors.primaryTransparent,
+    borderColor: theme.colors.primary,
   },
   title: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#F8FAFC',
+    color: theme.colors.textPrimary,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 12,
-    color: '#64748B',
+    color: theme.colors.textMuted,
     textAlign: 'center',
     marginBottom: 24,
   },
@@ -247,17 +254,17 @@ const styles = StyleSheet.create({
   },
   progressTrack: {
     height: 6,
-    backgroundColor: '#1E293B',
+    backgroundColor: theme.colors.surface,
     borderRadius: 99,
     overflow: 'hidden',
   },
   progressBar: {
     height: '100%',
-    backgroundColor: '#34D399',
+    backgroundColor: theme.colors.primary,
   },
   progressText: {
     fontSize: 10,
-    color: '#475569',
+    color: theme.colors.textDark,
     textAlign: 'center',
     marginTop: 8,
   },
@@ -268,47 +275,47 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 12,
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    backgroundColor: theme.colors.successTransparent,
     borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.2)',
+    borderColor: theme.colors.borderTransparent,
     marginBottom: 32,
   },
   statusDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#10B981',
+    backgroundColor: theme.colors.success,
   },
   statusText: {
     fontSize: 10,
-    color: '#10B981',
+    color: theme.colors.success,
     fontWeight: '500',
   },
   startButton: {
     width: '100%',
     height: 48,
-    backgroundColor: '#34D399',
+    backgroundColor: theme.colors.primary,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
   },
   startButtonText: {
-    color: '#0F172A',
+    color: theme.colors.background,
     fontSize: 14,
     fontWeight: 'bold',
   },
   cancelButton: {
     width: '100%',
     height: 48,
-    backgroundColor: '#1E293B',
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: theme.colors.border,
     justifyContent: 'center',
     alignItems: 'center',
   },
   cancelButtonText: {
-    color: '#EF4444',
+    color: theme.colors.danger,
     fontSize: 14,
     fontWeight: '600',
   },
@@ -323,11 +330,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 12,
-    backgroundColor: '#1E293B',
+    backgroundColor: theme.colors.surface,
   },
   flashText: {
     fontSize: 12,
-    color: '#64748B',
+    color: theme.colors.textMuted,
   },
 });
 

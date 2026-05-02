@@ -9,21 +9,26 @@ import {
   TouchableOpacity,
   SafeAreaView,
   StatusBar,
+  Alert,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import workerService from '../api/workerService';
+import fieldLogService from '../api/fieldLogService';
 import { BASE_URL } from '../api/apiClient';
 import theme from '../theme';
 
 const WorkerDetailsScreen = ({ route, navigation }) => {
-  const { workerId } = route.params;
-  const [worker, setWorker] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { workerId, workerData } = route.params;
+  const [worker, setWorker] = useState(workerData || null);
+  const [loading, setLoading] = useState(!workerData);
   const [docsExpanded, setDocsExpanded] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
-    fetchWorkerDetails();
-  }, [workerId]);
+    if (!workerData && workerId) {
+      fetchWorkerDetails();
+    }
+  }, [workerId, workerData]);
 
   const fetchWorkerDetails = async () => {
     setLoading(true);
@@ -32,15 +37,42 @@ const WorkerDetailsScreen = ({ route, navigation }) => {
       setWorker(data);
     } catch (error) {
       console.error(error);
+      Alert.alert('خطأ', 'فشل في تحميل بيانات العامل');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleLogInspection = async () => {
+    if (!worker) return;
+
+    setActionLoading(true);
+    try {
+      await fieldLogService.logInspection({
+        Worker_ID: worker.id,
+        Result: 'Verified',
+        Note: 'تم التحقق من البيانات ميدانياً عبر تطبيق الهاتف'
+      });
+      Alert.alert('نجاح', 'تم تسجيل عملية التفتيش بنجاح');
+    } catch (error) {
+      Alert.alert('فشل', 'حدث خطأ أثناء تسجيل التفتيش');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleAction = (actionName) => {
+    if (actionName === 'تسجيل تفتيش') {
+       handleLogInspection();
+       return;
+    }
+    Alert.alert('نظام التفتيش', `جاري تنفيذ ${actionName}...`);
+  };
+
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#34D399" />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
@@ -49,6 +81,9 @@ const WorkerDetailsScreen = ({ route, navigation }) => {
     return (
       <View style={styles.centered}>
         <Text style={styles.errorText}>لم يتم العثور على بيانات العامل</Text>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+           <Text style={{color: theme.colors.textSecondary}}>عودة</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -58,11 +93,13 @@ const WorkerDetailsScreen = ({ route, navigation }) => {
     return `${BASE_URL}/${path}`;
   };
 
+  const isExpired = worker.Health_Cert_Expiry && new Date(worker.Health_Cert_Expiry) < new Date();
+
   const statusConfig = {
-    'Active': { label: "نشط", color: "hsl(152,60%,40%)" },
-    'Expired': { label: "منتهي", color: "hsl(38,92%,50%)" },
-    'Suspended': { label: "موقوف", color: "hsl(38,85%,55%)" },
-    'Runaway': { label: "هارب", color: "hsl(0,72%,51%)" },
+    'Active': { label: "نشط", color: theme.colors.success },
+    'Expired': { label: "منتهي", color: theme.colors.danger },
+    'Suspended': { label: "موقوف", color: theme.colors.warning },
+    'Runaway': { label: "هارب", color: theme.colors.danger },
   };
 
   const sc = statusConfig[worker.Current_Status] || statusConfig.Active;
@@ -72,10 +109,12 @@ const WorkerDetailsScreen = ({ route, navigation }) => {
       <StatusBar barStyle="light-content" />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <MaterialCommunityIcons name="arrow-right" size={16} color="#94A3B8" />
+          <MaterialCommunityIcons name="arrow-right" size={16} color={theme.colors.textSecondary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>نتيجة التحقق</Text>
-        <View style={{ width: 36 }} />
+        <View style={{ width: 36 }}>
+          {actionLoading && <ActivityIndicator size="small" color={theme.colors.primary} />}
+        </View>
       </View>
 
       <ScrollView style={styles.container} bounces={false}>
@@ -83,12 +122,19 @@ const WorkerDetailsScreen = ({ route, navigation }) => {
           {/* Worker Photo & Status */}
           <View style={styles.photoSection}>
             <View style={styles.photoBox}>
-              <MaterialCommunityIcons name="account" size={40} color="#475569" />
+              {worker.Personal_Photo_Copy ? (
+                <Image
+                  source={{ uri: getImageUrl(worker.Personal_Photo_Copy) }}
+                  style={styles.fullPhoto}
+                />
+              ) : (
+                <MaterialCommunityIcons name="account" size={40} color={theme.colors.textDark} />
+              )}
             </View>
             <Text style={styles.workerName}>{worker.Full_Name}</Text>
             <View style={[
               styles.statusBadge,
-              { borderColor: sc.color, backgroundColor: sc.color.replace('hsl', 'hsla').replace(')', ', 0.12)') }
+              { borderColor: sc.color, backgroundColor: `${sc.color}1F` } // Approx 0.12 opacity
             ]}>
               <Text style={[styles.statusText, { color: sc.color }]}>{sc.label}</Text>
             </View>
@@ -96,7 +142,7 @@ const WorkerDetailsScreen = ({ route, navigation }) => {
 
           {/* Verification indicator */}
           <View style={styles.verificationCard}>
-            <MaterialCommunityIcons name="shield-check" size={16} color="#10B981" />
+            <MaterialCommunityIcons name="shield-check" size={16} color={theme.colors.success} />
             <Text style={styles.verificationText}>التشفير تم التحقق منه</Text>
           </View>
 
@@ -104,9 +150,14 @@ const WorkerDetailsScreen = ({ route, navigation }) => {
           <View style={styles.infoGrid}>
             <DetailRow icon="credit-card-outline" label="رقم الجواز" value={worker.Passport_Number} />
             <DetailRow icon="earth" label="الجنسية" value={worker.Nationality} />
-            <DetailRow icon="briefcase-outline" label="الكفيل" value={worker.Sponsor?.Sponsor_Name || 'غير محدد'} />
-            <DetailRow icon="calendar" label="تاريخ الإصدار" value={worker.createdAt?.split('T')[0] || '2025-01-15'} />
-            <DetailRow icon="calendar" label="تاريخ الانتهاء" value={worker.Health_Cert_Expiry} />
+            <DetailRow icon="briefcase-outline" label="الكفيل" value={worker.Sponsor?.Sponsor_Name || (worker.Freelance ? 'عمل حر' : 'غير محدد')} />
+            <DetailRow icon="calendar" label="تاريخ التسجيل" value={new Date(worker.createdAt).toLocaleDateString('ar-SA')} />
+            <DetailRow
+              icon="calendar"
+              label="صلاحية الشهادة"
+              value={worker.Health_Cert_Expiry}
+              isHighlighted={isExpired}
+            />
           </View>
 
           {/* Documents Section */}
@@ -120,44 +171,50 @@ const WorkerDetailsScreen = ({ route, navigation }) => {
                 <MaterialCommunityIcons
                   name={docsExpanded ? "chevron-up" : "chevron-down"}
                   size={16}
-                  color="#64748B"
+                  color={theme.colors.textMuted}
                 />
               </View>
               <View style={styles.docsHeaderRight}>
-                <MaterialCommunityIcons name="file-document-outline" size={16} color="#34D399" />
+                <MaterialCommunityIcons name="file-document-outline" size={16} color={theme.colors.primary} />
                 <Text style={styles.docsTitle}>المستندات المرفقة</Text>
                 <View style={styles.docsCountBadge}>
-                  <Text style={styles.docsCountText}>4</Text>
+                  <Text style={styles.docsCountText}>
+                    {[worker.Passport_Copy, worker.Health_Cert_Copy, worker.Residency_Copy, worker.Personal_Photo_Copy].filter(Boolean).length}
+                  </Text>
                 </View>
               </View>
             </TouchableOpacity>
 
             {docsExpanded && (
               <View style={styles.docsList}>
-                <DocItem label="صورة جواز السفر" type="صورة" icon="credit-card-outline" />
-                <DocItem label="الشهادة الصحية" type="PDF" icon="file-document-outline" />
-                <DocItem label="صورة الإقامة" type="صورة" icon="file-document-outline" />
-                <DocItem label="صورة شخصية" type="صورة" icon="image-outline" />
+                {worker.Passport_Copy && <DocItem label="صورة جواز السفر" type="صورة" icon="credit-card-outline" />}
+                {worker.Health_Cert_Copy && <DocItem label="الشهادة الصحية" type="PDF" icon="file-document-outline" />}
+                {worker.Residency_Copy && <DocItem label="صورة الإقامة" type="صورة" icon="file-document-outline" />}
+                {worker.Personal_Photo_Copy && <DocItem label="صورة شخصية" type="صورة" icon="image-outline" />}
               </View>
             )}
           </View>
 
           {/* Action Buttons */}
           <View style={styles.actionsGrid}>
-            <TouchableOpacity style={[styles.actionBtn, styles.primaryBtn]}>
-              <MaterialCommunityIcons name="clipboard-text-outline" size={20} color="#0F172A" />
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.primaryBtn, actionLoading && {opacity: 0.7}]}
+              onPress={() => handleAction('تسجيل تفتيش')}
+              disabled={actionLoading}
+            >
+              <MaterialCommunityIcons name="clipboard-text-outline" size={20} color={theme.colors.background} />
               <Text style={styles.primaryBtnText}>تسجيل تفتيش</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.actionBtn, styles.dangerBtn]}>
-              <MaterialCommunityIcons name="alert-triangle-outline" size={20} color="#EF4444" />
+            <TouchableOpacity style={[styles.actionBtn, styles.dangerBtn]} onPress={() => handleAction('إبلاغ مخالفة')}>
+              <MaterialCommunityIcons name="alert-triangle-outline" size={20} color={theme.colors.danger} />
               <Text style={styles.dangerBtnText}>إبلاغ مخالفة</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.actionBtn, styles.secondaryBtn]}>
-              <MaterialCommunityIcons name="scale-balance" size={20} color="#94A3B8" />
+            <TouchableOpacity style={[styles.actionBtn, styles.secondaryBtn]} onPress={() => handleAction('عرض القضايا')}>
+              <MaterialCommunityIcons name="scale-balance" size={20} color={theme.colors.textSecondary} />
               <Text style={styles.secondaryBtnText}>القضايا</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.actionBtn, styles.secondaryBtn]}>
-              <MaterialCommunityIcons name="file-document-outline" size={20} color="#94A3B8" />
+            <TouchableOpacity style={[styles.actionBtn, styles.secondaryBtn]} onPress={() => handleAction('عرض المستندات')}>
+              <MaterialCommunityIcons name="file-document-outline" size={20} color={theme.colors.textSecondary} />
               <Text style={styles.secondaryBtnText}>المستندات</Text>
             </TouchableOpacity>
           </View>
@@ -167,12 +224,14 @@ const WorkerDetailsScreen = ({ route, navigation }) => {
   );
 };
 
-const DetailRow = ({ icon, label, value }) => (
+const DetailRow = ({ icon, label, value, isHighlighted }) => (
   <View style={styles.detailRow}>
-    <Text style={styles.detailValue}>{value}</Text>
+    <Text style={[styles.detailValue, isHighlighted && { color: theme.colors.danger, fontWeight: 'bold' }]}>
+      {value}
+    </Text>
     <View style={styles.detailLabelGroup}>
       <Text style={styles.detailLabel}>{label}</Text>
-      <MaterialCommunityIcons name={icon} size={16} color="#475569" />
+      <MaterialCommunityIcons name={icon} size={16} color={theme.colors.textDark} />
     </View>
   </View>
 );
@@ -180,14 +239,14 @@ const DetailRow = ({ icon, label, value }) => (
 const DocItem = ({ label, type, icon }) => (
   <View style={styles.docItem}>
     <TouchableOpacity style={styles.docViewBtn}>
-      <MaterialCommunityIcons name="eye-outline" size={14} color="#64748B" />
+      <MaterialCommunityIcons name="eye-outline" size={14} color={theme.colors.textMuted} />
     </TouchableOpacity>
     <View style={styles.docInfo}>
       <Text style={styles.docLabelText}>{label}</Text>
       <Text style={styles.docTypeText}>{type} • مرفق</Text>
     </View>
     <View style={styles.docIconBox}>
-      <MaterialCommunityIcons name={icon} size={16} color="#34D399" />
+      <MaterialCommunityIcons name={icon} size={16} color={theme.colors.primary} />
     </View>
   </View>
 );
@@ -195,11 +254,11 @@ const DocItem = ({ label, type, icon }) => (
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: theme.colors.background,
   },
   centered: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: theme.colors.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -215,14 +274,14 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 8,
-    backgroundColor: '#1E293B',
+    backgroundColor: theme.colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerTitle: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#F8FAFC',
+    color: theme.colors.textPrimary,
   },
   container: {
     flex: 1,
@@ -239,17 +298,22 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 16,
-    backgroundColor: '#1E293B',
+    backgroundColor: theme.colors.surface,
     borderWidth: 2,
-    borderColor: '#334155',
+    borderColor: theme.colors.border,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
+    overflow: 'hidden',
+  },
+  fullPhoto: {
+    width: '100%',
+    height: '100%',
   },
   workerName: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#F8FAFC',
+    color: theme.colors.textPrimary,
   },
   statusBadge: {
     marginTop: 8,
@@ -267,16 +331,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    backgroundColor: theme.colors.successTransparent,
     borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.2)',
+    borderColor: theme.colors.borderTransparent,
     borderRadius: 12,
     paddingVertical: 8,
     marginBottom: 20,
   },
   verificationText: {
     fontSize: 11,
-    color: '#10B981',
+    color: theme.colors.success,
     fontWeight: '500',
   },
   infoGrid: {
@@ -287,9 +351,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#1E293B',
+    backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: theme.colors.border,
     borderRadius: 12,
     padding: 12,
   },
@@ -300,11 +364,11 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontSize: 12,
-    color: '#64748B',
+    color: theme.colors.textMuted,
   },
   detailValue: {
     fontSize: 12,
-    color: '#E2E8F0',
+    color: theme.colors.textSlate200,
     fontWeight: '500',
   },
   docsSection: {
@@ -314,9 +378,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#1E293B',
+    backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: theme.colors.border,
     borderRadius: 12,
     padding: 12,
   },
@@ -328,18 +392,18 @@ const styles = StyleSheet.create({
   docsTitle: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#F1F5F9',
+    color: theme.colors.textSlate100,
   },
   docsCountBadge: {
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
-    backgroundColor: 'rgba(52, 211, 153, 0.15)',
+    backgroundColor: theme.colors.primaryTransparent,
   },
   docsCountText: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: '#34D399',
+    color: theme.colors.primary,
   },
   docsList: {
     marginTop: 8,
@@ -349,9 +413,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: 'rgba(15, 23, 42, 0.4)',
+    backgroundColor: theme.colors.slateTransparent,
     borderWidth: 1,
-    borderColor: '#1E293B',
+    borderColor: theme.colors.surface,
     borderRadius: 12,
     padding: 12,
   },
@@ -359,7 +423,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: 'rgba(52, 211, 153, 0.1)',
+    backgroundColor: theme.colors.primaryTransparent,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -371,17 +435,17 @@ const styles = StyleSheet.create({
   docLabelText: {
     fontSize: 11,
     fontWeight: '500',
-    color: '#E2E8F0',
+    color: theme.colors.textSlate200,
   },
   docTypeText: {
     fontSize: 9,
-    color: '#64748B',
+    color: theme.colors.textMuted,
   },
   docViewBtn: {
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: '#1E293B',
+    backgroundColor: theme.colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -399,35 +463,36 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   primaryBtn: {
-    backgroundColor: '#34D399',
+    backgroundColor: theme.colors.primary,
   },
   primaryBtnText: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: '#0F172A',
+    color: theme.colors.background,
   },
   dangerBtn: {
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    backgroundColor: theme.colors.dangerTransparent,
     borderWidth: 1,
     borderColor: 'rgba(239, 68, 68, 0.25)',
   },
   dangerBtnText: {
     fontSize: 10,
     fontWeight: 'bold',
-    color: '#EF4444',
+    color: theme.colors.danger,
   },
   secondaryBtn: {
-    backgroundColor: '#1E293B',
+    backgroundColor: theme.colors.surface,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: theme.colors.border,
   },
   secondaryBtnText: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#94A3B8',
+    color: theme.colors.textSecondary,
   },
   errorText: {
-    color: '#EF4444',
+    color: theme.colors.danger,
+    marginBottom: 20,
   }
 });
 

@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../context/AuthContext';
+import theme from '../theme';
 
 const LoginScreen = () => {
   const [username, setUsername] = useState('');
@@ -49,7 +50,7 @@ const LoginScreen = () => {
           {/* Logo Section */}
           <View style={styles.logoContainer}>
             <View style={styles.logoBox}>
-              <MaterialCommunityIcons name="shield" size={40} color="#0F172A" />
+              <MaterialCommunityIcons name="shield" size={40} color={theme.colors.background} />
             </View>
             <Text style={styles.logoTitle}>FLMS</Text>
             <Text style={styles.logoSubtitle}>Field Inspection App</Text>
@@ -59,12 +60,12 @@ const LoginScreen = () => {
           <View style={styles.formContainer}>
             <View style={styles.inputWrapper}>
               <View style={styles.iconContainer}>
-                <MaterialCommunityIcons name="account" size={16} color="#64748B" />
+                <MaterialCommunityIcons name="account" size={16} color={theme.colors.textMuted} />
               </View>
               <TextInput
                 style={styles.input}
                 placeholder="اسم المستخدم"
-                placeholderTextColor="#475569"
+                placeholderTextColor={theme.colors.textDark}
                 value={username}
                 onChangeText={setUsername}
                 autoCapitalize="none"
@@ -73,12 +74,12 @@ const LoginScreen = () => {
 
             <View style={styles.inputWrapper}>
               <View style={styles.iconContainer}>
-                <MaterialCommunityIcons name="lock" size={16} color="#64748B" />
+                <MaterialCommunityIcons name="lock" size={16} color={theme.colors.textMuted} />
               </View>
               <TextInput
                 style={[styles.input, { paddingLeft: 40 }]}
                 placeholder="كلمة المرور"
-                placeholderTextColor="#475569"
+                placeholderTextColor={theme.colors.textDark}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
@@ -90,7 +91,7 @@ const LoginScreen = () => {
                 <MaterialCommunityIcons
                   name={showPassword ? "eye-off" : "eye"}
                   size={16}
-                  color="#64748B"
+                  color={theme.colors.textMuted}
                 />
               </TouchableOpacity>
             </View>
@@ -102,7 +103,7 @@ const LoginScreen = () => {
               activeOpacity={0.8}
             >
               {loading ? (
-                <ActivityIndicator color="#0F172A" />
+                <ActivityIndicator color={theme.colors.background} />
               ) : (
                 <Text style={styles.loginButtonText}>تسجيل الدخول</Text>
               )}
@@ -113,14 +114,14 @@ const LoginScreen = () => {
               onPress={() => Alert.alert('معلومات', 'خاصية البصمة ستكون متاحة قريباً')}
               activeOpacity={0.7}
             >
-              <MaterialCommunityIcons name="fingerprint" size={20} color="#94A3B8" />
+              <MaterialCommunityIcons name="fingerprint" size={20} color={theme.colors.textSecondary} />
               <Text style={styles.fingerprintButtonText}>الدخول بالبصمة</Text>
             </TouchableOpacity>
           </View>
 
           {/* Footer Section */}
           <View style={styles.footer}>
-            <MaterialCommunityIcons name="lock" size={12} color="#475569" />
+            <MaterialCommunityIcons name="lock" size={12} color={theme.colors.textDark} />
             <Text style={styles.footerText}>وصول آمن – للمستخدمين المصرح لهم فقط</Text>
           </View>
         </View>
@@ -132,30 +133,30 @@ const LoginScreen = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: theme.colors.background,
   },
   container: {
     flex: 1,
   },
   innerContainer: {
     flex: 1,
-    padding: 24,
+    padding: theme.spacing.xl,
     paddingTop: 56,
   },
   logoContainer: {
     alignItems: 'center',
     marginTop: 48,
-    marginBottom: 40,
+    marginBottom: theme.spacing.xxxl,
   },
   logoBox: {
     width: 80,
     height: 80,
-    borderRadius: 16,
-    backgroundColor: '#34D399',
+    borderRadius: theme.roundness.xl,
+    backgroundColor: theme.colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
-    shadowColor: '#34D399',
+    marginBottom: theme.spacing.lg,
+    shadowColor: theme.colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -164,25 +165,25 @@ const styles = StyleSheet.create({
   logoTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#F8FAFC',
+    color: theme.colors.textPrimary,
     letterSpacing: 1,
   },
   logoSubtitle: {
     fontSize: 12,
-    color: '#64748B',
+    color: theme.colors.textMuted,
     marginTop: 4,
   },
   formContainer: {
     flex: 1,
-    gap: 16,
+    gap: theme.spacing.lg,
   },
   inputWrapper: {
     position: 'relative',
     height: 48,
-    backgroundColor: '#1E293B',
-    borderRadius: 12,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.roundness.lg,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: theme.colors.border,
   },
   iconContainer: {
     position: 'absolute',
@@ -196,7 +197,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingRight: 40,
     paddingLeft: 16,
-    color: '#F8FAFC',
+    color: theme.colors.textPrimary,
     fontSize: 14,
     textAlign: 'right',
   },
@@ -209,30 +210,30 @@ const styles = StyleSheet.create({
   },
   loginButton: {
     height: 48,
-    backgroundColor: '#34D399',
-    borderRadius: 12,
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.roundness.lg,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: theme.spacing.sm,
   },
   loginButtonText: {
-    color: '#0F172A',
+    color: theme.colors.background,
     fontSize: 14,
     fontWeight: 'bold',
   },
   fingerprintButton: {
     height: 48,
-    backgroundColor: '#1E293B',
-    borderRadius: 12,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.roundness.lg,
     borderWidth: 1,
-    borderColor: '#334155',
+    borderColor: theme.colors.border,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
+    gap: theme.spacing.sm,
   },
   fingerprintButtonText: {
-    color: '#CBD5E1',
+    color: theme.colors.textSlate300,
     fontSize: 14,
   },
   footer: {
@@ -240,11 +241,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 6,
-    paddingBottom: 32,
+    paddingBottom: theme.spacing.xxl,
   },
   footerText: {
     fontSize: 10,
-    color: '#475569',
+    color: theme.colors.textDark,
   },
 });
 
