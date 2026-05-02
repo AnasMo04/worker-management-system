@@ -8,14 +8,31 @@ import {
   SafeAreaView,
   StatusBar,
   Alert,
+  Platform,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import NfcManager, { NfcTech } from 'react-native-nfc-manager';
 import theme from '../theme';
 import workerService from '../api/workerService';
 
 const NfcScanScreen = ({ navigation }) => {
   const [scanning, setScanning] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [hasNfc, setHasNfc] = useState(null);
+
+  useEffect(() => {
+    async function checkNfc() {
+      const supported = await NfcManager.isSupported();
+      setHasNfc(supported);
+      if (supported) {
+        await NfcManager.start();
+      }
+    }
+    checkNfc();
+
+    return () => {
+      NfcManager.cancelTechnologyRequest().catch(() => {});
+    };
+  }, []);
 
   const handleScanComplete = async (uid) => {
     try {
@@ -23,7 +40,7 @@ const NfcScanScreen = ({ navigation }) => {
       if (worker && worker.id) {
         navigation.replace('WorkerDetails', { workerData: worker });
       } else {
-        Alert.alert('فشل التحقق', 'لم يتم العثور على سجل مطابق لهذه البطاقة في قاعدة البيانات المركزية');
+        Alert.alert('فشل التحقق', `لم يتم العثور على سجل مطابق لهذا المعرف: ${uid}`);
         resetScan();
       }
     } catch (error) {
@@ -34,46 +51,48 @@ const NfcScanScreen = ({ navigation }) => {
 
   const resetScan = () => {
     setScanning(false);
-    setProgress(0);
+    NfcManager.cancelTechnologyRequest().catch(() => {});
   };
 
-  const startScan = () => {
+  const startScan = async () => {
+    if (hasNfc === false) {
+      Alert.alert('تنبيه', 'جهازك لا يدعم تقنية NFC');
+      return;
+    }
+
     setScanning(true);
-    setProgress(0);
+
+    try {
+      // Trigger native NFC prompt
+      await NfcManager.requestTechnology(NfcTech.Ndef);
+      const tag = await NfcManager.getTag();
+
+      if (tag && tag.id) {
+        // UID typically comes in hex from the library,
+        // but backend might expect decimal or specific string.
+        // We pass the raw ID for verification.
+        handleScanComplete(tag.id);
+      } else {
+        throw new Error('Could not read Tag ID');
+      }
+    } catch (ex) {
+      console.warn(ex);
+      if (ex.toString() !== 'Error: User cancelled') {
+        Alert.alert('خطأ في القراءة', 'فشل في قراءة بطاقة NFC، يرجى المحاولة مرة أخرى');
+      }
+      resetScan();
+    } finally {
+      NfcManager.cancelTechnologyRequest().catch(() => {});
+    }
   };
 
-  useEffect(() => {
-    if (!scanning) return;
-
-    const interval = setInterval(() => {
-      setProgress((p) => {
-        if (p >= 100) {
-          clearInterval(interval);
-          setTimeout(() => {
-            Alert.alert(
-              'نظام التحقق الميداني',
-              'يرجى تقريب البطاقة من الجهاز أو اختيار محاكاة للمتابعة',
-              [
-                {
-                  text: 'إلغاء',
-                  onPress: () => resetScan(),
-                  style: 'cancel'
-                },
-                {
-                  text: 'تأكيد (محاكاة)',
-                  onPress: () => handleScanComplete('123456789')
-                }
-              ]
-            );
-          }, 300);
-          return 100;
-        }
-        return p + 4;
-      });
-    }, 100);
-
-    return () => clearInterval(interval);
-  }, [scanning]);
+  if (hasNfc === null) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -112,27 +131,20 @@ const NfcScanScreen = ({ navigation }) => {
           </View>
 
           <Text style={styles.title}>
-            {scanning ? "جاري قراءة البيانات..." : "ضع البطاقة على الجهاز"}
+            {scanning ? "جاري انتظار البطاقة..." : "ضع البطاقة على الجهاز"}
           </Text>
           <Text style={styles.subtitle}>
             {scanning
-              ? "يرجى الحفاظ على ثبات البطاقة حتى اكتمال القراءة"
+              ? "يرجى تقريب البطاقة من منطقة الحساس خلف الجهاز"
               : "تأكد من تفعيل NFC في إعدادات الجهاز ثم قرب البطاقة من خلف الهاتف"}
           </Text>
 
-          {scanning && (
-            <View style={styles.progressSection}>
-              <View style={styles.progressTrack}>
-                <View style={[styles.progressBar, { width: `${progress}%` }]} />
-              </View>
-              <Text style={styles.progressText}>{progress}%</Text>
-            </View>
-          )}
-
           {/* NFC Status */}
           <View style={styles.statusBadge}>
-            <View style={styles.statusDot} />
-            <Text style={styles.statusText}>المستشعر جاهز</Text>
+            <View style={[styles.statusDot, { backgroundColor: hasNfc ? theme.colors.success : theme.colors.danger }]} />
+            <Text style={[styles.statusText, { color: hasNfc ? theme.colors.success : theme.colors.danger }]}>
+               {hasNfc ? "المستشعر جاهز" : "المستشعر غير مدعوم"}
+            </Text>
           </View>
 
           {!scanning ? (
@@ -171,6 +183,12 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: theme.colors.background,
+  },
+  centered: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
     flexDirection: 'row-reverse',
@@ -244,29 +262,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 40,
-  },
-  progressSection: {
-    width: '100%',
-    marginBottom: 32,
-  },
-  progressTrack: {
-    height: 8,
-    backgroundColor: theme.colors.surface,
-    borderRadius: 4,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
-  progressBar: {
-    height: '100%',
-    backgroundColor: theme.colors.primary,
-  },
-  progressText: {
-    fontSize: 12,
-    color: theme.colors.textPrimary,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginTop: 10,
   },
   statusBadge: {
     flexDirection: 'row-reverse',

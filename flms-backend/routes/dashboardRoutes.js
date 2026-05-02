@@ -5,6 +5,9 @@ const authMiddleware = require('../middleware/authMiddleware');
 
 router.use(authMiddleware);
 
+// Legacy/Global System Summary (Web Admin)
+router.get('/summary', dashboardController.getSystemSummary);
+
 // Global System Summary (Web Admin)
 router.get('/system', dashboardController.getSystemSummary);
 
