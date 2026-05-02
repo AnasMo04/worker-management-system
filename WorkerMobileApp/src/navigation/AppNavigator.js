@@ -8,6 +8,7 @@ import LoginScreen from '../screens/LoginScreen';
 import DashboardScreen from '../screens/DashboardScreen';
 import WorkerDetailsScreen from '../screens/WorkerDetailsScreen';
 import NfcScanScreen from '../screens/NfcScanScreen';
+import ManualSearchScreen from '../screens/ManualSearchScreen';
 import InspectionRecordsScreen from '../screens/InspectionRecordsScreen';
 import CasesScreen from '../screens/CasesScreen';
 import LogInspectionScreen from '../screens/LogInspectionScreen';
@@ -41,6 +42,10 @@ const AppNavigator = () => {
           <Stack.Screen
             name="NfcScan"
             component={NfcScanScreen}
+          />
+          <Stack.Screen
+            name="ManualSearch"
+            component={ManualSearchScreen}
           />
           <Stack.Screen
             name="WorkerDetails"

@@ -38,24 +38,32 @@ const InspectionRecordsScreen = ({ navigation }) => {
   const renderItem = ({ item }) => (
     <View style={styles.logCard}>
       <View style={styles.logHeader}>
-        <Text style={styles.logResult}>{item.Result}</Text>
+        <View style={styles.resultBadge}>
+           <Text style={styles.logResult}>{item.Result}</Text>
+        </View>
         <Text style={styles.logDate}>{new Date(item.Scan_Time).toLocaleString('ar-SA')}</Text>
       </View>
-      <Text style={styles.workerName}>{item.Worker?.Full_Name}</Text>
-      <Text style={styles.passportNumber}>{item.Worker?.Passport_Number}</Text>
-      {item.Note && <Text style={styles.note}>{item.Note}</Text>}
+      <View style={styles.logBody}>
+         <Text style={styles.workerName}>{item.Worker?.Full_Name}</Text>
+         <Text style={styles.passportNumber}>{item.Worker?.Passport_Number}</Text>
+         {item.Note && (
+           <View style={styles.noteBox}>
+              <Text style={styles.note}>{item.Note}</Text>
+           </View>
+         )}
+      </View>
     </View>
   );
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" />
+      <StatusBar barStyle="dark-content" backgroundColor={theme.colors.surface} />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <MaterialCommunityIcons name="arrow-right" size={16} color={theme.colors.textSecondary} />
+          <MaterialCommunityIcons name="arrow-right" size={24} color={theme.colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>سجلات التفتيش</Text>
-        <View style={{ width: 36 }} />
+        <Text style={styles.headerTitle}>سجلات التفتيش الميدانية</Text>
+        <View style={{ width: 40 }} />
       </View>
 
       {loading ? (
@@ -68,7 +76,12 @@ const InspectionRecordsScreen = ({ navigation }) => {
           renderItem={renderItem}
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.listContent}
-          ListEmptyComponent={<Text style={styles.emptyText}>لا توجد سجلات تفتيش حالياً</Text>}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+               <MaterialCommunityIcons name="clipboard-off-outline" size={60} color={theme.colors.textMuted} />
+               <Text style={styles.emptyText}>لا توجد سجلات تفتيش مسجلة باسمك حالياً</Text>
+            </View>
+          }
         />
       )}
     </SafeAreaView>
@@ -81,25 +94,21 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
   },
   header: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 56,
-    paddingBottom: 12,
+    paddingVertical: 16,
+    backgroundColor: theme.colors.surface,
+    elevation: 4,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
   },
   backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: theme.colors.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
+    padding: 8,
   },
   headerTitle: {
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: 'bold',
     color: theme.colors.textPrimary,
   },
@@ -113,49 +122,73 @@ const styles = StyleSheet.create({
   },
   logCard: {
     backgroundColor: theme.colors.surface,
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
-    marginBottom: 12,
+    marginBottom: 16,
+    elevation: 3,
     borderWidth: 1,
     borderColor: theme.colors.border,
   },
   logHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.surfaceLight,
+    paddingBottom: 12,
+    marginBottom: 12,
+  },
+  resultBadge: {
+    backgroundColor: theme.colors.successTransparent,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
   logResult: {
     color: theme.colors.success,
     fontWeight: 'bold',
-    fontSize: 12,
+    fontSize: 11,
   },
   logDate: {
-    color: theme.colors.textMuted,
-    fontSize: 10,
+    color: theme.colors.textSecondary,
+    fontSize: 11,
+  },
+  logBody: {
+    alignItems: 'flex-end',
   },
   workerName: {
     color: theme.colors.textPrimary,
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: 'bold',
-    textAlign: 'right',
   },
   passportNumber: {
     color: theme.colors.textSecondary,
-    fontSize: 12,
-    textAlign: 'right',
+    fontSize: 13,
     marginTop: 4,
   },
+  noteBox: {
+    backgroundColor: theme.colors.surfaceLight,
+    padding: 12,
+    borderRadius: 10,
+    marginTop: 12,
+    width: '100%',
+  },
   note: {
-    color: theme.colors.textMuted,
-    fontSize: 11,
+    color: theme.colors.textDark,
+    fontSize: 12,
     textAlign: 'right',
-    marginTop: 8,
-    fontStyle: 'italic',
+    lineHeight: 18,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    marginTop: 80,
+    gap: 16,
   },
   emptyText: {
     color: theme.colors.textMuted,
     textAlign: 'center',
-    marginTop: 40,
+    fontSize: 14,
+    fontWeight: '500',
   },
 });
 
