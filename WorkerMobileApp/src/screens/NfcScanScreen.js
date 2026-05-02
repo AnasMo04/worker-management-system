@@ -8,7 +8,6 @@ import {
   SafeAreaView,
   StatusBar,
   Alert,
-  Platform,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import NfcManager, { NfcTech } from 'react-native-nfc-manager';
@@ -20,69 +19,85 @@ const NfcScanScreen = ({ navigation }) => {
   const [hasNfc, setHasNfc] = useState(null);
 
   useEffect(() => {
-    async function checkNfc() {
-      const supported = await NfcManager.isSupported();
-      setHasNfc(supported);
-      if (supported) {
-        await NfcManager.start();
+    const initNfc = async () => {
+      try {
+        const supported = await NfcManager.isSupported();
+        setHasNfc(supported);
+        if (supported) {
+          await NfcManager.start();
+        }
+      } catch (err) {
+        console.warn('NFC initialization failed', err);
+        setHasNfc(false);
       }
-    }
-    checkNfc();
+    };
+
+    initNfc();
 
     return () => {
+      // Cleanup: release hardware resources when leaving screen
       NfcManager.cancelTechnologyRequest().catch(() => {});
     };
   }, []);
 
-  const handleScanComplete = async (uid) => {
-    try {
-      const worker = await workerService.searchByNfcUid(uid);
-      if (worker && worker.id) {
-        navigation.replace('WorkerDetails', { workerData: worker });
-      } else {
-        Alert.alert('فشل التحقق', `لم يتم العثور على سجل مطابق لهذا المعرف: ${uid}`);
-        resetScan();
-      }
-    } catch (error) {
-      Alert.alert('خطأ فني', 'حدث خطأ أثناء محاولة الوصول إلى سجلات النظام');
-      resetScan();
-    }
-  };
-
-  const resetScan = () => {
+  const resetScanState = () => {
     setScanning(false);
+    // Explicitly stop any pending tech requests to prevent hanging
     NfcManager.cancelTechnologyRequest().catch(() => {});
   };
 
   const startScan = async () => {
     if (hasNfc === false) {
-      Alert.alert('تنبيه', 'جهازك لا يدعم تقنية NFC');
+      Alert.alert('تنبيه', 'تقنية NFC غير متوفرة أو معطلة على هذا الجهاز');
       return;
     }
 
     setScanning(true);
 
     try {
-      // Trigger native NFC prompt
-      await NfcManager.requestTechnology(NfcTech.Ndef);
+      // Request NfcA technology specifically. This focuses on hardware UID reading
+      // and bypasses the Android system's default unformatted/empty tag interceptor.
+      await NfcManager.requestTechnology([NfcTech.NfcA]);
+
       const tag = await NfcManager.getTag();
 
-      if (tag && tag.id) {
-        // UID typically comes in hex from the library,
-        // but backend might expect decimal or specific string.
-        // We pass the raw ID for verification.
-        handleScanComplete(tag.id);
+      // Robust null check for the tag and its ID property to prevent crashes
+      if (!tag || !tag.id) {
+        throw new Error('TAG_NOT_FOUND');
+      }
+
+      console.log('NFC UID detected:', tag.id);
+
+      // Call API using extracted hardware UID
+      const worker = await workerService.searchByNfcUid(tag.id);
+
+      if (worker && worker.id) {
+        // Success: Navigate to details
+        navigation.replace('WorkerDetails', { workerData: worker });
       } else {
-        throw new Error('Could not read Tag ID');
+        // ID valid but not in our database
+        Alert.alert('سجل غير موجود', `معرف البطاقة (${tag.id}) غير مرتبطة بأي فرد في المنظومة.`);
+        resetScanState();
       }
+
     } catch (ex) {
-      console.warn(ex);
-      if (ex.toString() !== 'Error: User cancelled') {
-        Alert.alert('خطأ في القراءة', 'فشل في قراءة بطاقة NFC، يرجى المحاولة مرة أخرى');
+      // Safe error handling for null/undefined exceptions
+      const errorStr = ex?.message || ex?.toString() || '';
+      console.warn('NFC Scan Process Error:', errorStr);
+
+      if (errorStr.includes('User cancelled') || errorStr.includes('cancelled')) {
+        // Silent handle for user cancellation
+        console.log('NFC Scan cancelled by user');
+      } else {
+        Alert.alert(
+          'خطأ في المسح',
+          'تعذر قراءة هوية البطاقة الرقمية. يرجى التأكد من تفعيل المستشعر وتقريب البطاقة من خلف الجهاز.'
+        );
       }
-      resetScan();
+      resetScanState();
     } finally {
-      NfcManager.cancelTechnologyRequest().catch(() => {});
+      // Absolute final fallback to ensure hardware is released
+      resetScanState();
     }
   };
 
@@ -90,6 +105,7 @@ const NfcScanScreen = ({ navigation }) => {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text style={{ marginTop: 20, color: theme.colors.textSecondary }}>جاري فحص المستشعر...</Text>
       </View>
     );
   }
@@ -131,19 +147,19 @@ const NfcScanScreen = ({ navigation }) => {
           </View>
 
           <Text style={styles.title}>
-            {scanning ? "جاري انتظار البطاقة..." : "ضع البطاقة على الجهاز"}
+            {scanning ? "جاري المطابقة..." : "ضع البطاقة خلف الجهاز"}
           </Text>
           <Text style={styles.subtitle}>
             {scanning
-              ? "يرجى تقريب البطاقة من منطقة الحساس خلف الجهاز"
-              : "تأكد من تفعيل NFC في إعدادات الجهاز ثم قرب البطاقة من خلف الهاتف"}
+              ? "يرجى الحفاظ على استقرار البطاقة لإتمام القراءة"
+              : "تأكد من تفعيل خاصية NFC في الإعدادات لبدء التحقق الميداني"}
           </Text>
 
-          {/* NFC Status */}
+          {/* NFC Status Indicator */}
           <View style={styles.statusBadge}>
             <View style={[styles.statusDot, { backgroundColor: hasNfc ? theme.colors.success : theme.colors.danger }]} />
             <Text style={[styles.statusText, { color: hasNfc ? theme.colors.success : theme.colors.danger }]}>
-               {hasNfc ? "المستشعر جاهز" : "المستشعر غير مدعوم"}
+               {hasNfc ? "نظام المسح جاهز" : "المستشعر غير متوفر"}
             </Text>
           </View>
 
@@ -154,12 +170,12 @@ const NfcScanScreen = ({ navigation }) => {
               activeOpacity={0.8}
             >
               <MaterialCommunityIcons name="broadcast" size={24} color={theme.colors.textContrast} style={{marginLeft: 12}} />
-              <Text style={styles.startButtonText}>بدء عملية المسح</Text>
+              <Text style={styles.startButtonText}>بدء عملية التحقق</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
               style={styles.cancelButton}
-              onPress={resetScan}
+              onPress={resetScanState}
               activeOpacity={0.8}
             >
               <Text style={styles.cancelButtonText}>إلغاء العملية</Text>
@@ -167,11 +183,11 @@ const NfcScanScreen = ({ navigation }) => {
           )}
         </View>
 
-        {/* Help section */}
+        {/* Informational help */}
         <View style={styles.footer}>
            <TouchableOpacity style={styles.helpButton}>
-              <MaterialCommunityIcons name="help-circle-outline" size={18} color={theme.colors.textSecondary} />
-              <Text style={styles.helpText}>كيفية مسح البطاقة؟</Text>
+              <MaterialCommunityIcons name="information-outline" size={18} color={theme.colors.textSecondary} />
+              <Text style={styles.helpText}>مكان وضع البطاقة قد يختلف حسب نوع الجهاز</Text>
            </TouchableOpacity>
         </View>
       </View>
@@ -334,6 +350,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: theme.colors.textSecondary,
     fontWeight: '500',
+    textAlign: 'center',
   },
 });
 
