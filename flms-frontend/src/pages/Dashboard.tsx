@@ -66,32 +66,32 @@ export default function Dashboard() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
-          title="إجمالي العمال"
-          value={formatNumber(data?.counts?.totalWorkers)}
+          title="تفتيش اليوم"
+          value={formatNumber(data?.counts?.todayInspections)}
           icon={<Users />}
           gradient="kpi-gradient-1"
-          change="محدث الآن"
+          change="الخاص بك"
         />
         <KPICard
-          title="البطاقات النشطة"
-          value={formatNumber(data?.counts?.activeCards)}
+          title="مخالفاتك"
+          value={formatNumber(data?.counts?.myViolations)}
           icon={<CreditCard />}
           gradient="kpi-gradient-2"
-          change={`${data?.counts?.totalWorkers ? Math.round((data?.counts?.activeCards / data?.counts?.totalWorkers) * 100) : 0}% من الإجمالي`}
+          change="ميدانية"
         />
         <KPICard
-          title="القضايا المفتوحة"
-          value={formatNumber(data?.counts?.openLegalCases)}
+          title="تنبيهات نشطة"
+          value={formatNumber(data?.counts?.activeAlerts)}
           icon={<Scale />}
           gradient="kpi-gradient-3"
-          change="قضايا قيد المتابعة"
+          change="تنبيهات النظام"
         />
         <KPICard
-          title="مدفوعات معلقة"
-          value={formatNumber(data?.counts?.pendingPayments)}
+          title="إجمالي العمالة"
+          value={formatNumber(data?.counts?.totalWorkers)}
           icon={<Wallet />}
           gradient="kpi-gradient-4"
-          change="دينار ليبي"
+          change="في المنظومة"
         />
       </div>
 

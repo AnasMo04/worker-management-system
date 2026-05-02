@@ -24,6 +24,22 @@ exports.logInspection = async (req, res) => {
   }
 };
 
+exports.getAll = async (req, res) => {
+  try {
+    const logs = await FieldLog.findAll({
+      include: [
+        { model: require('../models').Worker, attributes: ['Full_Name', 'Passport_Number'] },
+        { model: require('../models').User, attributes: ['Name'] }
+      ],
+      order: [['Scan_Time', 'DESC']]
+    });
+    res.json(logs);
+  } catch (error) {
+    console.error('Get All Logs Error:', error);
+    res.status(500).json({ message: 'Error retrieving logs' });
+  }
+};
+
 exports.getMyLogs = async (req, res) => {
   try {
     const Officer_ID = req.user.id;

@@ -16,6 +16,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { useAuth } from '../context/AuthContext';
 import dashboardService from '../api/dashboardService';
 import theme from '../theme';
+import { formatNumber } from '../utils/format';
 
 const DashboardScreen = ({ navigation }) => {
   const { logout, user } = useAuth();
@@ -56,19 +57,19 @@ const DashboardScreen = ({ navigation }) => {
   const stats = [
     {
       label: "تفتيش اليوم",
-      value: summary.counts.todayInspections?.toString() || "0",
+      value: formatNumber(summary.counts.todayInspections),
       icon: "clipboard-list-outline",
       color: theme.colors.primary
     },
     {
       label: "مخالفات",
-      value: summary.counts.myViolations?.toString() || "0",
+      value: formatNumber(summary.counts.myViolations),
       icon: "alert-octagon-outline",
       color: theme.colors.danger
     },
     {
       label: "تنبيهات نشطة",
-      value: summary.counts.activeAlerts?.toString() || "0",
+      value: formatNumber(summary.counts.activeAlerts),
       icon: "bell-outline",
       color: theme.colors.warning
     },
@@ -197,7 +198,7 @@ const DashboardScreen = ({ navigation }) => {
                       <Text style={styles.scanName}>{scan.Worker?.Full_Name || 'عامل غير معروف'}</Text>
                       <View style={styles.scanTimeRow}>
                         <MaterialCommunityIcons name="clock-outline" size={12} color={theme.colors.textMuted} />
-                        <Text style={styles.scanTime}>{new Date(scan.Scan_Time).toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}</Text>
+                        <Text style={styles.scanTime}>{new Date(scan.Scan_Time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}</Text>
                       </View>
                     </View>
                     <View style={styles.scanAvatar}>
