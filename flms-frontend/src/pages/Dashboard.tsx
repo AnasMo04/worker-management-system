@@ -32,7 +32,7 @@ export default function Dashboard() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const response = await api.get("/api/dashboard/summary");
+      const response = await api.get("/api/dashboard/system");
       setData(response.data);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
@@ -66,32 +66,32 @@ export default function Dashboard() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
-          title="تفتيش اليوم"
-          value={formatNumber(data?.counts?.todayInspections)}
+          title="إجمالي العمال"
+          value={formatNumber(data?.counts?.totalWorkers)}
           icon={<Users />}
           gradient="kpi-gradient-1"
-          change="الخاص بك"
+          change="محدث الآن"
         />
         <KPICard
-          title="مخالفاتك"
-          value={formatNumber(data?.counts?.myViolations)}
+          title="البطاقات النشطة"
+          value={formatNumber(data?.counts?.activeCards)}
           icon={<CreditCard />}
           gradient="kpi-gradient-2"
-          change="ميدانية"
+          change={`${data?.counts?.totalWorkers ? Math.round((data?.counts?.activeCards / data?.counts?.totalWorkers) * 100) : 0}% من الإجمالي`}
         />
         <KPICard
-          title="تنبيهات نشطة"
-          value={formatNumber(data?.counts?.activeAlerts)}
+          title="القضايا المفتوحة"
+          value={formatNumber(data?.counts?.openLegalCases)}
           icon={<Scale />}
           gradient="kpi-gradient-3"
-          change="تنبيهات النظام"
+          change="قضايا قيد المتابعة"
         />
         <KPICard
-          title="إجمالي العمالة"
-          value={formatNumber(data?.counts?.totalWorkers)}
+          title="مدفوعات معلقة"
+          value={formatNumber(data?.counts?.pendingPayments)}
           icon={<Wallet />}
           gradient="kpi-gradient-4"
-          change="في المنظومة"
+          change="دينار ليبي"
         />
       </div>
 
