@@ -17,6 +17,7 @@ import workerService from '../api/workerService';
 import fieldLogService from '../api/fieldLogService';
 import { BASE_URL } from '../api/apiClient';
 import theme from '../theme';
+import { toAsciiDigits, formatDate } from '../utils/format';
 
 const WorkerDetailsScreen = ({ route, navigation }) => {
   const { workerId, workerData } = route.params;
@@ -168,13 +169,13 @@ const WorkerDetailsScreen = ({ route, navigation }) => {
             </View>
 
             <View style={styles.infoGrid}>
-              <DetailRow label="رقم الجواز" value={worker.Passport_Number} icon="passport" />
+              <DetailRow label="رقم الجواز" value={toAsciiDigits(worker.Passport_Number)} icon="passport" />
               <DetailRow label="الجنسية" value={worker.Nationality} icon="earth" />
               <DetailRow label="جهة العمل" value={worker.Sponsor?.Sponsor_Name || (worker.Freelance ? 'عمل حر' : 'غير محدد')} icon="office-building" />
-              <DetailRow label="تاريخ الإصدار" value={new Date(worker.createdAt).toLocaleDateString('ar-SA')} icon="calendar-check" />
+              <DetailRow label="تاريخ الإصدار" value={formatDate(worker.createdAt)} icon="calendar-check" />
               <DetailRow
                 label="تاريخ الانتهاء"
-                value={worker.Health_Cert_Expiry}
+                value={formatDate(worker.Health_Cert_Expiry)}
                 isHighlighted={isExpired}
                 icon="calendar-clock"
               />

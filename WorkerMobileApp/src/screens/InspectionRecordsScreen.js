@@ -13,6 +13,7 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import fieldLogService from '../api/fieldLogService';
 import theme from '../theme';
+import { formatDate, formatTime } from '../utils/format';
 
 const InspectionRecordsScreen = ({ navigation }) => {
   const [logs, setLogs] = useState([]);
@@ -41,7 +42,7 @@ const InspectionRecordsScreen = ({ navigation }) => {
         <View style={styles.resultBadge}>
            <Text style={styles.logResult}>{item.Result}</Text>
         </View>
-        <Text style={styles.logDate}>{new Date(item.Scan_Time).toLocaleString('ar-SA')}</Text>
+        <Text style={styles.logDate}>{formatDate(item.Scan_Time)} {formatTime(item.Scan_Time)}</Text>
       </View>
       <View style={styles.logBody}>
          <Text style={styles.workerName}>{item.Worker?.Full_Name}</Text>

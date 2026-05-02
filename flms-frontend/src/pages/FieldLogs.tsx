@@ -1,15 +1,47 @@
 import { formatDateTime } from "../utils/formatDate";
 import { StatusBadge } from "@/components/StatusBadge";
-
-const logs = [
-  { id: 1, worker: "محمد أحمد علي", officer: "خالد السعيدي", device: "NFC-001", time: "2026-02-23 09:15", result: "active" as const, gps: "32.8872, 13.1802" },
-  { id: 2, worker: "عبدالله كمارا", officer: "سالم العبيدي", device: "NFC-003", time: "2026-02-23 08:45", result: "suspended" as const, gps: "32.9025, 13.1856" },
-  { id: 3, worker: "راجيش كومار", officer: "خالد السعيدي", device: "NFC-001", time: "2026-02-23 08:30", result: "active" as const, gps: "32.8760, 13.1790" },
-  { id: 4, worker: "فيكتور أونيكا", officer: "أحمد الفقيه", device: "NFC-005", time: "2026-02-22 16:20", result: "expired" as const, gps: "32.8950, 13.1700" },
-  { id: 5, worker: "جون مارك", officer: "سالم العبيدي", device: "NFC-003", time: "2026-02-22 15:10", result: "runaway" as const, gps: "32.9100, 13.1650" },
-];
+import { useState, useEffect } from "react";
+import api from "../api/axiosConfig";
+import { useToast } from "@/hooks/use-toast";
 
 export default function FieldLogs() {
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchLogs();
+  }, []);
+
+  const fetchLogs = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get("/api/field-logs");
+      setLogs(response.data);
+    } catch (error) {
+      console.error("Error fetching logs:", error);
+      toast({
+        variant: "destructive",
+        title: "خطأ",
+        description: "فشل في تحميل سجلات التفتيش من الخادم."
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getResultVariant = (res: string) => {
+    if (res === 'صالح' || res === 'Verified') return 'active';
+    if (res === 'مخالفة') return 'runaway';
+    if (res === 'منتهي') return 'expired';
+    if (res === 'موقوف') return 'suspended';
+    return 'expired';
+  };
+
+  if (loading) {
+    return <div className="p-8 text-center text-muted-foreground animate-pulse">جاري تحميل السجلات...</div>;
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -24,23 +56,32 @@ export default function FieldLogs() {
               <tr className="border-b border-border bg-muted/50 text-muted-foreground">
                 <th className="text-right p-3 font-medium">العامل</th>
                 <th className="text-right p-3 font-medium">الضابط</th>
-                <th className="text-right p-3 font-medium">الجهاز</th>
                 <th className="text-right p-3 font-medium">وقت المسح</th>
                 <th className="text-right p-3 font-medium">النتيجة</th>
                 <th className="text-right p-3 font-medium">الموقع GPS</th>
+                <th className="text-right p-3 font-medium">ملاحظات</th>
               </tr>
             </thead>
             <tbody>
-              {logs.map((l) => (
-                <tr key={l.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
-                  <td className="p-3 font-medium">{l.worker}</td>
-                  <td className="p-3">{l.officer}</td>
-                  <td className="p-3 font-mono text-xs">{l.device}</td>
-                  <td className="p-3 text-xs">{formatDateTime(l.time)}</td>
-                  <td className="p-3"><StatusBadge variant={l.result} /></td>
-                  <td className="p-3 font-mono text-xs text-muted-foreground">{l.gps}</td>
-                </tr>
-              ))}
+              {logs.length === 0 ? (
+                <tr><td colSpan={6} className="p-8 text-center text-muted-foreground italic">لا توجد سجلات تفتيش مسجلة حالياً</td></tr>
+              ) : (
+                logs.map((l) => (
+                  <tr key={l.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
+                    <td className="p-3 font-medium">
+                       <div>{l.Worker?.Full_Name || "—"}</div>
+                       <div className="text-[10px] text-muted-foreground">{l.Worker?.Passport_Number}</div>
+                    </td>
+                    <td className="p-3">{l.User?.Name || "—"}</td>
+                    <td className="p-3 text-xs">{formatDateTime(l.Scan_Time)}</td>
+                    <td className="p-3"><StatusBadge variant={getResultVariant(l.Result) as any} /></td>
+                    <td className="p-3 font-mono text-[10px] text-muted-foreground">
+                       {l.GPS_Lat && l.GPS_Lon ? `${l.GPS_Lat}, ${l.GPS_Lon}` : (l.Location_Text || "—")}
+                    </td>
+                    <td className="p-3 text-[10px] max-w-[200px] truncate">{l.Note || "—"}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -50,16 +91,19 @@ export default function FieldLogs() {
       <div className="bg-card rounded-lg border border-border shadow-sm p-5">
         <h3 className="font-semibold mb-4">الجدول الزمني للتفتيش</h3>
         <div className="space-y-4">
-          {logs.map((l) => (
+          {logs.slice(0, 10).map((l) => (
             <div key={l.id} className="flex gap-4">
               <div className="flex flex-col items-center">
                 <div className="w-3 h-3 rounded-full bg-primary" />
                 <div className="w-0.5 flex-1 bg-border" />
               </div>
               <div className="pb-4">
-                <p className="text-sm font-medium">{l.worker}</p>
-                <p className="text-xs text-muted-foreground">{l.officer} — {l.device} — {formatDateTime(l.time)}</p>
-                <StatusBadge variant={l.result} className="mt-1" />
+                <p className="text-sm font-medium">{l.Worker?.Full_Name || "عامل غير معروف"}</p>
+                <p className="text-xs text-muted-foreground">
+                   {l.User?.Name} — {formatDateTime(l.Scan_Time)}
+                </p>
+                <StatusBadge variant={getResultVariant(l.Result) as any} className="mt-1" />
+                {l.Note && <p className="text-[10px] text-muted-foreground mt-1 italic">{l.Note}</p>}
               </div>
             </div>
           ))}

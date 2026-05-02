@@ -15,10 +15,10 @@ exports.getSummary = async (req, res) => {
       }
     });
 
-    const myViolations = await LegalCase.count({
+    const myViolations = await FieldLog.count({
       where: {
-        Reported_By: officerId,
-        Status: ['Open', 'open', 'نشط']
+        Officer_ID: officerId,
+        Result: 'مخالفة'
       }
     });
 
