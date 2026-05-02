@@ -10,6 +10,7 @@ import {
   SafeAreaView,
   StatusBar,
   Alert,
+  Modal,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import workerService from '../api/workerService';
@@ -23,6 +24,7 @@ const WorkerDetailsScreen = ({ route, navigation }) => {
   const [loading, setLoading] = useState(!workerData);
   const [docsExpanded, setDocsExpanded] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [viewingPassport, setViewingPassport] = useState(false);
 
   useEffect(() => {
     if (!workerData && workerId) {
@@ -63,7 +65,7 @@ const WorkerDetailsScreen = ({ route, navigation }) => {
 
   const handleAction = (actionName) => {
     if (actionName === 'تسجيل تفتيش') {
-       handleLogInspection();
+       navigation.navigate('LogInspection', { worker });
        return;
     }
     Alert.alert('نظام التفتيش', `جاري تنفيذ ${actionName}...`);
@@ -107,6 +109,33 @@ const WorkerDetailsScreen = ({ route, navigation }) => {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="light-content" />
+
+      {/* Passport Image Viewer Modal */}
+      <Modal
+        visible={viewingPassport}
+        transparent={true}
+        onRequestClose={() => setViewingPassport(false)}
+      >
+        <View style={styles.imageModalOverlay}>
+          <TouchableOpacity
+            style={styles.closeImageBtn}
+            onPress={() => setViewingPassport(false)}
+          >
+            <MaterialCommunityIcons name="close-circle" size={32} color={theme.colors.textPrimary} />
+          </TouchableOpacity>
+          <View style={styles.imageModalContent}>
+            {worker.Passport_Copy ? (
+              <Image
+                source={{ uri: getImageUrl(worker.Passport_Copy) }}
+                style={styles.largeImage}
+                resizeMode="contain"
+              />
+            ) : (
+              <Text style={{color: theme.colors.textPrimary}}>لا توجد صورة متوفرة</Text>
+            )}
+          </View>
+        </View>
+      </Modal>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <MaterialCommunityIcons name="arrow-right" size={16} color={theme.colors.textSecondary} />
@@ -148,13 +177,14 @@ const WorkerDetailsScreen = ({ route, navigation }) => {
 
           {/* Info Grid */}
           <View style={styles.infoGrid}>
+            <DetailRow icon="account-outline" label="اسم العامل" value={worker.Full_Name} />
             <DetailRow icon="credit-card-outline" label="رقم الجواز" value={worker.Passport_Number} />
             <DetailRow icon="earth" label="الجنسية" value={worker.Nationality} />
-            <DetailRow icon="briefcase-outline" label="الكفيل" value={worker.Sponsor?.Sponsor_Name || (worker.Freelance ? 'عمل حر' : 'غير محدد')} />
-            <DetailRow icon="calendar" label="تاريخ التسجيل" value={new Date(worker.createdAt).toLocaleDateString('ar-SA')} />
+            <DetailRow icon="briefcase-outline" label="اسم شركة الكفيل" value={worker.Sponsor?.Sponsor_Name || (worker.Freelance ? 'عمل حر' : 'غير محدد')} />
+            <DetailRow icon="calendar-check-outline" label="تاريخ الإصدار" value={new Date(worker.createdAt).toLocaleDateString('ar-SA')} />
             <DetailRow
-              icon="calendar"
-              label="صلاحية الشهادة"
+              icon="calendar-clock-outline"
+              label="تاريخ الانتهاء"
               value={worker.Health_Cert_Expiry}
               isHighlighted={isExpired}
             />
@@ -187,7 +217,7 @@ const WorkerDetailsScreen = ({ route, navigation }) => {
 
             {docsExpanded && (
               <View style={styles.docsList}>
-                {worker.Passport_Copy && <DocItem label="صورة جواز السفر" type="صورة" icon="credit-card-outline" />}
+                {worker.Passport_Copy && <DocItem label="صورة جواز السفر" type="صورة" icon="credit-card-outline" onShow={() => setViewingPassport(true)} />}
                 {worker.Health_Cert_Copy && <DocItem label="الشهادة الصحية" type="PDF" icon="file-document-outline" />}
                 {worker.Residency_Copy && <DocItem label="صورة الإقامة" type="صورة" icon="file-document-outline" />}
                 {worker.Personal_Photo_Copy && <DocItem label="صورة شخصية" type="صورة" icon="image-outline" />}
@@ -198,9 +228,8 @@ const WorkerDetailsScreen = ({ route, navigation }) => {
           {/* Action Buttons */}
           <View style={styles.actionsGrid}>
             <TouchableOpacity
-              style={[styles.actionBtn, styles.primaryBtn, actionLoading && {opacity: 0.7}]}
+              style={[styles.actionBtn, styles.primaryBtn]}
               onPress={() => handleAction('تسجيل تفتيش')}
-              disabled={actionLoading}
             >
               <MaterialCommunityIcons name="clipboard-text-outline" size={20} color={theme.colors.background} />
               <Text style={styles.primaryBtnText}>تسجيل تفتيش</Text>
@@ -209,11 +238,11 @@ const WorkerDetailsScreen = ({ route, navigation }) => {
               <MaterialCommunityIcons name="alert-triangle-outline" size={20} color={theme.colors.danger} />
               <Text style={styles.dangerBtnText}>إبلاغ مخالفة</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.actionBtn, styles.secondaryBtn]} onPress={() => handleAction('عرض القضايا')}>
+            <TouchableOpacity style={[styles.actionBtn, styles.secondaryBtn]} onPress={() => navigation.navigate('Cases')}>
               <MaterialCommunityIcons name="scale-balance" size={20} color={theme.colors.textSecondary} />
               <Text style={styles.secondaryBtnText}>القضايا</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.actionBtn, styles.secondaryBtn]} onPress={() => handleAction('عرض المستندات')}>
+            <TouchableOpacity style={[styles.actionBtn, styles.secondaryBtn]} onPress={() => setDocsExpanded(true)}>
               <MaterialCommunityIcons name="file-document-outline" size={20} color={theme.colors.textSecondary} />
               <Text style={styles.secondaryBtnText}>المستندات</Text>
             </TouchableOpacity>
@@ -231,14 +260,14 @@ const DetailRow = ({ icon, label, value, isHighlighted }) => (
     </Text>
     <View style={styles.detailLabelGroup}>
       <Text style={styles.detailLabel}>{label}</Text>
-      <MaterialCommunityIcons name={icon} size={16} color={theme.colors.textDark} />
+      <MaterialCommunityIcons name={icon} size={16} color={theme.colors.textMuted} />
     </View>
   </View>
 );
 
-const DocItem = ({ label, type, icon }) => (
+  const DocItem = ({ label, type, icon, onShow }) => (
   <View style={styles.docItem}>
-    <TouchableOpacity style={styles.docViewBtn}>
+    <TouchableOpacity style={styles.docViewBtn} onPress={onShow}>
       <MaterialCommunityIcons name="eye-outline" size={14} color={theme.colors.textMuted} />
     </TouchableOpacity>
     <View style={styles.docInfo}>
@@ -493,6 +522,26 @@ const styles = StyleSheet.create({
   errorText: {
     color: theme.colors.danger,
     marginBottom: 20,
+  },
+  imageModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeImageBtn: {
+    position: 'absolute',
+    top: 60,
+    right: 30,
+    zIndex: 10,
+  },
+  imageModalContent: {
+    width: '100%',
+    height: '80%',
+  },
+  largeImage: {
+    width: '100%',
+    height: '100%',
   }
 });
 

@@ -26,6 +26,7 @@ const userRoutes = require('./routes/userRoutes');
 const auditRoutes = require('./routes/auditRoutes');
 const biometricRoutes = require('./routes/biometricRoutes');
 const fieldLogRoutes = require('./routes/fieldLogRoutes');
+const legalCaseRoutes = require('./routes/legalCaseRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/workers', workerRoutes);
@@ -37,6 +38,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/biometric', biometricRoutes);
 app.use('/api/field-logs', fieldLogRoutes);
+app.use('/api/legal-cases', legalCaseRoutes);
 
 app.get('/', (req, res) => {
     res.send('Welcome! FLMS System Server is running successfully with Sequelize and NFC Support.');

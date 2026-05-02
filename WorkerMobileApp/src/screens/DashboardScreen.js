@@ -10,6 +10,7 @@ import {
   StatusBar,
   RefreshControl,
   Alert,
+  Modal,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useAuth } from '../context/AuthContext';
@@ -20,11 +21,12 @@ const DashboardScreen = ({ navigation }) => {
   const { logout, user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [profileModalVisible, setProfileModalVisible] = useState(false);
   const [summary, setSummary] = useState({
     counts: {
-      totalWorkers: 0,
-      openLegalCases: 0,
-      activeCards: 0
+      todayInspections: 0,
+      myViolations: 0,
+      activeAlerts: 0
     },
     recentInspections: []
   });
@@ -53,21 +55,21 @@ const DashboardScreen = ({ navigation }) => {
 
   const stats = [
     {
-      label: "إجمالي العمالة",
-      value: summary.counts.totalWorkers.toString(),
-      icon: "account-group-outline",
+      label: "تفتيش اليوم",
+      value: summary.counts.todayInspections?.toString() || "0",
+      icon: "clipboard-list-outline",
       color: theme.colors.primary
     },
     {
-      label: "قضايا مفتوحة",
-      value: summary.counts.openLegalCases.toString(),
-      icon: "scale-balance",
+      label: "مخالفات",
+      value: summary.counts.myViolations?.toString() || "0",
+      icon: "alert-octagon-outline",
       color: theme.colors.danger
     },
     {
-      label: "بطاقات نشطة",
-      value: summary.counts.activeCards.toString(),
-      icon: "credit-card-check-outline",
+      label: "تنبيهات نشطة",
+      value: summary.counts.activeAlerts?.toString() || "0",
+      icon: "bell-outline",
       color: theme.colors.warning
     },
   ];
@@ -97,20 +99,24 @@ const DashboardScreen = ({ navigation }) => {
               <MaterialCommunityIcons name="wifi" size={12} color={theme.colors.success} />
               <Text style={styles.connectionText}>متصل</Text>
             </View>
-            <TouchableOpacity style={styles.deviceButton} onPress={logout}>
-              <MaterialCommunityIcons name="logout" size={16} color={theme.colors.danger} />
+            <TouchableOpacity style={styles.deviceButton}>
+              <MaterialCommunityIcons name="cellphone" size={16} color={theme.colors.textMuted} />
             </TouchableOpacity>
           </View>
 
           <View style={styles.headerRight}>
-            <View style={styles.headerUserInfo}>
-              <Text style={styles.userName}>{user?.name || 'مسؤول التفتيش'}</Text>
+            <TouchableOpacity
+              style={styles.headerUserInfo}
+              onPress={() => setProfileModalVisible(true)}
+            >
+              <Text style={styles.userName}>{user?.name || 'خالد الأحمدي'}</Text>
               <Text style={styles.badgeNumber}>رقم الشارة: OFF-{user?.id || '2241'}</Text>
-            </View>
+            </TouchableOpacity>
             <TouchableOpacity
               style={styles.profileAvatar}
+              onPress={() => setProfileModalVisible(true)}
             >
-              <Text style={styles.avatarText}>{user?.name ? user.name.substring(0, 1) : 'أ'}</Text>
+              <Text style={styles.avatarText}>{user?.name ? user.name.substring(0, 1) : 'خ'}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -145,7 +151,25 @@ const DashboardScreen = ({ navigation }) => {
               activeOpacity={0.7}
             >
               <MaterialCommunityIcons name="magnify" size={24} color={theme.colors.textSecondary} />
-              <Text style={[styles.actionLabel, { color: theme.colors.textSecondary }]}>بحث يدويا</Text>
+              <Text style={[styles.actionLabel, { color: theme.colors.textSecondary }]}>بحث يدوي</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionButton, styles.secondaryAction]}
+              onPress={() => navigation.navigate('InspectionRecords')}
+              activeOpacity={0.7}
+            >
+              <MaterialCommunityIcons name="clipboard-list-outline" size={24} color={theme.colors.textSecondary} />
+              <Text style={[styles.actionLabel, { color: theme.colors.textSecondary }]}>سجلات التفتيش</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.actionButton, styles.secondaryAction]}
+              onPress={() => navigation.navigate('Cases')}
+              activeOpacity={0.7}
+            >
+              <MaterialCommunityIcons name="scale-balance" size={24} color={theme.colors.textSecondary} />
+              <Text style={[styles.actionLabel, { color: theme.colors.textSecondary }]}>القضايا المفتوحة</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -154,7 +178,7 @@ const DashboardScreen = ({ navigation }) => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>آخر عمليات التفتيش</Text>
           <View style={styles.scansList}>
-            {summary.recentInspections.length > 0 ? (
+            {summary.recentInspections && summary.recentInspections.length > 0 ? (
               summary.recentInspections.map((scan, i) => (
                 <TouchableOpacity
                   key={i}
@@ -188,6 +212,53 @@ const DashboardScreen = ({ navigation }) => {
         <View style={{ height: 100 }} />
       </ScrollView>
 
+      {/* Profile Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={profileModalVisible}
+        onRequestClose={() => setProfileModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity onPress={() => setProfileModalVisible(false)}>
+                <MaterialCommunityIcons name="close" size={24} color={theme.colors.textSecondary} />
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>الملف الشخصي</Text>
+              <View style={{ width: 24 }} />
+            </View>
+
+            <View style={styles.profileInfo}>
+              <View style={[styles.profileAvatar, { width: 80, height: 80, borderRadius: 40 }]}>
+                <Text style={[styles.avatarText, { fontSize: 24 }]}>{user?.name ? user.name.substring(0, 1) : 'خ'}</Text>
+              </View>
+              <Text style={[styles.userName, { fontSize: 20, marginTop: 16 }]}>{user?.name}</Text>
+              <Text style={[styles.badgeNumber, { fontSize: 14, marginTop: 4 }]}>{user?.role === 'admin' ? 'مدير النظام' : 'ضابط جهاز متخصص'}</Text>
+              <Text style={[styles.badgeNumber, { fontSize: 12, marginTop: 2 }]}>الجهة المنتسب لها: هيئة الرقابة الإدارية</Text>
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.modalActionBtn}>
+                <MaterialCommunityIcons name="lock-reset" size={20} color={theme.colors.primary} />
+                <Text style={styles.modalActionText}>تغيير كلمة المرور</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.modalActionBtn, { borderBottomWidth: 0 }]}
+                onPress={() => {
+                  setProfileModalVisible(false);
+                  logout();
+                }}
+              >
+                <MaterialCommunityIcons name="logout" size={20} color={theme.colors.danger} />
+                <Text style={[styles.modalActionText, { color: theme.colors.danger }]}>تسجيل خروج</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       {/* Bottom Navigation Placeholder */}
       <View style={styles.bottomNavContainer}>
         <View style={styles.bottomNav}>
@@ -195,7 +266,7 @@ const DashboardScreen = ({ navigation }) => {
             <MaterialCommunityIcons name="shield" size={20} color={theme.colors.primary} />
             <Text style={[styles.navText, { color: theme.colors.primary }]}>الرئيسية</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.navItem}>
+          <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('InspectionRecords')}>
             <MaterialCommunityIcons name="clipboard-list" size={20} color={theme.colors.textDark} />
             <Text style={styles.navText}>السجلات</Text>
           </TouchableOpacity>
@@ -206,11 +277,11 @@ const DashboardScreen = ({ navigation }) => {
             <MaterialCommunityIcons name="credit-card" size={20} color={theme.colors.textDark} />
             <Text style={styles.navText}>مسح</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.navItem}>
+          <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Cases')}>
             <MaterialCommunityIcons name="scale-balance" size={20} color={theme.colors.textDark} />
             <Text style={styles.navText}>القضايا</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.navItem}>
+          <TouchableOpacity style={styles.navItem} onPress={() => setProfileModalVisible(true)}>
             <MaterialCommunityIcons name="account" size={20} color={theme.colors.textDark} />
             <Text style={styles.navText}>حسابي</Text>
           </TouchableOpacity>
@@ -364,6 +435,7 @@ const styles = StyleSheet.create({
   actionLabel: {
     fontSize: 12,
     fontWeight: '600',
+    textAlign: 'center',
   },
   scansList: {
     gap: 8,
@@ -445,6 +517,55 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: '500',
     color: theme.colors.textDark,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: theme.colors.background,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 48,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  modalTitle: {
+    color: theme.colors.textPrimary,
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  profileInfo: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  modalActions: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  modalActionBtn: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border,
+    gap: 12,
+  },
+  modalActionText: {
+    color: theme.colors.textPrimary,
+    fontSize: 14,
+    fontWeight: '500',
   },
 });
 
