@@ -10,6 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { NativeModules } from 'react-native';
 import NfcManager, { NfcTech } from 'react-native-nfc-manager';
 import theme from '../theme';
 import workerService from '../api/workerService';
@@ -21,6 +22,13 @@ const NfcScanScreen = ({ navigation }) => {
   useEffect(() => {
     const initNfc = async () => {
       try {
+        // Bulletproof initialization: Verify underlying Native Module exists
+        if (!NativeModules.NfcManager) {
+          console.error('NfcManager Native Module is NOT linked correctly');
+          setHasNfc(false);
+          return;
+        }
+
         // Critical: Start the manager first as per hardware detection requirements
         await NfcManager.start();
 
@@ -30,6 +38,10 @@ const NfcScanScreen = ({ navigation }) => {
 
       } catch (err) {
         console.warn('NFC initialization failed:', err);
+        // Explicit check for the null native module error message
+        if (err?.message?.includes('Cannot convert null value to object')) {
+           console.error('NFC Native Module Linkage Error detected');
+        }
         setHasNfc(false);
       }
     };
