@@ -80,10 +80,16 @@ const NfcScanScreen = ({ navigation }) => {
         throw new Error('TAG_NOT_FOUND');
       }
 
-      console.log('NFC UID detected:', tag.id);
+      console.log('NFC Hex UID detected:', tag.id);
 
-      // Call API using extracted hardware UID
-      const worker = await workerService.searchByNfcUid(tag.id);
+      // Convert Hex UID to Decimal string using BigInt to prevent precision loss.
+      // This ensures compatibility with the decimal format stored in the database.
+      // Example: "046346B0230389" (Hex) -> "1235055160787849" (Decimal)
+      const decimalUid = BigInt("0x" + tag.id).toString(10);
+      console.log('NFC Decimal UID calculated:', decimalUid);
+
+      // Call API using the normalized decimal UID
+      const worker = await workerService.searchByNfcUid(decimalUid);
 
       if (worker && worker.id) {
         // Success: Navigate to details
