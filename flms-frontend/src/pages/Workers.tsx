@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Search, Filter, Edit, Plus, UserPlus, Check, ChevronsUpDown, FileCheck, Users, Trash2, Wifi, FileDown, Download, ArrowRight, RotateCcw, Fingerprint } from "lucide-react";
+import { Search, Filter, Edit, Plus, UserPlus, Check, ChevronsUpDown, FileCheck, Users, Trash2, Wifi, FileDown, Download, ArrowRight, RotateCcw, Fingerprint, Briefcase, Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload, type UploadedDoc } from "@/components/DocumentUpload";
 import { io } from "socket.io-client";
@@ -555,7 +555,7 @@ export default function Workers() {
 
   if (isFormView) {
     return (
-      <div className="space-y-6 max-w-5xl mx-auto pb-10">
+      <div className="space-y-6 max-w-5xl mx-auto pb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={handleClose} className="rounded-full">
@@ -878,7 +878,7 @@ export default function Workers() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">إدارة الأجانب</h2>

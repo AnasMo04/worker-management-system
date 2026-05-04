@@ -38,8 +38,8 @@
     --sidebar-foreground: 210 20% 85%;
     --sidebar-primary: 175 55% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 35% 20%;
-    --sidebar-accent-foreground: 210 20% 90%;
+    --sidebar-accent: 175 55% 50%;
+    --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 215 30% 22%;
     --sidebar-ring: 175 55% 50%;
     --sidebar-muted: 215 20% 40%;
@@ -91,8 +91,8 @@
     --sidebar-foreground: 210 20% 80%;
     --sidebar-primary: 175 55% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 175 55% 50%;
-    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-accent: 220 25% 14%;
+    --sidebar-accent-foreground: 210 20% 90%;
     --sidebar-border: 220 20% 16%;
     --sidebar-ring: 175 55% 50%;
     --sidebar-muted: 220 15% 35%;
@@ -119,6 +119,12 @@
   body {
     @apply bg-background text-foreground font-cairo;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Hide native browser password reveal button */
+  input::-ms-reveal,
+  input::-ms-clear {
+    display: none;
   }
 }
 
