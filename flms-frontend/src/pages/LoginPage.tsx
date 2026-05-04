@@ -62,7 +62,7 @@ export default function LoginPage() {
         <div className="relative z-10 flex flex-col items-center text-center max-w-md">
           {/* Logo */}
           <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-[hsl(215,40%,14%)] to-[hsl(215,40%,20%)] flex items-center justify-center mb-8 shadow-xl shadow-[hsl(215,40%,14%)]/20">
-            <Shield className="w-12 h-12 text-white" />
+            <img src="/FLMS-LOGO.png" alt="FLMS Logo" className="w-16 h-16 object-contain" />
           </div>
 
           <h1 className="text-3xl font-bold text-gray-900 mb-3 tracking-wide">
@@ -102,7 +102,7 @@ export default function LoginPage() {
           {/* Mobile Logo */}
           <div className="flex flex-col items-center mb-10 lg:hidden">
             <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-[hsl(215,40%,14%)] to-[hsl(215,40%,20%)] flex items-center justify-center mb-4 shadow-lg shadow-[hsl(215,40%,14%)]/20">
-              <Shield className="w-8 h-8 text-white" />
+              <img src="/FLMS-LOGO.png" alt="FLMS Logo" className="w-10 h-10 object-contain" />
             </div>
             <h1 className="text-xl font-bold text-gray-900">FLMS</h1>
             <p className="text-xs text-gray-500 mt-1">منظومة إدارة العمالة الوافدة</p>
@@ -177,7 +177,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full h-12 bg-[hsl(215,40%,14%)] hover:bg-[hsl(215,40%,20%)] text-white font-bold rounded-xl transition-all text-sm disabled:opacity-60 shadow-lg shadow-[hsl(215,40%,14%)]/20"
+                className="w-full h-12 bg-sidebar-primary hover:opacity-90 text-sidebar-primary-foreground font-bold rounded-xl transition-all text-sm disabled:opacity-60 shadow-lg shadow-sidebar-primary/20"
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -213,9 +213,6 @@ export default function LoginPage() {
               <Lock className="w-3 h-3" />
               <p className="text-[10px]">وصول آمن ومشفر – للمستخدمين المصرح لهم فقط</p>
             </div>
-            <p className="text-[10px] text-gray-500 font-medium">
-              © 2026 جميع الحقوق محفوظة — وزارة العمل والتأهيل
-            </p>
           </div>
         </div>
       </div>

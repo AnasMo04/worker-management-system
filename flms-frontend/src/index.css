@@ -36,7 +36,7 @@
 
     --sidebar-background: 215 40% 14%;
     --sidebar-foreground: 210 20% 85%;
-    --sidebar-primary: 175 55% 50%;
+    --sidebar-primary: 210 70% 28%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 215 35% 20%;
     --sidebar-accent-foreground: 210 20% 90%;
@@ -119,6 +119,12 @@
   body {
     @apply bg-background text-foreground font-cairo;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Hide native browser password reveal button */
+  input::-ms-reveal,
+  input::-ms-clear {
+    display: none;
   }
 }
 
