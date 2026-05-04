@@ -52,16 +52,16 @@ export default function LoginPage() {
       <div className="hidden lg:flex lg:w-[45%] relative overflow-hidden flex-col items-center justify-center p-12 bg-white border-l border-gray-200">
         {/* Background pattern */}
         <div className="absolute inset-0 opacity-[0.05]" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%232563eb' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%231a2638' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
         }} />
         
         {/* Decorative circles */}
-        <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-blue-600/5 blur-3xl" />
-        <div className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full bg-blue-600/5 blur-3xl" />
+        <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-[hsl(215,40%,14%)]/5 blur-3xl" />
+        <div className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full bg-[hsl(215,40%,14%)]/5 blur-3xl" />
 
         <div className="relative z-10 flex flex-col items-center text-center max-w-md">
           {/* Logo */}
-          <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center mb-8 shadow-xl shadow-blue-600/20">
+          <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-[hsl(215,40%,14%)] to-[hsl(215,40%,20%)] flex items-center justify-center mb-8 shadow-xl shadow-[hsl(215,40%,14%)]/20">
             <Shield className="w-12 h-12 text-white" />
           </div>
 
@@ -81,8 +81,8 @@ export default function LoginPage() {
               { label: "كفيل نشط", value: "3,847" },
               { label: "عملية تفتيش", value: "12,650" },
             ].map((stat) => (
-              <div key={stat.label} className="text-center bg-blue-50/50 p-4 rounded-xl border border-blue-100">
-                <p className="text-2xl font-bold text-blue-700">{stat.value}</p>
+              <div key={stat.label} className="text-center bg-[hsl(215,40%,14%)]/5 p-4 rounded-xl border border-[hsl(215,40%,14%)]/10">
+                <p className="text-2xl font-bold text-[hsl(215,40%,14%)]">{stat.value}</p>
                 <p className="text-[11px] text-gray-500 font-bold mt-1">{stat.label}</p>
               </div>
             ))}
@@ -101,7 +101,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="flex flex-col items-center mb-10 lg:hidden">
-            <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center mb-4 shadow-lg shadow-blue-600/20">
+            <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-[hsl(215,40%,14%)] to-[hsl(215,40%,20%)] flex items-center justify-center mb-4 shadow-lg shadow-[hsl(215,40%,14%)]/20">
               <Shield className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-xl font-bold text-gray-900">FLMS</h1>
@@ -135,7 +135,7 @@ export default function LoginPage() {
                     placeholder="أدخل اسم المستخدم"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full h-12 bg-white border border-gray-300 rounded-xl pr-11 pl-4 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all"
+                    className="w-full h-12 bg-white border border-gray-300 rounded-xl pr-11 pl-4 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-[hsl(215,40%,14%)] focus:ring-4 focus:ring-[hsl(215,40%,14%)]/10 transition-all"
                   />
                 </div>
               </div>
@@ -150,7 +150,7 @@ export default function LoginPage() {
                     placeholder="أدخل كلمة المرور"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full h-12 bg-white border border-gray-300 rounded-xl pr-11 pl-11 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 transition-all"
+                    className="w-full h-12 bg-white border border-gray-300 rounded-xl pr-11 pl-11 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-[hsl(215,40%,14%)] focus:ring-4 focus:ring-[hsl(215,40%,14%)]/10 transition-all"
                   />
                   <button
                     type="button" // مهم باش ما يديرش Submit للـ Form بالغلط
@@ -165,10 +165,10 @@ export default function LoginPage() {
               {/* Remember + Forgot */}
               <div className="flex items-center justify-between">
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" className="w-3.5 h-3.5 rounded border-gray-300 bg-white accent-blue-600" />
+                  <input type="checkbox" className="w-3.5 h-3.5 rounded border-gray-300 bg-white accent-[hsl(215,40%,14%)]" />
                   <span className="text-xs text-gray-600">تذكرني</span>
                 </label>
-                <button type="button" className="text-xs text-blue-600 font-bold hover:text-blue-700 transition-colors">
+                <button type="button" className="text-xs text-[hsl(215,40%,14%)] font-bold hover:text-[hsl(215,40%,20%)] transition-colors">
                   نسيت كلمة المرور؟
                 </button>
               </div>
@@ -177,7 +177,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all text-sm disabled:opacity-60 shadow-lg shadow-blue-600/20"
+                className="w-full h-12 bg-[hsl(215,40%,14%)] hover:bg-[hsl(215,40%,20%)] text-white font-bold rounded-xl transition-all text-sm disabled:opacity-60 shadow-lg shadow-[hsl(215,40%,14%)]/20"
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -200,7 +200,7 @@ export default function LoginPage() {
             {/* Biometric */}
             <button
               type="button"
-              className="w-full h-12 mt-5 bg-white border border-gray-300 text-gray-700 rounded-xl flex items-center justify-center gap-2.5 hover:border-blue-600/50 hover:text-blue-600 transition-all text-sm font-semibold"
+              className="w-full h-12 mt-5 bg-white border border-gray-300 text-gray-700 rounded-xl flex items-center justify-center gap-2.5 hover:border-[hsl(215,40%,14%)]/50 hover:text-[hsl(215,40%,14%)] transition-all text-sm font-semibold"
             >
               <Fingerprint className="w-5 h-5" />
               الدخول بالبصمة
