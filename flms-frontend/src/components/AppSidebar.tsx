@@ -55,7 +55,7 @@ export function AppSidebar() {
                   ? ""
                   : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               }`}
-              activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-bold shadow-sm"
+              activeClassName="bg-sidebar-accent text-white font-bold shadow-sm"
             >
               <item.icon className="w-4.5 h-4.5 shrink-0" />
               <span>{item.title}</span>
