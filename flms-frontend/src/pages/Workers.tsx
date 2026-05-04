@@ -3,7 +3,6 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -46,6 +45,7 @@ interface Individual {
   Personal_Photo_Copy?: string;
   fingerprint_template?: string;
   fingerprint_image?: string;
+  Native_Language?: string;
   createdAt: string;
   is_archived?: boolean;
 }
@@ -56,14 +56,15 @@ interface Sponsor {
 }
 
 const categories = [
-  { id: "worker", label: "عامل", icon: "🛠️" },
-  { id: "student", label: "طالب", icon: "🎓" },
-  { id: "dependent", label: "مرافق / تابع", icon: "👨‍👩‍👧‍👦" }
+  { id: "worker", label: "عامل", icon: <Briefcase className="w-5 h-5" /> },
+  { id: "student", label: "طالب", icon: <Building2 className="w-5 h-5" /> },
+  { id: "dependent", label: "مرافق / تابع", icon: <Users className="w-5 h-5" /> }
 ];
 
 const docTypes = ["جواز سفر", "بطاقة قنصلية", "إفادة سفارة"];
 const relationships = ["زوج/زوجة", "ابن/ابنة", "أب/أم", "أخرى"];
 const nationalityOptions = ["بنغلاديش", "غانا", "الهند", "نيجيريا", "الفلبين", "مصر", "تونس", "باكستان", "سوريا", "السودان"];
+const languageOptions = ["العربية", "الإنجليزية", "الفرنسية", "الأردية", "البنغالية", "الهندية", "الفلبينية", "الأوسا"];
 const statusOptions = [
   { value: "نشط", variant: "active" },
   { value: "موقوف", variant: "suspended" },
@@ -73,7 +74,7 @@ const statusOptions = [
 ];
 
 const emptyForm = {
-  Full_Name: "", Passport_Number: "", Nationality: "", Residence_Address: "", Sponsor_ID: "",
+  Full_Name: "", Passport_Number: "", Nationality: "", Native_Language: "", Residence_Address: "", Sponsor_ID: "",
   National_ID: "", Birth_Date: "", Category: "worker", Document_Type: "جواز سفر",
   Health_Cert_Expiry: "", Freelance: false, Family_ID: "", Relationship: "",
   Gender: "ذكر", Current_Status: "نشط", NFC_UID: "", fingerprint_template: "", fingerprint_image: "", Finger_Index: "0"
@@ -107,7 +108,7 @@ export default function Workers() {
   const [createdFrom, setCreatedFrom] = useState("");
   const [createdTo, setCreatedTo] = useState("");
 
-  const [addOpen, setAddOpen] = useState(false);
+  const [isFormView, setIsFormView] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -123,6 +124,8 @@ export default function Workers() {
   const [biometricImage, setBiometricImage] = useState<string | null>(null);
   const [qualityScore, setQualityScore] = useState<number | null>(null);
   const [sponsorOpen, setSponsorOpen] = useState(false);
+  const [nationalityOpen, setNationalityOpen] = useState(false);
+  const [languageOpen, setLanguageOpen] = useState(false);
   const [filterSponsorOpen, setFilterSponsorOpen] = useState(false);
   const [filterNationalityOpen, setFilterNationalityOpen] = useState(false);
   const { toast } = useToast();
@@ -136,7 +139,7 @@ export default function Workers() {
     socketRef.current = io(backendUrl);
 
     socketRef.current.on('nfc:card-tapped', (data: { uid: string }) => {
-      if (addOpen) {
+      if (isFormView) {
         setForm(prev => ({ ...prev, NFC_UID: data.uid }));
         toast({
           title: "تم اكتشاف بطاقة",
@@ -221,7 +224,7 @@ export default function Workers() {
     let buffer = "";
     let lastTime = Date.now();
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!addOpen) return;
+      if (!isFormView) return;
       const now = Date.now();
       if (now - lastTime > 50) buffer = "";
       lastTime = now;
@@ -241,7 +244,7 @@ export default function Workers() {
       window.removeEventListener("keydown", handleKeyDown);
       if (socketRef.current) socketRef.current.disconnect();
     };
-  }, [showArchived, addOpen]);
+  }, [showArchived, isFormView]);
 
   const fetchData = async () => {
     try {
@@ -446,6 +449,7 @@ export default function Workers() {
       NFC_UID: ind?.NFC_UID || "",
       fingerprint_template: ind?.fingerprint_template || "",
       fingerprint_image: ind?.fingerprint_image || "",
+      Native_Language: ind?.Native_Language || "",
     });
     if (ind?.fingerprint_image) {
       setBiometricImage(ind.fingerprint_image.startsWith('data:') ? ind.fingerprint_image : `data:image/bmp;base64,${ind.fingerprint_image}`);
@@ -458,7 +462,7 @@ export default function Workers() {
       residencyPhoto: ind?.Residency_Copy ? { name: "مستند مرفق", url: getFullUrl(ind.Residency_Copy), type: "application/pdf", label: "صورة الإقامة" } : null,
       personalPhoto: ind?.Personal_Photo_Copy ? { name: "صورة مرفقة", url: getFullUrl(ind.Personal_Photo_Copy), type: "image/jpeg", label: "صورة شخصية" } : null,
     });
-    setAddOpen(true);
+    setIsFormView(true);
   };
 
   const handleDelete = async (id: number) => {
@@ -541,13 +545,337 @@ export default function Workers() {
   const handleClose = async () => {
     if (isCapturing) await api.post("/api/biometric/capture", { action: 'stop' });
     resetBiometrics();
-    setAddOpen(false);
+    setIsFormView(false);
     setEditMode(false);
     setSelectedId(null);
     setForm(emptyForm);
     setDocs(emptyDocs);
     setErrors({});
   };
+
+  if (isFormView) {
+    return (
+      <div className="space-y-6 max-w-5xl mx-auto pb-10">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={handleClose} className="rounded-full">
+              <ArrowRight className="h-5 w-5" />
+            </Button>
+            <div>
+              <h2 className="text-2xl font-bold">{editMode ? "تعديل بيانات الفرد" : "إضافة فرد جديد"}</h2>
+              <p className="text-muted-foreground text-sm">أدخل البيانات الشخصية، فئة التواجد، ومعلومات الاستضافة.</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-xl overflow-hidden">
+          <div className="p-8 space-y-10">
+            <div className="grid grid-cols-3 gap-4">
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setForm({ ...form, Category: cat.id })}
+                  className={cn(
+                    "flex flex-col items-center justify-center p-6 rounded-2xl border-2 transition-all gap-2",
+                    form.Category === cat.id
+                      ? "border-primary bg-primary/5 text-primary shadow-inner"
+                      : "border-gray-100 hover:border-primary/20 text-gray-500 bg-gray-50/50"
+                  )}
+                >
+                  <span className={cn(form.Category === cat.id ? "text-primary" : "text-gray-400")}>{cat.icon}</span>
+                  <span className="text-sm font-bold">{cat.label}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="space-y-8">
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-sm font-bold text-gray-700">الاسم الكامل <span className="text-destructive">*</span></Label>
+                  <Input value={form.Full_Name} onChange={(e) => setForm({ ...form, Full_Name: e.target.value })} placeholder="الاسم الرباعي" className="h-12 rounded-xl" />
+                  {errors.Full_Name && <p className="text-xs text-destructive font-medium">{errors.Full_Name}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-bold text-gray-700">الجنس</Label>
+                  <Select value={form.Gender} onValueChange={(v) => setForm({ ...form, Gender: v })}>
+                    <SelectTrigger className="h-12 rounded-xl"><SelectValue placeholder="اختر الجنس" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ذكر">ذكر</SelectItem>
+                      <SelectItem value="أنثى">أنثى</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-sm font-bold text-gray-700">الجنسية</Label>
+                  <Popover open={nationalityOpen} onOpenChange={setNationalityOpen}>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" role="combobox" aria-expanded={nationalityOpen} className="w-full h-12 rounded-xl justify-between font-normal bg-white">
+                        {form.Nationality || "اختر الجنسية..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="بحث عن جنسية..." className="h-10" />
+                        <CommandList>
+                          <CommandEmpty>لا توجد نتائج</CommandEmpty>
+                          <CommandGroup>
+                            {nationalityOptions.map((n) => (
+                              <CommandItem key={n} value={n} onSelect={() => { setForm({ ...form, Nationality: n }); setNationalityOpen(false); }}>
+                                <Check className={cn("mr-2 h-4 w-4", form.Nationality === n ? "opacity-100" : "opacity-0")} />
+                                {n}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-bold text-gray-700">اللغة الأم</Label>
+                  <Popover open={languageOpen} onOpenChange={setLanguageOpen}>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" role="combobox" aria-expanded={languageOpen} className="w-full h-12 rounded-xl justify-between font-normal bg-white">
+                        {form.Native_Language || "اختر اللغة..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="بحث عن لغة..." className="h-10" />
+                        <CommandList>
+                          <CommandEmpty>لا توجد نتائج</CommandEmpty>
+                          <CommandGroup>
+                            {languageOptions.map((l) => (
+                              <CommandItem key={l} value={l} onSelect={() => { setForm({ ...form, Native_Language: l }); setLanguageOpen(false); }}>
+                                <Check className={cn("mr-2 h-4 w-4", form.Native_Language === l ? "opacity-100" : "opacity-0")} />
+                                {l}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-sm font-bold text-gray-700">نوع الوثيقة</Label>
+                  <Select value={form.Document_Type} onValueChange={(v) => setForm({ ...form, Document_Type: v })}>
+                    <SelectTrigger className="h-12 rounded-xl"><SelectValue placeholder="اختر النوع" /></SelectTrigger>
+                    <SelectContent>
+                      {docTypes.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-bold text-gray-700">رقم الوثيقة <span className="text-destructive">*</span></Label>
+                  <Input value={form.Passport_Number} onChange={(e) => setForm({ ...form, Passport_Number: e.target.value })} placeholder="رقم الجواز" className="h-12 rounded-xl font-mono" />
+                  {errors.Passport_Number && <p className="text-xs text-destructive font-medium">{errors.Passport_Number}</p>}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-sm font-bold text-gray-700">الحالة</Label>
+                  <Select value={form.Current_Status} onValueChange={(v) => setForm({ ...form, Current_Status: v })}>
+                    <SelectTrigger className="h-12 rounded-xl"><SelectValue placeholder="اختر الحالة" /></SelectTrigger>
+                    <SelectContent>
+                      {statusOptions.map((o) => <SelectItem key={o.value} value={o.value}>{o.value}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-bold text-gray-700">عنوان السكن</Label>
+                  <Input value={form.Residence_Address} onChange={(e) => setForm({ ...form, Residence_Address: e.target.value })} placeholder="العنوان الحالي" className="h-12 rounded-xl" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-sm font-bold text-gray-700">تاريخ انتهاء الشهادة الصحية</Label>
+                  <Input type="date" value={form.Health_Cert_Expiry} onChange={(e) => setForm({ ...form, Health_Cert_Expiry: e.target.value })} className="h-12 rounded-xl" />
+                </div>
+                <div className="flex items-center justify-between p-4 rounded-xl bg-gray-50 border border-gray-100 self-end h-12">
+                  <Label className="text-sm font-bold text-gray-700">يعمل لحسابه (Freelance)</Label>
+                  <Switch checked={form.Freelance} onCheckedChange={(v) => setForm({ ...form, Freelance: v })} />
+                </div>
+              </div>
+
+              {!form.Freelance && (form.Category === "worker" || form.Category === "student") && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-bold text-gray-700">الجهة المستضيفة <span className="text-destructive">*</span></Label>
+                  <Popover open={sponsorOpen} onOpenChange={setSponsorOpen}>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" role="combobox" aria-expanded={sponsorOpen} className="w-full h-12 rounded-xl justify-between font-normal bg-white">
+                        {form.Sponsor_ID ? sponsors.find((s) => s.id.toString() === form.Sponsor_ID)?.Sponsor_Name : "اختر الجهة..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="بحث عن جهة..." className="h-10" />
+                        <CommandList>
+                          <CommandEmpty>لا توجد نتائج</CommandEmpty>
+                          <CommandGroup>
+                            {sponsors.map((s) => (
+                              <CommandItem key={s.id} value={s.Sponsor_Name} onSelect={() => { setForm({ ...form, Sponsor_ID: s.id.toString() }); setSponsorOpen(false); }}>
+                                <Check className={cn("mr-2 h-4 w-4", form.Sponsor_ID === s.id.toString() ? "opacity-100" : "opacity-0")} />
+                                {s.Sponsor_Name}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  {errors.Sponsor_ID && <p className="text-xs text-destructive font-medium">{errors.Sponsor_ID}</p>}
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-sm font-bold text-gray-700">رقم العائلة (Family ID)</Label>
+                  <Input value={form.Family_ID} onChange={(e) => setForm({ ...form, Family_ID: e.target.value })} className="h-12 rounded-xl font-mono" />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-bold text-gray-700">صلة القرابة</Label>
+                  <Select value={form.Relationship} onValueChange={(v) => setForm({ ...form, Relationship: v })}>
+                    <SelectTrigger className="h-12 rounded-xl"><SelectValue placeholder="اختر الصلة" /></SelectTrigger>
+                    <SelectContent>
+                      {relationships.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-8 border-t border-gray-100 space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-primary font-bold text-base">
+                  <Fingerprint className="w-5 h-5" />
+                  البيانات الحيوية (Biometrics)
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{biometricStatus}</span>
+                  <Button size="sm" variant={isCapturing ? "destructive" : "secondary"} onClick={handleToggleCapture} className="h-7 text-[10px] gap-1 rounded-lg">
+                    {isCapturing ? "إيقاف الحساس" : "تشغيل الحساس"}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-6 p-6 rounded-2xl bg-gray-50 border border-gray-100">
+                <div className="flex items-center gap-6">
+                  <div className="flex-1 space-y-2">
+                    <Label className="text-xs font-bold text-gray-600">إصبع الالتقاط</Label>
+                    <Select value={form.Finger_Index} onValueChange={(v) => setForm({ ...form, Finger_Index: v })}>
+                      <SelectTrigger className="h-10 text-xs rounded-xl bg-white">
+                        <SelectValue placeholder="اختر الإصبع" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">الإبهام الأيمن (0)</SelectItem>
+                        <SelectItem value="1">السبابة الأيمن (1)</SelectItem>
+                        <SelectItem value="2">الوسطى الأيمن (2)</SelectItem>
+                        <SelectItem value="3">البنصر الأيمن (3)</SelectItem>
+                        <SelectItem value="4">الخنصر الأيمن (4)</SelectItem>
+                        <SelectItem value="5">الإبهام الأيسر (5)</SelectItem>
+                        <SelectItem value="6">السبابة الأيسر (6)</SelectItem>
+                        <SelectItem value="7">الوسطى الأيسر (7)</SelectItem>
+                        <SelectItem value="8">البنصر الأيسر (8)</SelectItem>
+                        <SelectItem value="9">الخنصر الأيسر (9)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex-1 flex flex-col justify-end">
+                    <Button
+                      type="button"
+                      variant={form.fingerprint_template ? "outline" : "default"}
+                      onClick={handleEnrollFingerprint}
+                      disabled={isEnrolling}
+                      className="gap-2 h-10 text-xs rounded-xl"
+                    >
+                      <Fingerprint className={cn("w-4 h-4", form.fingerprint_template && "text-green-500")} />
+                      {isEnrolling ? "جاري الالتقاط..." : "بدء التقاط البصمة"}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-8">
+                  <div className="w-[180px] h-[220px] bg-white rounded-xl border border-gray-200 flex items-center justify-center overflow-hidden p-2 shadow-inner">
+                    {biometricImage ? (
+                      <img src={biometricImage} alt="Fingerprint Preview" className="w-full h-auto object-contain" />
+                    ) : (
+                      <Fingerprint className="w-10 h-10 text-gray-200" />
+                    )}
+                  </div>
+                  <div className="flex-1 space-y-4">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs font-bold">
+                        <span className="text-gray-600">جودة الصورة {isSynthetic && <span className="text-orange-500 font-normal ml-1">(اصطناعي)</span>}</span>
+                        <span className={cn(
+                          qualityScore !== null && qualityScore >= 50 ? "text-green-600" : "text-destructive"
+                        )}>
+                          {qualityScore !== null ? `${qualityScore}%` : "—"}
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+                        <div
+                          className={cn("h-full transition-all duration-500", qualityScore !== null && qualityScore >= 50 ? "bg-green-500" : "bg-destructive")}
+                          style={{ width: `${qualityScore || 0}%` }}
+                        />
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-gray-500 leading-relaxed bg-white p-3 rounded-lg border border-gray-100">
+                      يرجى وضع الإصبع بوضوح على الحساس حتى تظهر المعاينة وتصل الجودة إلى 50% على الأقل لضمان دقة النظام.
+                    </p>
+
+                    {form.fingerprint_template && (
+                      <div className="flex items-center gap-2 text-xs text-green-600 font-bold bg-green-50 p-3 rounded-xl border border-green-100 shadow-sm animate-in fade-in">
+                        <Check className="w-4 h-4" />
+                        تم تسجيل بصمة الإصبع بنجاح في النظام
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-8 border-t border-gray-100">
+              <div className="flex items-center gap-2 text-primary font-bold text-base mb-6">
+                <FileCheck className="w-5 h-5" />
+                المستندات الثبوتية المطلوبة
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <DocumentUpload label="صورة الوثيقة" value={docs.passportPhoto} onChange={(d) => setDocs({ ...docs, passportPhoto: d })} />
+                <DocumentUpload label="الشهادة الصحية" value={docs.healthCert} onChange={(d) => setDocs({ ...docs, healthCert: d })} />
+                <DocumentUpload label="صورة الإقامة" value={docs.residencyPhoto} onChange={(d) => setDocs({ ...docs, residencyPhoto: d })} />
+                <DocumentUpload label="صورة شخصية" value={docs.personalPhoto} onChange={(d) => setDocs({ ...docs, personalPhoto: d })} />
+              </div>
+            </div>
+          </div>
+
+          <div className="p-8 bg-gray-50 border-t border-gray-200 flex justify-end">
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={handleClose} disabled={isSaving} className="h-11 px-8 rounded-xl border-gray-300 font-bold hover:bg-gray-100">
+                إلغاء
+              </Button>
+              <Button onClick={handleSubmit} className="h-11 px-10 rounded-xl font-bold shadow-lg shadow-primary/20" disabled={isSaving}>
+                {isSaving ? "جاري الحفظ..." : (editMode ? "تحديث البيانات" : "تسجيل الفرد")}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -572,7 +900,7 @@ export default function Workers() {
             <Label htmlFor="archived-toggle" className="text-xs cursor-pointer font-medium">عرض الأرشيف</Label>
           </div>
           {hasPermission('workers', 'create') && (
-            <Button onClick={() => setAddOpen(true)} className="gap-2">
+            <Button onClick={() => setIsFormView(true)} className="gap-2">
               <Plus className="h-4 w-4" /> إضافة فرد
             </Button>
           )}
@@ -775,157 +1103,6 @@ export default function Workers() {
         </div>
       </div>
 
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><UserPlus className="h-5 w-5 text-primary" />{editMode ? "تعديل بيانات الفرد" : "إضافة فرد جديد"}</DialogTitle>
-            <DialogDescription>أدخل البيانات الشخصية، فئة التواجد، ومعلومات الاستضافة.</DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-6 py-2">
-            <div className="grid grid-cols-3 gap-3">
-              {categories.map((cat) => (
-                <button key={cat.id} onClick={() => setForm({ ...form, Category: cat.id })} className={cn("flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all gap-1", form.Category === cat.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/30")}>
-                  <span className="text-xl">{cat.icon}</span><span className="text-xs font-bold">{cat.label}</span>
-                </button>
-              ))}
-            </div>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5"><Label>الاسم الكامل <span className="text-destructive">*</span></Label><Input value={form.Full_Name} onChange={(e) => setForm({ ...form, Full_Name: e.target.value })} placeholder="الاسم الرباعي" /></div>
-                <div className="space-y-1.5"><Label>الجنس</Label><Select value={form.Gender} onValueChange={(v) => setForm({ ...form, Gender: v })}><SelectTrigger><SelectValue placeholder="اختر الجنس" /></SelectTrigger><SelectContent><SelectItem value="ذكر">ذكر</SelectItem><SelectItem value="أنثى">أنثى</SelectItem></SelectContent></Select></div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5"><Label>الجنسية</Label><Select value={form.Nationality} onValueChange={(v) => setForm({ ...form, Nationality: v })}><SelectTrigger><SelectValue placeholder="اختر الجنسية" /></SelectTrigger><SelectContent>{nationalityOptions.map((n) => <SelectItem key={n} value={n}>{n}</SelectItem>)}</SelectContent></Select></div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5"><Label>نوع الوثيقة</Label><Select value={form.Document_Type} onValueChange={(v) => setForm({ ...form, Document_Type: v })}><SelectTrigger><SelectValue placeholder="اختر النوع" /></SelectTrigger><SelectContent>{docTypes.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select></div>
-                <div className="space-y-1.5"><Label>رقم الوثيقة <span className="text-destructive">*</span></Label><Input value={form.Passport_Number} onChange={(e) => setForm({ ...form, Passport_Number: e.target.value })} placeholder="رقم الجواز" className="font-mono" /></div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5"><Label>الحالة</Label><Select value={form.Current_Status} onValueChange={(v) => setForm({ ...form, Current_Status: v })}><SelectTrigger><SelectValue placeholder="اختر الحالة" /></SelectTrigger><SelectContent>{statusOptions.map((o) => <SelectItem key={o.value} value={o.value}>{o.value}</SelectItem>)}</SelectContent></Select></div>
-                <div className="space-y-1.5"><Label>عنوان السكن</Label><Input value={form.Residence_Address} onChange={(e) => setForm({ ...form, Residence_Address: e.target.value })} placeholder="العنوان الحالي" /></div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5"><Label>تاريخ انتهاء الشهادة الصحية</Label><Input type="date" value={form.Health_Cert_Expiry} onChange={(e) => setForm({ ...form, Health_Cert_Expiry: e.target.value })} /></div>
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border">
-                <div className="space-y-0.5"><Label>يعمل لحسابه (Freelance)</Label></div>
-                <Switch checked={form.Freelance} onCheckedChange={(v) => setForm({ ...form, Freelance: v })} />
-              </div>
-              {!form.Freelance && (form.Category === "worker" || form.Category === "student") && (
-                <div className="space-y-1.5">
-                  <Label>الجهة المستضيفة <span className="text-destructive">*</span></Label>
-                  <Popover open={sponsorOpen} onOpenChange={setSponsorOpen}>
-                    <PopoverTrigger asChild><Button variant="outline" className="w-full justify-between font-normal">{form.Sponsor_ID ? sponsors.find((s) => s.id.toString() === form.Sponsor_ID)?.Sponsor_Name : "اختر الجهة..."}<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" /></Button></PopoverTrigger>
-                    <PopoverContent className="w-full p-0" align="start"><Command><CommandInput placeholder="بحث..." /><CommandList><CommandEmpty>لا توجد نتائج</CommandEmpty><CommandGroup>{sponsors.map((s) => <CommandItem key={s.id} value={s.Sponsor_Name} onSelect={() => { setForm({ ...form, Sponsor_ID: s.id.toString() }); setSponsorOpen(false); }}><Check className={cn("mr-2 h-4 w-4", form.Sponsor_ID === s.id.toString() ? "opacity-100" : "opacity-0")} />{s.Sponsor_Name}</CommandItem>)}</CommandGroup></CommandList></Command></PopoverContent>
-                  </Popover>
-                </div>
-              )}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5"><Label>رقم العائلة (Family ID)</Label><Input value={form.Family_ID} onChange={(e) => setForm({ ...form, Family_ID: e.target.value })} className="font-mono" /></div>
-                <div className="space-y-1.5"><Label>صلة القرابة</Label><Select value={form.Relationship} onValueChange={(v) => setForm({ ...form, Relationship: v })}><SelectTrigger><SelectValue placeholder="اختر الصلة" /></SelectTrigger><SelectContent>{relationships.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select></div>
-              </div>
-            </div>
-
-            <div className="border-t pt-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold">البيانات الحيوية (Biometrics)</p>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{biometricStatus}</span>
-                  <Button size="sm" variant={isCapturing ? "destructive" : "secondary"} onClick={handleToggleCapture} className="h-6 text-[10px] gap-1">
-                    {isCapturing ? "إيقاف الحساس" : "تشغيل الحساس"}
-                  </Button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-3 p-4 rounded-xl bg-muted/30 border border-dashed border-border/60">
-                <div className="flex items-center gap-4">
-                  <div className="flex-1 space-y-1.5">
-                    <Label className="text-[10px]">إصبع الالتقاط</Label>
-                    <Select value={form.Finger_Index} onValueChange={(v) => setForm({ ...form, Finger_Index: v })}>
-                      <SelectTrigger className="h-8 text-xs">
-                        <SelectValue placeholder="اختر الإصبع" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="0">الإبهام الأيمن (0)</SelectItem>
-                        <SelectItem value="1">السبابة الأيمن (1)</SelectItem>
-                        <SelectItem value="2">الوسطى الأيمن (2)</SelectItem>
-                        <SelectItem value="3">البنصر الأيمن (3)</SelectItem>
-                        <SelectItem value="4">الخنصر الأيمن (4)</SelectItem>
-                        <SelectItem value="5">الإبهام الأيسر (5)</SelectItem>
-                        <SelectItem value="6">السبابة الأيسر (6)</SelectItem>
-                        <SelectItem value="7">الوسطى الأيسر (7)</SelectItem>
-                        <SelectItem value="8">البنصر الأيسر (8)</SelectItem>
-                        <SelectItem value="9">الخنصر الأيسر (9)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="flex-1 flex flex-col justify-end pt-5">
-                    <Button
-                      type="button"
-                      variant={form.fingerprint_template ? "outline" : "default"}
-                      onClick={handleEnrollFingerprint}
-                      disabled={isEnrolling}
-                      className="gap-2 h-8 text-xs"
-                    >
-                      <Fingerprint className={cn("w-3.5 h-3.5", form.fingerprint_template && "text-green-500")} />
-                      {isEnrolling ? "جاري الالتقاط..." : "بدء الالتقاط"}
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <div className="w-[200px] h-[240px] bg-[#f0f0f0] rounded-lg border flex items-center justify-center overflow-hidden p-1">
-                    {biometricImage ? (
-                      <img src={biometricImage} alt="Fingerprint Preview" className="w-[200px] h-auto object-contain" />
-                    ) : (
-                      <Fingerprint className="w-8 h-8 text-muted-foreground/30" />
-                    )}
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center justify-between text-[10px] font-bold">
-                      <span>جودة الصورة: {isSynthetic && <span className="text-orange-500 font-normal">(Synthetic Quality)</span>}</span>
-                      <span className={cn(
-                        qualityScore !== null && qualityScore >= 50 ? "text-green-600" : "text-destructive"
-                      )}>
-                        {qualityScore !== null ? `${qualityScore}%` : "—"}
-                      </span>
-                    </div>
-                    <div className="w-full bg-muted h-1.5 rounded-full overflow-hidden border">
-                      <div
-                        className={cn("h-full transition-all duration-500", qualityScore !== null && qualityScore >= 50 ? "bg-green-500" : "bg-destructive")}
-                        style={{ width: `${qualityScore || 0}%` }}
-                      />
-                    </div>
-                    <p className="text-[9px] text-muted-foreground leading-tight">
-                      يرجى وضع الإصبع بوضوح على الحساس حتى تظهر المعاينة وتصل الجودة إلى 50% على الأقل.
-                    </p>
-                  </div>
-                </div>
-
-                {form.fingerprint_template && (
-                  <div className="flex items-center gap-2 text-[10px] text-green-600 font-bold bg-green-50 p-2 rounded-lg border border-green-100">
-                    <Check className="w-3.5 h-3.5" />
-                    تم تسجيل بصمة الإصبع بنجاح (طول القالب: {Math.round(form.fingerprint_template.length * 0.75)} bytes)
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="border-t pt-4">
-              <p className="text-sm font-semibold mb-3">المستندات المطلوبة</p>
-              <div className="grid grid-cols-2 gap-3">
-                <DocumentUpload label="صورة الوثيقة" value={docs.passportPhoto} onChange={(d) => setDocs({ ...docs, passportPhoto: d })} />
-                <DocumentUpload label="الشهادة الصحية" value={docs.healthCert} onChange={(d) => setDocs({ ...docs, healthCert: d })} />
-                <DocumentUpload label="صورة الإقامة" value={docs.residencyPhoto} onChange={(d) => setDocs({ ...docs, residencyPhoto: d })} />
-                <DocumentUpload label="صورة شخصية" value={docs.personalPhoto} onChange={(d) => setDocs({ ...docs, personalPhoto: d })} />
-              </div>
-            </div>
-          </div>
-          <DialogFooter><Button variant="outline" onClick={handleClose}>إلغاء</Button><Button onClick={handleSubmit} disabled={isSaving}>{isSaving ? "جاري الحفظ..." : "حفظ"}</Button></DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
