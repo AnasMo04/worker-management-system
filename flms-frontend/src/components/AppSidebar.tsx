@@ -28,6 +28,7 @@ export function AppSidebar() {
   return (
     <aside className="w-64 h-screen bg-sidebar text-sidebar-foreground border-l border-sidebar-border flex flex-col shrink-0 sticky top-0">
       {/* Logo */}
+      {/* Logo */}
       <div className="p-6 border-b border-sidebar-border">
         <div className="flex flex-col items-center gap-3 text-center">
           <div className="w-20 h-20 rounded-2xl bg-white/5 flex items-center justify-center shadow-inner">
