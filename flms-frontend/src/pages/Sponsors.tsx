@@ -4,9 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Building2, Edit, FileCheck, User, Trash2, FileDown, Download, Filter, Search, RotateCcw } from "lucide-react";
+import { Plus, Building2, Edit, FileCheck, User, Trash2, FileDown, Download, Filter, Search, RotateCcw, ArrowRight } from "lucide-react";
 import Fuse from "fuse.js";
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -64,7 +63,7 @@ export default function Sponsors() {
   const [showArchived, setShowArchived] = useState(false);
   const [regionFilter, setRegionFilter] = useState("all");
   const [workerRangeFilter, setWorkerRangeFilter] = useState("all");
-  const [addOpen, setAddOpen] = useState(false);
+  const [isFormView, setIsFormView] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -175,7 +174,7 @@ export default function Sponsors() {
       identityCopy: entity?.Identity_Copy ? { name: "مستند مرفق", url: getFullUrl(entity.Identity_Copy), type: "application/pdf", label: "إثبات الهوية" } : null,
     });
     setEntityType(entity?.Owner_Name ? "business" : "university");
-    setAddOpen(true);
+    setIsFormView(true);
   };
 
   const handleDelete = async (id: number) => {
@@ -249,7 +248,7 @@ export default function Sponsors() {
   };
 
   const handleClose = () => {
-    setAddOpen(false);
+    setIsFormView(false);
     setEditMode(false);
     setSelectedId(null);
     setForm(emptyForm);
@@ -282,6 +281,174 @@ export default function Sponsors() {
     });
   }, [entities, searchQuery, regionFilter, workerRangeFilter]);
 
+  if (isFormView) {
+    return (
+      <div className="space-y-6 max-w-5xl mx-auto pb-10">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={handleClose} className="rounded-full">
+              <ArrowRight className="h-5 w-5" />
+            </Button>
+            <div>
+              <h2 className="text-2xl font-bold">{editMode ? "تعديل بيانات الجهة" : "تسجيل جهة مستضيفة جديدة"}</h2>
+              <p className="text-muted-foreground text-sm">يرجى تعبئة كافة الحقول المطلوبة لضمان صحة البيانات</p>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={handleClose} disabled={isSaving} className="h-11 px-8 rounded-xl border-gray-300 font-bold hover:bg-gray-100">
+              إلغاء
+            </Button>
+            <Button onClick={handleSubmit} className="h-11 px-10 rounded-xl font-bold shadow-lg shadow-primary/20" disabled={isSaving}>
+              {isSaving ? (
+                <span className="flex items-center gap-2">
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  جاري الحفظ...
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  {editMode ? <Edit className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                  {editMode ? "تحديث البيانات" : "تسجيل الجهة"}
+                </span>
+              )}
+            </Button>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-xl overflow-hidden">
+          <div className="p-8 space-y-10">
+            <div className="space-y-6">
+              <div className="flex items-center gap-2 text-primary font-bold text-base mb-2">
+                <Building2 className="w-5 h-5" />
+                المعلومات الأساسية للجهة
+              </div>
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-sm font-bold text-gray-700">نوع الجهة</Label>
+                  <Select value={entityType} onValueChange={setEntityType}>
+                    <SelectTrigger className="h-12 rounded-xl bg-white border-gray-200 focus:ring-primary/20"><SelectValue placeholder="اختر النوع" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="business">نشاط تجاري / شركة</SelectItem>
+                      <SelectItem value="university">جامعة / معهد</SelectItem>
+                      <SelectItem value="other">جهة أخرى</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-bold text-gray-700">اسم الجهة <span className="text-destructive">*</span></Label>
+                  <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="مثال: شركة البناء / جامعة طرابلس" className="h-12 rounded-xl border-gray-200" />
+                  {errors.name && <p className="text-xs text-destructive font-medium">{errors.name}</p>}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-sm font-bold text-gray-700">المنطقة</Label>
+                  <Popover open={regionOpen} onOpenChange={setRegionOpen}>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full h-12 rounded-xl border-gray-200 justify-between font-normal bg-white">
+                        {form.region || "اختر المنطقة..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="بحث عن منطقة..." className="h-10" />
+                        <CommandList>
+                          <CommandEmpty>لا توجد نتائج</CommandEmpty>
+                          <CommandGroup>
+                            {regions.map((r) => (
+                              <CommandItem key={r} value={r} onSelect={() => { setForm({ ...form, region: r }); setRegionOpen(false); }}>
+                                <Check className={cn("mr-2 h-4 w-4", form.region === r ? "opacity-100" : "opacity-0")} />
+                                {r}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-bold text-gray-700">رقم القيد / السجل التجاري</Label>
+                  <Input value={form.license} onChange={(e) => setForm({ ...form, license: e.target.value })} placeholder="REG-2025-XXX" className="h-12 rounded-xl border-gray-200 font-mono" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label className="text-sm font-bold text-gray-700">رقم الهاتف للجهة <span className="text-destructive">*</span></Label>
+                  <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="091-XXXXXXX" className="h-12 rounded-xl border-gray-200" />
+                  {errors.phone && <p className="text-xs text-destructive font-medium">{errors.phone}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-bold text-gray-700">البريد الإلكتروني للجهة</Label>
+                  <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="info@entity.com" className="h-12 rounded-xl border-gray-200" />
+                </div>
+              </div>
+            </div>
+
+            {entityType === "business" && (
+              <div className="pt-6 space-y-6 border-t border-gray-100">
+                <div className="flex items-center gap-2 text-primary font-bold text-base mb-2">
+                  <User className="w-5 h-5" />
+                  بيانات المالك / المفوض القانوني
+                </div>
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-bold text-gray-700">اسم المالك <span className="text-destructive">*</span></Label>
+                    <Input value={form.ownerName} onChange={(e) => setForm({ ...form, ownerName: e.target.value })} placeholder="الاسم الرباعي للمالك" className="h-12 rounded-xl border-gray-200" />
+                    {errors.ownerName && <p className="text-xs text-destructive font-medium">{errors.ownerName}</p>}
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-bold text-gray-700">الرقم الوطني للمالك</Label>
+                    <Input value={form.ownerNationalID} onChange={(e) => setForm({ ...form, ownerNationalID: e.target.value })} placeholder="1199XXXXXXXX" className="h-12 rounded-xl border-gray-200" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-bold text-gray-700">هاتف المالك</Label>
+                    <Input value={form.ownerPhone} onChange={(e) => setForm({ ...form, ownerPhone: e.target.value })} placeholder="092-XXXXXXX" className="h-12 rounded-xl border-gray-200" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-bold text-gray-700">ايميل المالك</Label>
+                    <Input type="email" value={form.ownerEmail} onChange={(e) => setForm({ ...form, ownerEmail: e.target.value })} placeholder="owner@domain.com" className="h-12 rounded-xl border-gray-200" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <DocumentUpload label="صورة المالك" value={docs.ownerPhoto} onChange={(d) => setDocs({ ...docs, ownerPhoto: d })} />
+                  <DocumentUpload label="إثبات الهوية" value={docs.identityCopy} onChange={(d) => setDocs({ ...docs, identityCopy: d })} />
+                </div>
+              </div>
+            )}
+
+            <div className="pt-6 border-t border-gray-100">
+              <div className="flex items-center gap-2 text-primary font-bold text-base mb-4">
+                <FileCheck className="w-5 h-5" />
+                المستندات الثبوتية للجهة
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <DocumentUpload label="صورة القيد/السجل" value={docs.commercialRegister} onChange={(d) => setDocs({ ...docs, commercialRegister: d })} />
+                <DocumentUpload label="الشهادة الضريبية" value={docs.taxCert} onChange={(d) => setDocs({ ...docs, taxCert: d })} />
+                <DocumentUpload label="نسخة الترخيص" value={docs.licenseCopy} onChange={(d) => setDocs({ ...docs, licenseCopy: d })} />
+                <DocumentUpload label="خطاب التفويض" value={docs.authLetter} onChange={(d) => setDocs({ ...docs, authLetter: d })} />
+              </div>
+            </div>
+          </div>
+          <div className="p-8 bg-gray-50 border-t border-gray-200 flex justify-end">
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={handleClose} disabled={isSaving} className="h-11 px-8 rounded-xl border-gray-300 font-bold hover:bg-gray-100">
+                إلغاء
+              </Button>
+              <Button onClick={handleSubmit} className="h-11 px-10 rounded-xl font-bold shadow-lg shadow-primary/20" disabled={isSaving}>
+                {isSaving ? "جاري الحفظ..." : (editMode ? "تحديث البيانات" : "تسجيل الجهة")}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -307,7 +474,7 @@ export default function Sponsors() {
             <Label htmlFor="archived-toggle-spon" className="text-xs cursor-pointer font-medium">عرض الأرشيف</Label>
           </div>
           {hasPermission?.('sponsors', 'create') && (
-            <Button onClick={() => setAddOpen(true)} className="gap-2">
+            <Button onClick={() => setIsFormView(true)} className="gap-2">
               <Plus className="h-4 w-4" />
               إضافة جهة
             </Button>
@@ -440,166 +607,6 @@ export default function Sponsors() {
         </div>
       </div>
 
-      <Dialog open={addOpen} onOpenChange={(o) => { if (!o) handleClose(); else setAddOpen(true); }}>
-        <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto p-0 border-none shadow-2xl">
-          <DialogHeader className="p-8 bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                <Building2 className="h-6 w-6" />
-              </div>
-              <div>
-                <DialogTitle className="text-2xl font-bold text-gray-900">
-                  {editMode ? "تعديل بيانات الجهة" : "تسجيل جهة مستضيفة جديدة"}
-                </DialogTitle>
-                <DialogDescription className="text-gray-500 mt-1">
-                  يرجى تعبئة كافة الحقول المطلوبة لضمان صحة البيانات في المنظومة الوطنية.
-                </DialogDescription>
-              </div>
-            </div>
-          </DialogHeader>
-
-          <div className="p-8 space-y-10">
-            <div className="space-y-6">
-              <div className="flex items-center gap-2 text-primary font-bold text-base mb-2">
-                <Building2 className="w-5 h-5" />
-                المعلومات الأساسية للجهة
-              </div>
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-sm font-bold text-gray-700">نوع الجهة</Label>
-                  <Select value={entityType} onValueChange={setEntityType}>
-                    <SelectTrigger className="h-12 rounded-xl bg-white border-gray-200 focus:ring-primary/20"><SelectValue placeholder="اختر النوع" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="business">نشاط تجاري / شركة</SelectItem>
-                      <SelectItem value="university">جامعة / معهد</SelectItem>
-                      <SelectItem value="other">جهة أخرى</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-bold text-gray-700">اسم الجهة <span className="text-destructive">*</span></Label>
-                  <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="مثال: شركة البناء / جامعة طرابلس" className="h-12 rounded-xl border-gray-200" />
-                  {errors.name && <p className="text-xs text-destructive font-medium">{errors.name}</p>}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-sm font-bold text-gray-700">المنطقة</Label>
-                  <Popover open={regionOpen} onOpenChange={setRegionOpen}>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full h-12 rounded-xl border-gray-200 justify-between font-normal bg-white">
-                        {form.region || "اختر المنطقة..."}
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                      <Command>
-                        <CommandInput placeholder="بحث عن منطقة..." className="h-10" />
-                        <CommandList>
-                          <CommandEmpty>لا توجد نتائج</CommandEmpty>
-                          <CommandGroup>
-                            {regions.map((r) => (
-                              <CommandItem key={r} value={r} onSelect={(v) => { setForm({ ...form, region: v }); setRegionOpen(false); }}>
-                                <Check className={cn("mr-2 h-4 w-4", form.region === r ? "opacity-100" : "opacity-0")} />
-                                {r}
-                              </CommandItem>
-                            ))}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-bold text-gray-700">رقم القيد / السجل التجاري</Label>
-                  <Input value={form.license} onChange={(e) => setForm({ ...form, license: e.target.value })} placeholder="REG-2025-XXX" className="h-12 rounded-xl border-gray-200 font-mono" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-sm font-bold text-gray-700">رقم الهاتف للجهة <span className="text-destructive">*</span></Label>
-                  <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="091-XXXXXXX" className="h-12 rounded-xl border-gray-200" />
-                  {errors.phone && <p className="text-xs text-destructive font-medium">{errors.phone}</p>}
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-sm font-bold text-gray-700">البريد الإلكتروني للجهة</Label>
-                  <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="info@entity.com" className="h-12 rounded-xl border-gray-200" />
-                </div>
-              </div>
-            </div>
-
-            {entityType === "business" && (
-              <div className="pt-6 space-y-6">
-                <div className="flex items-center gap-2 text-primary font-bold text-base mb-2">
-                  <User className="w-5 h-5" />
-                  بيانات المالك / المفوض القانوني
-                </div>
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-bold text-gray-700">اسم المالك <span className="text-destructive">*</span></Label>
-                    <Input value={form.ownerName} onChange={(e) => setForm({ ...form, ownerName: e.target.value })} placeholder="الاسم الرباعي للمالك" className="h-12 rounded-xl border-gray-200" />
-                    {errors.ownerName && <p className="text-xs text-destructive font-medium">{errors.ownerName}</p>}
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-bold text-gray-700">الرقم الوطني للمالك</Label>
-                    <Input value={form.ownerNationalID} onChange={(e) => setForm({ ...form, ownerNationalID: e.target.value })} placeholder="1199XXXXXXXX" className="h-12 rounded-xl border-gray-200" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-sm font-bold text-gray-700">هاتف المالك</Label>
-                    <Input value={form.ownerPhone} onChange={(e) => setForm({ ...form, ownerPhone: e.target.value })} placeholder="092-XXXXXXX" className="h-12 rounded-xl border-gray-200" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm font-bold text-gray-700">ايميل المالك</Label>
-                    <Input type="email" value={form.ownerEmail} onChange={(e) => setForm({ ...form, ownerEmail: e.target.value })} placeholder="owner@domain.com" className="h-12 rounded-xl border-gray-200" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <DocumentUpload label="صورة المالك" value={docs.ownerPhoto} onChange={(d) => setDocs({ ...docs, ownerPhoto: d })} />
-                  <DocumentUpload label="إثبات الهوية" value={docs.identityCopy} onChange={(d) => setDocs({ ...docs, identityCopy: d })} />
-                </div>
-              </div>
-            )}
-
-            <div className="pt-6">
-              <div className="flex items-center gap-2 text-primary font-bold text-base mb-4">
-                <FileCheck className="w-5 h-5" />
-                المستندات الثبوتية للجهة
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <DocumentUpload label="صورة القيد/السجل" value={docs.commercialRegister} onChange={(d) => setDocs({ ...docs, commercialRegister: d })} />
-                <DocumentUpload label="الشهادة الضريبية" value={docs.taxCert} onChange={(d) => setDocs({ ...docs, taxCert: d })} />
-                <DocumentUpload label="نسخة الترخيص" value={docs.licenseCopy} onChange={(d) => setDocs({ ...docs, licenseCopy: d })} />
-                <DocumentUpload label="خطاب التفويض" value={docs.authLetter} onChange={(d) => setDocs({ ...docs, authLetter: d })} />
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter className="p-8 bg-gray-50 border-t border-gray-200 flex-row-reverse sticky bottom-0 z-10">
-            <div className="flex gap-3 w-full sm:w-auto">
-              <Button variant="outline" onClick={handleClose} disabled={isSaving} className="h-12 px-8 rounded-xl border-gray-300 font-bold hover:bg-gray-100 flex-1 sm:flex-none">
-                إلغاء
-              </Button>
-              <Button onClick={handleSubmit} className="h-12 px-10 rounded-xl font-bold shadow-lg shadow-primary/20 flex-1 sm:flex-none" disabled={isSaving}>
-                {isSaving ? (
-                  <span className="flex items-center gap-2">
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    جاري الحفظ...
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-2">
-                    {editMode ? <Edit className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                    {editMode ? "تحديث البيانات" : "تسجيل الجهة"}
-                  </span>
-                )}
-              </Button>
-            </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

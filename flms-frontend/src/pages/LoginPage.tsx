@@ -135,7 +135,7 @@ export default function LoginPage() {
                     placeholder="أدخل اسم المستخدم"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full h-12 bg-white border border-gray-300 rounded-xl pr-11 pl-4 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-[hsl(215,40%,14%)] focus:ring-4 focus:ring-[hsl(215,40%,14%)]/10 transition-all"
+                    className="w-full h-12 bg-white border border-gray-300 rounded-xl pr-11 pl-4 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-[hsl(210,70%,28%)] focus:ring-4 focus:ring-[hsl(210,70%,28%)]/10 transition-all"
                   />
                 </div>
               </div>
@@ -150,7 +150,7 @@ export default function LoginPage() {
                     placeholder="أدخل كلمة المرور"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full h-12 bg-white border border-gray-300 rounded-xl pr-11 pl-11 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-[hsl(215,40%,14%)] focus:ring-4 focus:ring-[hsl(215,40%,14%)]/10 transition-all"
+                    className="w-full h-12 bg-white border border-gray-300 rounded-xl pr-11 pl-11 text-sm text-gray-900 placeholder:text-gray-400 outline-none focus:border-[hsl(210,70%,28%)] focus:ring-4 focus:ring-[hsl(210,70%,28%)]/10 transition-all"
                   />
                   <button
                     type="button" // مهم باش ما يديرش Submit للـ Form بالغلط
@@ -165,10 +165,10 @@ export default function LoginPage() {
               {/* Remember + Forgot */}
               <div className="flex items-center justify-between">
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" className="w-3.5 h-3.5 rounded border-gray-300 bg-white accent-[hsl(215,40%,14%)]" />
+                  <input type="checkbox" className="w-3.5 h-3.5 rounded border-gray-300 bg-white accent-[hsl(210,70%,28%)]" />
                   <span className="text-xs text-gray-600">تذكرني</span>
                 </label>
-                <button type="button" className="text-xs text-[hsl(215,40%,14%)] font-bold hover:text-[hsl(215,40%,20%)] transition-colors">
+                <button type="button" className="text-xs text-[hsl(210,70%,28%)] font-bold hover:text-[hsl(210,70%,35%)] transition-colors">
                   نسيت كلمة المرور؟
                 </button>
               </div>
@@ -177,7 +177,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full h-12 bg-sidebar-primary hover:opacity-90 text-sidebar-primary-foreground font-bold rounded-xl transition-all text-sm disabled:opacity-60 shadow-lg shadow-sidebar-primary/20"
+                className="w-full h-12 bg-[hsl(210,70%,28%)] hover:opacity-90 text-white font-bold rounded-xl transition-all text-sm disabled:opacity-60 shadow-lg shadow-[hsl(210,70%,28%)]/20"
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -200,7 +200,7 @@ export default function LoginPage() {
             {/* Biometric */}
             <button
               type="button"
-              className="w-full h-12 mt-5 bg-white border border-gray-300 text-gray-700 rounded-xl flex items-center justify-center gap-2.5 hover:border-[hsl(215,40%,14%)]/50 hover:text-[hsl(215,40%,14%)] transition-all text-sm font-semibold"
+              className="w-full h-12 mt-5 bg-white border border-gray-300 text-gray-700 rounded-xl flex items-center justify-center gap-2.5 hover:border-[hsl(210,70%,28%)]/50 hover:text-[hsl(210,70%,28%)] transition-all text-sm font-semibold"
             >
               <Fingerprint className="w-5 h-5" />
               الدخول بالبصمة
