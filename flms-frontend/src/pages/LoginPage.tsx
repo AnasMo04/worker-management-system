@@ -61,8 +61,8 @@ export default function LoginPage() {
 
         <div className="relative z-10 flex flex-col items-center text-center max-w-md">
           {/* Logo */}
-          <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-[hsl(215,40%,14%)] to-[hsl(215,40%,20%)] flex items-center justify-center mb-8 shadow-xl shadow-[hsl(215,40%,14%)]/20">
-            <img src="/FLMS-LOGO.png" alt="FLMS Logo" className="w-16 h-16 object-contain" />
+          <div className="w-36 h-36 rounded-3xl bg-gradient-to-br from-[hsl(215,40%,14%)] to-[hsl(215,40%,20%)] flex items-center justify-center mb-8 shadow-xl shadow-[hsl(215,40%,14%)]/20">
+            <img src="/FLMS-LOGO.png" alt="FLMS Logo" className="w-24 h-24 object-contain" />
           </div>
 
           <h1 className="text-3xl font-bold text-gray-900 mb-3 tracking-wide">
@@ -101,8 +101,8 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="flex flex-col items-center mb-10 lg:hidden">
-            <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-[hsl(215,40%,14%)] to-[hsl(215,40%,20%)] flex items-center justify-center mb-4 shadow-lg shadow-[hsl(215,40%,14%)]/20">
-              <img src="/FLMS-LOGO.png" alt="FLMS Logo" className="w-10 h-10 object-contain" />
+            <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-[hsl(215,40%,14%)] to-[hsl(215,40%,20%)] flex items-center justify-center mb-4 shadow-lg shadow-[hsl(215,40%,14%)]/20">
+              <img src="/FLMS-LOGO.png" alt="FLMS Logo" className="w-16 h-16 object-contain" />
             </div>
             <h1 className="text-xl font-bold text-gray-900">FLMS</h1>
             <p className="text-xs text-gray-500 mt-1">منظومة إدارة العمالة الوافدة</p>

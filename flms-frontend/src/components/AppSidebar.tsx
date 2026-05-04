@@ -28,14 +28,14 @@ export function AppSidebar() {
   return (
     <aside className="w-64 h-screen bg-sidebar text-sidebar-foreground border-l border-sidebar-border flex flex-col shrink-0 sticky top-0">
       {/* Logo */}
-      <div className="p-5 border-b border-sidebar-border">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-sidebar-primary flex items-center justify-center">
-            <Shield className="w-5 h-5 text-sidebar-primary-foreground" />
+      <div className="p-6 border-b border-sidebar-border">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="w-20 h-20 rounded-2xl bg-white/5 flex items-center justify-center shadow-inner">
+            <img src="/FLMS-LOGO.png" alt="FLMS Logo" className="w-14 h-14 object-contain" />
           </div>
           <div>
-            <h1 className="font-bold text-sm text-sidebar-accent-foreground">FLMS</h1>
-            <p className="text-[10px] text-sidebar-muted">إدارة العمالة الأجنبية</p>
+            <h1 className="font-bold text-lg text-white tracking-widest">FLMS</h1>
+            <p className="text-[10px] text-sidebar-muted font-bold">المنظومة الوطنية لإدارة العمالة</p>
           </div>
         </div>
       </div>
@@ -55,7 +55,7 @@ export function AppSidebar() {
                   ? ""
                   : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               }`}
-              activeClassName="bg-sidebar-accent text-sidebar-primary font-semibold"
+              activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-bold shadow-sm"
             >
               <item.icon className="w-4.5 h-4.5 shrink-0" />
               <span>{item.title}</span>
