@@ -19,6 +19,7 @@ module.exports = (sequelize, DataTypes) => {
     National_ID: DataTypes.STRING,
     Full_Name: DataTypes.STRING,
     Nationality: DataTypes.STRING,
+    Native_Language: DataTypes.STRING,
     Birth_Date: DataTypes.DATEONLY,
     Residence_Address: DataTypes.STRING, // عنوان السكن
     Current_Status: {
