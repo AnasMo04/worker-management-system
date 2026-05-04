@@ -298,24 +298,6 @@ export default function Sponsors() {
               <p className="text-muted-foreground text-sm">يرجى تعبئة كافة الحقول المطلوبة لضمان صحة البيانات</p>
             </div>
           </div>
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={handleClose} disabled={isSaving} className="h-11 px-8 rounded-xl border-gray-300 font-bold hover:bg-gray-100">
-              إلغاء
-            </Button>
-            <Button onClick={handleSubmit} className="h-11 px-10 rounded-xl font-bold shadow-lg shadow-primary/20" disabled={isSaving}>
-              {isSaving ? (
-                <span className="flex items-center gap-2">
-                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  جاري الحفظ...
-                </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  {editMode ? <Edit className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                  {editMode ? "تحديث البيانات" : "تسجيل الجهة"}
-                </span>
-              )}
-            </Button>
-          </div>
         </div>
 
         <div className="bg-white rounded-2xl border border-gray-200 shadow-xl overflow-hidden">
