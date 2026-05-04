@@ -40,6 +40,8 @@ interface HostingEntity {
   Owner_Photo?: string;
   Identity_Copy?: string;
   is_archived?: boolean;
+  Region?: string;
+  createdAt?: string;
 }
 
 interface EntityDocs {
@@ -63,9 +65,11 @@ export default function Sponsors() {
   const [showArchived, setShowArchived] = useState(false);
   const [regionFilter, setRegionFilter] = useState("all");
   const [workerRangeFilter, setWorkerRangeFilter] = useState("all");
+
   const [isFormView, setIsFormView] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+
   const [form, setForm] = useState(emptyForm);
   const [docs, setDocs] = useState<EntityDocs>(emptyDocs);
   const [entityType, setEntityType] = useState<string>("business");
@@ -345,7 +349,7 @@ export default function Sponsors() {
                   <Label className="text-sm font-bold text-gray-700">المنطقة</Label>
                   <Popover open={regionOpen} onOpenChange={setRegionOpen}>
                     <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full h-12 rounded-xl border-gray-200 justify-between font-normal bg-white">
+                      <Button variant="outline" role="combobox" aria-expanded={regionOpen} className="w-full h-12 rounded-xl border-gray-200 justify-between font-normal bg-white">
                         {form.region || "اختر المنطقة..."}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
@@ -567,7 +571,7 @@ export default function Sponsors() {
                     <td className="p-3 font-medium">{s?.Sponsor_Name || "—"}</td>
                     <td className="p-3 text-xs">{s?.Region || "—"}</td>
                     <td className="p-3 font-mono text-xs">{s?.Commercial_Reg_No || "—"}</td>
-                    <td className="p-3 text-[10px] font-mono">{formatDateTime(s?.createdAt)}</td>
+                    <td className="p-3 text-[10px] font-mono">{s?.createdAt ? formatDateTime(s.createdAt) : "—"}</td>
                     <td className="p-3">{formatNumber(s?.workersCount)}</td>
                     <td className="p-3">
                       <span className={cn(
